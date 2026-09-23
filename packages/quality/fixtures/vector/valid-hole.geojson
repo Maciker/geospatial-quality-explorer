@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "hole-1",
+      "properties": { "name": "polygon with hole" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [[0, 0], [6, 0], [6, 6], [0, 6], [0, 0]],
+          [[2, 2], [4, 2], [4, 4], [2, 4], [2, 2]]
+        ]
+      }
+    }
+  ]
+}

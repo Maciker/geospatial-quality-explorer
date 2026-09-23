@@ -1,10 +1,10 @@
 # Architecture
 
-## Current scaffold
-A Node HTTP API serves /health and an empty /api/v1/findings scaffold; React consumes the contract through a Vite proxy. Validation, persistence, imports and the map are pending.
+## Current shape
+`packages/quality` holds the vector rules, the validation function, and the report/QGIS builders. `packages/persistence` is the PostGIS adapter. `apps/cli` and `apps/api` are delivery adapters. `apps/web` renders stored findings and starts loopback imports.
 
 ## Dependency direction
-`apps/` contains entry points and delivery adapters. `packages/domain/` contains pure computational behavior (Quality currently has no domain rules). Application use cases and ports will be introduced with the first vertical slices, with infrastructure adapters depending on those ports. Do not add speculative interfaces to the scaffold.
+Infrastructure adapters depend on the quality package. Domain code does not import application, infrastructure, HTTP, filesystem, databases, or browser APIs. The geometry engine is injected as a port. CLI, API, and web share the validation function.
 
 Domain code must not depend on application, infrastructure, HTTP, filesystem, databases or browser APIs. CLI, API and web reuse contracts/use cases instead of duplicating rules. TypeScript is the implementation language throughout; SQL and QGIS desktop assets are external tools, not alternate application runtimes.
 
