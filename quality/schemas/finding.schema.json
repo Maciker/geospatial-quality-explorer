@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["tool", "ruleId", "severity", "file", "message", "fingerprint"],
+  "properties": {
+    "tool": { "type": "string" },
+    "ruleId": { "type": "string" },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "file": { "type": "string" },
+    "line": { "type": "integer" },
+    "column": { "type": "integer" },
+    "message": { "type": "string" },
+    "fingerprint": { "type": "string" }
+  }
+}

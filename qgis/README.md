@@ -1,5 +1,3 @@
 # QGIS integration
 
-This directory will hold portable QGIS projects, Processing models, and PyQGIS scripts.
-
-Keep data files outside version control unless they are small, redistributable fixtures. Use relative paths in projects. Processing logic should call the same deterministic rule definitions used by the API/CLI wherever practical.
+Portable desktop projects/styles consume exports from the TypeScript CLI. Use relative paths and licensed fixtures. No PyQGIS scripts or second rule implementation. The QGIS export ticket supplies the first working assets and manual walkthrough.

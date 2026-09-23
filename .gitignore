@@ -1,20 +1,25 @@
-# Local data and generated outputs
-data/
-outputs/
-*.gpkg-wal
-*.gpkg-shm
+node_modules/
+dist/
+.quality/
 
-# Python
-.venv/
-__pycache__/
-.pytest_cache/
+# Generated workspace artifacts are ignored by .ai/workspace/.gitignore;
+# the workspace directory structure is kept via tracked .gitkeep files.
 
-# Editors and operating systems
-.vscode/
-.idea/
-.DS_Store
+# Sandbox worktrees
+.sandbox/
 
-# Local application state
+# Local env
 .env
-apps/web/node_modules/
-apps/web/dist/
+.env.*
+!.env.example
+
+# Editor/OS
+.DS_Store
+*.log
+
+# Local geospatial assets and reports
+data/raw/
+outputs/
+coverage/
+playwright-report/
+test-results/

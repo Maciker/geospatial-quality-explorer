@@ -1,0 +1,25 @@
+---
+description: "Repository-wide agent workflow: discovery, plan, approval, TDD execution, review, and quality gates."
+alwaysApply: true
+---
+
+# Agent workflow
+
+Follow the repository contract in AGENTS.md. The canonical source is .ai/.
+
+## Required flow
+
+1. Discovery before solution design when the request is ambiguous.
+2. Plan before implementation.
+3. Human approval before executor changes production code.
+4. TDD for behavior changes.
+5. Review after implementation.
+6. Run quality gates before finishing.
+
+## Guardrails
+
+- Do not implement ambiguous work. Ask one material question or create a discovery artifact.
+- Review agents are read-only. They produce findings, not fixes.
+- Executor is the only agent allowed to apply implementation changes.
+- Never grow quality baselines automatically.
+- Prefer small vertical slices over broad edits.

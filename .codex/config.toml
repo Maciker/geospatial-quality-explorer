@@ -1,0 +1,89 @@
+# Project-specific Codex configuration.
+# Canonical workflow instructions live in AGENTS.md and .ai/.
+# User-specific model, provider, auth and approval settings should remain in ~/.codex/config.toml.
+
+project_doc_max_bytes = 32768
+
+[agents]
+max_threads = 6
+max_depth = 1
+job_max_runtime_seconds = 1800
+
+[agents."architecture-reviewer"]
+description = "Review TypeScript code for architecture compliance, layer boundaries, dependency direction, module structure, and naming."
+config_file = "agents/architecture-reviewer.toml"
+
+[agents."code-reviewer"]
+description = "Review changed or specified TypeScript code against design principles and implementation quality."
+config_file = "agents/code-reviewer.toml"
+
+[agents."context-manager"]
+description = "Use when compacting task progress, summarizing long logs, or preparing a clean handoff between agent sessions."
+config_file = "agents/context-manager.toml"
+
+[agents."debater"]
+description = "Use at the start of a task to understand the problem before planning. Asks one Socratic question at a time and writes a PRD."
+config_file = "agents/debater.toml"
+
+[agents."executor"]
+description = "Use only after a plan is approved. Implements one checklist item at a time with TDD and commits each completed step."
+config_file = "agents/executor.toml"
+
+[agents."frontend-reviewer"]
+description = "Optional React profile reviewer for components, hooks, CSS Modules, context, and React Query store conventions."
+config_file = "agents/frontend-reviewer.toml"
+
+[agents."functional-qa"]
+description = "Run functional QA against a spec or described flow with browser automation, console/network checks, and E2E coverage audit."
+config_file = "agents/functional-qa.toml"
+
+[agents."maintainer-filter"]
+description = "Use after specialized reviewers to remove duplicates and false positives before publishing comments."
+config_file = "agents/maintainer-filter.toml"
+
+[agents."planner"]
+description = "Use after discovery to create an implementation plan. Read-only for production code."
+config_file = "agents/planner.toml"
+
+[agents."qa-cross-model"]
+description = "Cross-model QA reviewer. Use after execution and before PR when a different model must validate the diff."
+config_file = "agents/qa-cross-model.toml"
+
+[agents."repository-analyst"]
+description = "Use when onboarding an existing repository for the first time. Maps structure, validation, architecture, risks and AGENTS.md gaps without editing code."
+config_file = "agents/repository-analyst.toml"
+
+[agents."reviewer"]
+description = "Use after execution to validate the implementation against the plan and project rules. Read-only."
+config_file = "agents/reviewer.toml"
+
+[agents."security-reviewer"]
+description = "Use to review authentication, authorization, secrets, input validation and common web risks."
+config_file = "agents/security-reviewer.toml"
+
+[agents."task-researcher"]
+description = "Use when investigating a specific task, bug, feature, or change area before planning implementation. Produces factual task research without editing code."
+config_file = "agents/task-researcher.toml"
+
+[agents."test-reviewer"]
+description = "Review test quality, naming, structure, coverage, and mock usage across unit, integration, and E2E tests."
+config_file = "agents/test-reviewer.toml"
+
+[agents."ux-reviewer"]
+description = "Optional browser-based UX reviewer for visual review, responsive checks, interaction states, and UI polish feedback."
+config_file = "agents/ux-reviewer.toml"
+
+[agents."validator"]
+description = "Run project validation through package scripts and report compile, lint, test, quality, and formatting status."
+config_file = "agents/validator.toml"
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@4.1.1"]
+
+[mcp_servers.context7.env]
+CONTEXT7_API_KEY = "${CONTEXT7_API_KEY}"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.82", "--isolated"]

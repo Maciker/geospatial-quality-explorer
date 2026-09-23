@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "tools/**/*.mjs",
+        "test/**/*.test.ts"
+      ],
+      "project": [
+        "tools/**/*.mjs",
+        "test/**/*.ts"
+      ]
+    },
+    "apps/*": {
+      "entry": [
+        "src/main.{ts,tsx}",
+        "vite.config.ts"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "vite.config.ts"
+      ]
+    },
+    "packages/*": {
+      "entry": [
+        "src/index.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    }
+  }
+}

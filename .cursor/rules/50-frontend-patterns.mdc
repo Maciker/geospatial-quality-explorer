@@ -1,0 +1,16 @@
+---
+description: "Optional React profile rules for components, hooks, React Query store hooks and CSS Modules."
+globs: "**/*.tsx,**/*.hook.ts,**/*.module.css,**/store/*.ts,**/context/*.ts"
+alwaysApply: false
+---
+
+# Frontend patterns
+
+Use this only when the React profile is active. Full reference: .ai/skills/frontend-patterns.
+
+- Components use props.x, not destructuring.
+- useEffect belongs in components, not custom hooks.
+- Custom hooks use one grouped useState and expose domain operations.
+- Context is dependency injection only, not shared state.
+- Store hooks hide React Query internals behind domain helpers.
+- CSS Modules only; no utility CSS frameworks.

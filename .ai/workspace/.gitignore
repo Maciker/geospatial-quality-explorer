@@ -1,0 +1,15 @@
+# Generated workspace artifacts. The directory structure is kept via .gitkeep;
+# generated contents are ignored so they never land in version control.
+prds/
+plans/
+summaries/
+reviews/
+findings/
+qa/inputs/
+qa/outputs/
+qa/reports/
+loop/
+repo-analysis/*
+!repo-analysis/.gitkeep
+tasks/*
+!tasks/.gitkeep

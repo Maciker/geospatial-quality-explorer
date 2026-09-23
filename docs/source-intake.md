@@ -1,0 +1,93 @@
+# Source intake — 2026-09-18
+
+## Scope and revisions
+
+- Destination baseline: `Maciker/agent-workflow-code-ts@ee7e1ccb91760e91f1ba48cca5d93ab6a7b55570`.
+- Training collection: `Maciker/ai-learnings@c614b59c2da8bc87fe072f671c85317647ba6016`.
+- Matt Pocock: `mattpocock/skills@c55ee46073ed923f86ce59a5eb3b6d895095d1b7`.
+
+The recursive default-branch trees were inventoried; relevant instructions, skills, rule sets and READMEs were compared with the existing core. This is a workflow-content intake, not a runtime/security audit of every course application or a survey of unmerged branches. Immutable links below make the reviewed revision reproducible. Re-evaluate later upstream changes rather than automatically mirroring them.
+
+## Matt Pocock intake
+
+| Source skill | Decision | Local destination or reason |
+| --- | --- | --- |
+| [ask-matt](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/ask-matt/SKILL.md) | Replaced by local guide | `docs/curated-workflows.md` routes the repository's own commands. |
+| [code-review](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/code-review/SKILL.md) | Merged into existing | `.ai/agents/reviewer.md`, review template; separate spec and standards axes. |
+| [codebase-design](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/codebase-design/SKILL.md) | Adapted | `.ai/skills/codebase-design/`, `/design-module`; preserve hexagonal ports and existing tests. |
+| [diagnosing-bugs](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/diagnosing-bugs/SKILL.md) | Adapted | `.ai/skills/diagnosing-bugs/`, `/diagnose`; bounded investigation, original-symptom verification. |
+| [domain-modeling](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/domain-modeling/SKILL.md) | Adapted | `.ai/skills/domain-modeling/`, domain templates; reuse local glossary locations. |
+| [grill-with-docs](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/grill-with-docs/SKILL.md) | Merged into existing | Existing `/discovery` plus `domain-modeling`; no second interview engine. |
+| [implement](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/implement/SKILL.md) | Already covered | `/execute`, executor and quality gates already provide implementation. |
+| [improve-codebase-architecture](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/improve-codebase-architecture/SKILL.md) | Adapted | `codebase-design`, `/design-module` survey; no mandatory HTML report. |
+| [prototype](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/prototype/SKILL.md) | Adapted | `/prototype`; isolate experiments and preserve evidence, production gates remain. |
+| [research](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/research/SKILL.md) | Merged into existing | `task-researcher`; primary-source evidence with versions and explicit inferences. |
+| [resolving-merge-conflicts](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/resolving-merge-conflicts/SKILL.md) | Adapted | `/resolve-conflicts`; no unconditional finish, abort prohibition, or stage-everything rule. |
+| [setup-matt-pocock-skills](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/setup-matt-pocock-skills/SKILL.md) | Not imported | Upstream-specific configuration; existing repository onboarding supplies context and adapters. |
+| [tdd](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/tdd/SKILL.md) | Merged into existing | `testing-standards`; observable interfaces and independent expected results. Keep local Red–Green–Refactor. |
+| [to-spec](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/to-spec/SKILL.md) | Adapted | `/to-spec`, spec template; no automatic tracker publishing or forced long story lists. |
+| [to-tickets](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/to-tickets/SKILL.md) | Adapted | `/to-tickets`, ticket template, `safe-refactoring`; vertical slices and expand–contract. |
+| [triage](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/triage/SKILL.md) | Adapted | `/triage`; reuse labels, preserve scope, no automatic close/comment actions. |
+| [wayfinder](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/wayfinder/SKILL.md) | Pattern retained | Plan template distinguishes decision/research tasks from implementation. Existing task workspaces handle long work; no separate tracker state machine. |
+| [wizard](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/wizard/SKILL.md) | Deferred | Manual infrastructure wizards are a separate operational task, not required by this TypeScript core. |
+| [claude-handoff](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/claude-handoff/SKILL.md) | Not imported (in progress) | Claude background-process coupling; use portable progress artifacts. |
+| [implement-spec](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/implement-spec/SKILL.md) | Deferred (in progress) | Existing execution/task workspace already covers the main flow; do not import an additional orchestrator. |
+| [loop-me](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/loop-me/SKILL.md) | Not imported (in progress) | Personal workflow discovery is outside the coding package. |
+| [pr](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/pr/SKILL.md) | Deferred (in progress) | Has additional Humanlayer credits; no text/template copied. Existing review and evidence artifacts suffice. |
+| [retro](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/retro/SKILL.md) | Deferred (in progress) | Existing skill intake and evidence-based review cover curation; reconsider after demonstrated repeated need. |
+| [setup-ts-deep-modules](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/setup-ts-deep-modules/SKILL.md) | Deferred (in progress) | Existing dependency-cruiser enforces architecture. Root-entrypoint-only rules need a separate compatibility design. |
+| [writing-beats](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/writing-beats/SKILL.md) | Not imported (in progress) | Long-form writing is outside the coding workflow. |
+| [writing-fragments](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/writing-fragments/SKILL.md) | Not imported (in progress) | Long-form writing is outside the coding workflow. |
+| [writing-shape](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/in-progress/writing-shape/SKILL.md) | Not imported (in progress) | Long-form writing is outside the coding workflow. |
+| [git-guardrails-claude-code](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/misc/git-guardrails-claude-code/SKILL.md) | Not imported | Vendor-specific hooks; retain current permission profiles and generated adapters. |
+| [migrate-to-shoehorn](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/misc/migrate-to-shoehorn/SKILL.md) | Not imported | One-off dependency migration; no demonstrated need in this repository. |
+| [scaffold-exercises](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/misc/scaffold-exercises/SKILL.md) | Not imported | Training exercise generation belongs in ai-learnings. |
+| [setup-pre-commit](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/misc/setup-pre-commit/SKILL.md) | Already covered | Existing `.githooks/` and `pnpm setup:hooks`; no duplicate installer. |
+| [grill-me](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/grill-me/SKILL.md) | Adapted | `.ai/skills/grill-me/`, `/grill-me`; a user-started interview for plans, decisions and ideas. |
+| [grilling](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/grilling/SKILL.md) | Adapted | `.ai/skills/grilling/`; decision-tree rounds, local fact-finding and explicit handoff. |
+| [handoff](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/handoff/SKILL.md) | Merged into existing | Existing `/compact-progress` and progress template; durable task artifacts instead of OS temp-only storage. |
+| [teach](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/teach/SKILL.md) | Not imported | Course tutoring belongs to the learning workspace, not the coding workflow. |
+| [to-questionnaire](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/to-questionnaire/SKILL.md) | Deferred | External stakeholder questionnaires are outside the recurring coding workflow. |
+| [wait-what](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/wait-what/SKILL.md) | Already covered | Existing concise-communication policy; no separate conversational command. |
+| [writing-for-agents](https://github.com/mattpocock/skills/blob/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/productivity/writing-for-agents/SKILL.md) | Adapted | `.ai/skills/writing-for-agents/`, `/review-skill`; no vendor tool coupling. |
+
+## Training collection intake
+
+| Source area | Contents | Decision |
+| --- | --- | --- |
+| [LeanMind/Lista_conceptos.md](https://github.com/Maciker/ai-learnings/blob/c614b59c2da8bc87fe072f671c85317647ba6016/LeanMind/Lista_conceptos.md) | Training concepts | Existing context, trust, task workspace and review policies already cover most concepts. Added domain vocabulary, observable specs and migration guidance as original summaries. |
+| [LeanMind/desarrollo-guiado-por-ia-ts](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/LeanMind/desarrollo-guiado-por-ia-ts) | Guided TypeScript exercise | Existing planner/executor/reviewer and vendor generation already implement the reusable pattern. Do not replace the richer generator with the course script or import the mood application. |
+| [LeanMind/desarrollo-guiado-por-ia-python](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/LeanMind/desarrollo-guiado-por-ia-python) | Python exercise | Outside the TypeScript package; generic workflow is already covered. |
+| [LeanMind/desarrollo-ia-ts](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/LeanMind/desarrollo-ia-ts) | Unguided TypeScript baseline | Training comparison, not a reusable workflow addition. |
+| [LeanMind/desarrollo-ia-python](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/LeanMind/desarrollo-ia-python) | Unguided Python baseline | Training comparison, outside this package. |
+| [masterclasses/backend-architecture-rules](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/backend-architecture-rules) | Backend rules | Already represented by architecture-hexagonal, design-principles, testing-standards and XP/TDD. Preserve one canonical version. |
+| [masterclasses/backend-template](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/backend-template) | Backend application template | Keep domain rules already in the core; no application code, environment files, generated build artifacts or database dependencies imported. |
+| [masterclasses/frontend-rules](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/frontend-rules) | Frontend rules | Already represented by the optional frontend-patterns profile. Do not make framework-specific rules universal. |
+| [masterclasses/frontend-template](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/frontend-template) | React application template | Optional frontend guidance already present; do not import the classroom application or its tooling. |
+| [masterclasses/fullstack-solo-developer](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/fullstack-solo-developer) | Fullstack workflow and OpenSpec | Existing review agents, optional OpenSpec commands and core skills cover these patterns; no duplicate Claude skill tree. |
+| [masterclasses/masterclass-04-skills](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/masterclass-04-skills) | Skill authoring and review | Original `/review-skill` procedure; reuse the local knowledge/command/agent distinction rather than Claude-specific scaffolding. |
+| [masterclasses/masterclass-08-n8n](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/masterclass-08-n8n) | n8n operations | Deployment, workflow backups and webhook tests belong in an automation package. Exported workflow JSON can contain inline secrets/data; no blanket safe-to-publish claim adopted. |
+| [masterclasses/masterclass-09-mcp](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/masterclass-09-mcp) | Small MCP server | New optional MCP architecture reference captures protocol-boundary lessons without importing SDK/version claims or the lsof application. |
+| [masterclasses/masterclass-09-mcp-hexagonal](https://github.com/Maciker/ai-learnings/tree/c614b59c2da8bc87fe072f671c85317647ba6016/masterclasses/masterclass-09-mcp-hexagonal) | HTTP and MCP adapters | New architecture reference covers shared use cases, task-oriented tool catalogs and protocol-level verification; no runtime dependency added. |
+
+## Deliberate reconciliations
+
+- Keep the local Red–Green–Refactor cycle. Upstream now places refactoring at review time; importing both rules would create a contradiction.
+- Hexagonal ports remain valid even when only one production adapter exists. Deep-module advice does not remove architectural contracts or automatically delete tests.
+- Preserve the repository's knowledge/command/agent split. Provider-specific invocation fields, hard dependencies on upstream setup, shell wizards and mandatory parallel agents do not enter the canonical core.
+- Use existing user authorization. Writing a local spec is not permission to post issues, contact reporters, close tickets, deploy, or merge.
+- Preserve existing templates, framework profiles and adapters. No new package dependencies, workflow engines, source application code or provider accounts are introduced.
+- Course materials are summarized in original language, not vendored. See [attribution and licensing boundaries](../THIRD_PARTY_NOTICES.md).
+
+## Maintainer intake checklist
+
+1. Compare source revisions and read relevant changes, including license/credit changes.
+2. Map each proposal to existing skills or a precise missing recurring task.
+3. Adapt local contracts first; record conflicts and excluded behavior here.
+4. Edit canonical content and regenerate adapters.
+5. Validate frontmatter, references, vendor parity, skill-index budget and representative task behavior.
+6. Run repository quality and cross-model QA gates before release. Keep evidence and limitations in the PR.
+
+## Public profile preparation
+
+The repository now uses the root [MIT License](../LICENSE) for its original content. The third-party notice retains Matt Pocock's MIT attribution. Training materials are summarized in original language rather than copied into this repository. The README and workflow guide describe actual contents, without claims of industry endorsement or proven vendor compatibility.

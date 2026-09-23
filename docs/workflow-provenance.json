@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/Maciker/agent-workflow-code-ts",
+  "commit": "97d01f03436cbbf35936c172008e74e55be56dd5",
+  "workflowVersion": "0.8.0",
+  "imported": [
+    ".ai",
+    "tools",
+    "quality",
+    "scripts",
+    ".githooks",
+    "docs",
+    "examples",
+    "test/vendor-sync.test.ts"
+  ],
+  "adaptations": [
+    "pnpm workspace apps/packages layout",
+    "quality and ratchet scan apps/packages/test/tools",
+    "vendor glob coverage",
+    "project instructions and docs",
+    "project-specific scaffold validation"
+  ],
+  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally."
+}

@@ -1,0 +1,72 @@
+{
+  "name": "geospatial-quality-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript GIS project with a pinned portable agent workflow",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "scripts": {
+    "build": "pnpm build:server && pnpm --filter ./apps/web build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter ./apps/web typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "arch": "depcruise apps packages test tools --config dependency-cruiser.config.cjs",
+    "deadcode": "knip",
+    "dup": "jscpd --config jscpd.config.json",
+    "quality:collect": "node tools/quality/quality-runner.mjs collect",
+    "quality:ratchet": "node tools/quality/ratchet.mjs",
+    "quality:init": "node tools/quality/ratchet.mjs --init",
+    "quality:status": "node tools/quality/ratchet.mjs --status",
+    "quality:fast": "pnpm typecheck && pnpm lint && pnpm test",
+    "quality:full": "pnpm typecheck && pnpm lint && pnpm test && pnpm arch && pnpm deadcode && pnpm dup && pnpm quality:ratchet",
+    "quality:ci": "pnpm typecheck && pnpm lint && pnpm test && pnpm arch && pnpm deadcode && pnpm dup && pnpm quality:ratchet",
+    "quality:agent": "pnpm quality:full && pnpm qa:gate",
+    "loop": "node tools/loop/verify-and-iterate.mjs run",
+    "loop:status": "node tools/loop/verify-and-iterate.mjs status",
+    "loop:reset": "node tools/loop/verify-and-iterate.mjs reset",
+    "qa:prepare": "node tools/qa/prepare-qa-input.mjs",
+    "qa:run": "node tools/qa/run-cross-model-qa.mjs",
+    "qa:extract": "node tools/qa/extract-json.mjs",
+    "qa:validate": "node tools/qa/validate-qa-review.mjs",
+    "qa:gate": "node tools/qa/qa-gate.mjs",
+    "sandbox": "node tools/sandbox/run-in-sandbox.mjs",
+    "ai:sync": "node tools/vendors/sync-vendors.mjs",
+    "sync:ai": "node tools/vendors/sync-vendors.mjs",
+    "vendors:check": "node tools/vendors/check-vendor-adapters.mjs",
+    "codex:check": "node tools/vendors/check-codex-adapter.mjs && node tools/vendors/check-codex-skill-budget.mjs",
+    "codex:skills:budget": "node tools/vendors/check-codex-skill-budget.mjs",
+    "quality:vendor": "pnpm ai:sync && pnpm vendors:check",
+    "quality:codex": "pnpm codex:check",
+    "quality:stabilization": "pnpm ai:sync && pnpm vendors:check && pnpm codex:check && pnpm dogfood:check",
+    "dogfood:check": "node tools/stabilization/dogfood-check.mjs",
+    "doctor": "node tools/diagnostics/doctor.mjs",
+    "setup:hooks": "bash scripts/install-githooks.sh",
+    "build:server": "tsc -p tsconfig.build.json",
+    "dev:api": "pnpm build:server && node dist/apps/api/src/main.js",
+    "dev:web": "pnpm --filter ./apps/web dev"
+  },
+  "dependencies": {
+    "yaml": "^2.7.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^22.10.0",
+    "dependency-cruiser": "^16.9.0",
+    "eslint": "^9.18.0",
+    "jscpd": "4.0.1",
+    "knip": "^5.42.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^3.0.0"
+  }
+}

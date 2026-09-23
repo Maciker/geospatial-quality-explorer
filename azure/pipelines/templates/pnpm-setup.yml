@@ -1,0 +1,25 @@
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '22.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      corepack enable
+      corepack prepare pnpm@10.0.0 --activate
+    displayName: 'Enable pnpm'
+
+  - script: |
+      pnpm config set store-dir $(Pipeline.Workspace)/.pnpm-store
+    displayName: 'Configure pnpm store'
+
+  - task: Cache@2
+    inputs:
+      key: 'pnpm | "$(Agent.OS)" | pnpm-lock.yaml'
+      restoreKeys: |
+        pnpm | "$(Agent.OS)"
+      path: '$(Pipeline.Workspace)/.pnpm-store'
+    displayName: 'Cache pnpm store'
+
+  - script: pnpm install --frozen-lockfile
+    displayName: 'Install dependencies'

@@ -1,0 +1,83 @@
+version: 4
+
+quality_levels:
+  fast:
+    - typecheck
+    - lint
+    - unit-tests
+  full:
+    - typecheck
+    - lint
+    - unit-tests
+    - architecture
+    - dead-code
+    - duplication
+    - ratchet
+  agent:
+    - full
+    - qa-cross-model
+
+hard_gates:
+  - id: typecheck
+    language: ts
+    cmd: pnpm typecheck
+  - id: lint
+    language: ts
+    cmd: pnpm lint
+  - id: unit-tests
+    language: ts
+    cmd: pnpm test
+  - id: architecture
+    language: ts
+    cmd: pnpm arch
+  - id: dead-code
+    language: ts
+    cmd: pnpm deadcode
+  - id: duplication
+    language: any
+    cmd: pnpm dup
+
+ratchet_gates:
+  - id: eslint
+    language: ts
+    collect: node tools/quality/collect-eslint-json.mjs
+    parse: node tools/quality/eslint-to-findings.mjs .quality/eslint.json --out .quality/eslint-findings.json
+    current: .quality/eslint-findings.json
+    baseline: quality/baselines/eslint.json
+
+  - id: architecture
+    language: ts
+    collect: node tools/quality/collect-depcruise-json.mjs
+    parse: node tools/quality/depcruise-to-findings.mjs .quality/depcruise.json --out .quality/architecture-findings.json
+    current: .quality/architecture-findings.json
+    baseline: quality/baselines/architecture.json
+
+  - id: duplication
+    language: any
+    collect: node tools/quality/collect-jscpd-json.mjs
+    parse: node tools/quality/jscpd-to-findings.mjs .quality/jscpd/jscpd-report.json --out .quality/duplication-findings.json
+    current: .quality/duplication-findings.json
+    baseline: quality/baselines/duplication.json
+
+qa_gate:
+  enabled: true
+  input: .ai/workspace/qa/outputs/qa-review.json
+  input_prompt: .ai/workspace/qa/inputs/qa-input.md
+  findings: .quality/qa-findings.json
+  report: .quality/qa-gate-report.json
+  pass_score: 80
+  retry_score_min: 60
+  max_iterations: 3
+  policy:
+    pass: score >= 80 and decision == pass and no P0/P1 blocking findings
+    iterate: score 60-79 or decision == iterate
+    stop: score < 60 or decision == stop or any P0 blocking finding
+
+
+profiles:
+  stabilization: quality/profiles/stabilization.md
+  core: quality/profiles/core.md
+  react: quality/profiles/react.md
+  browser_qa: quality/profiles/browser-qa.md
+  fullstack: quality/profiles/fullstack.md
+  openspec: quality/profiles/openspec.md

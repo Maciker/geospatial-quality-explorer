@@ -1,30 +1,36 @@
 # Geospatial Quality Explorer
 
-A local-first, open-source project for finding and explaining deterministic quality issues in geospatial vector data.
-
-It is a portfolio project for modern geospatial engineering: QGIS and PyQGIS, PostgreSQL/PostGIS, Python, FastAPI, React, MapLibre, reproducible testing, and English technical communication.
-
-## Product intent
-
-A user will provide a small vector dataset and receive traceable findings such as invalid geometry, missing or empty geometry, duplicate identifiers, missing CRS metadata, and selected project-specific spatial rules. Findings can be inspected in QGIS and a browser.
-
-Every finding must state its rule, source feature, severity, explanation, and suggested next action. The system must not infer a CRS, silently alter source data, or let an AI model decide spatial validity.
-
-## Repository structure
-
-- `apps/api` — FastAPI service and deterministic validation core.
-- `apps/web` — React/TypeScript interface; MapLibre integration follows the findings-map issue.
-- `infra` — local PostGIS development environment and schema.
-- `qgis` — portable QGIS projects, Processing models, and PyQGIS scripts.
-- `docs` — roadmap, weekly execution guide, architecture, and local development guide.
-
-## Start here
-
-1. Read the [roadmap](docs/roadmap.md).
-2. Follow the [weekly execution guide](docs/weekly-guide.md) and complete issues sequentially.
-3. For local setup, follow [development.md](docs/development.md).
-4. Track product work in the MVP issues linked from the repository issue list.
+Validate a small vector dataset, save traceable findings in PostGIS, and inspect them in QGIS and a browser.
 
 ## Current state
 
-The repository contains an executable API health endpoint, an initial frontend/API contract, a local PostGIS schema, and development documentation. It does not yet ingest datasets, run validation rules, persist findings, or display a map. Those capabilities are intentionally delivered through separate, testable issues.
+A Node HTTP API serves /health and an empty /api/v1/findings scaffold; React consumes the contract through a Vite proxy. Validation, persistence, imports and the map are pending. This is a foundation, not a completed GIS product.
+
+All application, CLI and API code uses TypeScript on Node.js. QGIS desktop and PostGIS SQL remain GIS tools. There is no Python, FastAPI or PyQGIS runtime.
+
+## Start
+
+Use Node.js 22 or 24 and pnpm 10.17.1 (pinned in package.json).
+
+```sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm quality:fast
+pnpm build
+```
+
+See [local development](docs/development.md), [project specification](docs/project-spec.md), [architecture](docs/architecture.md) and [roadmap](docs/roadmap.md).
+
+## Agent workflow
+
+Canonical instructions and skills are in `.ai/`, with generated adapters for Cursor, Codex, Copilot and Hermes. OpenCode can read root `AGENTS.md` and the named skill files explicitly. No automatic OpenCode discovery is assumed.
+
+Imported from [agent-workflow-code-ts](https://github.com/Maciker/agent-workflow-code-ts/tree/97d01f03436cbbf35936c172008e74e55be56dd5). The pin, upstream MIT attribution and local adaptations are recorded in [workflow provenance](docs/workflow-provenance.json). This is a vendored snapshot: upstream changes require a reviewed update and regeneration, not a floating dependency on main.
+
+Run `pnpm quality:full` and `pnpm quality:stabilization` before review. Independent cross-model QA and human approval are merge requirements. Provider credentials are optional for local deterministic checks.
+
+## Work order
+
+Start with [foundation #9](https://github.com/Maciker/geospatial-quality-explorer/issues/9), then follow [MVP tracker #8](https://github.com/Maciker/geospatial-quality-explorer/issues/8). Tickets specify dependencies, acceptance tests and relevant skills. No feature is complete merely because its ticket exists.
+
+Keep source data immutable. Only tiny, licensed fixtures belong in Git; real datasets and generated outputs stay local.

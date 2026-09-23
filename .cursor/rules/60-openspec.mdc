@@ -1,0 +1,14 @@
+---
+description: "Optional OpenSpec workflow rules for proposal, design, specs, tasks, apply and archive flows."
+globs: "openspec/**"
+alwaysApply: false
+---
+
+# OpenSpec profile
+
+Use only when the OpenSpec profile is active.
+
+- Explore before implementation.
+- Propose changes through proposal, design, specs and tasks.
+- Apply tasks in order with TDD and focused validation.
+- Archive only after tasks and artifacts are complete.

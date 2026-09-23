@@ -1,0 +1,18 @@
+---
+description: "Testing rules for unit, integration and E2E tests, AAA, FIRST, naming and mock policy."
+globs: "**/*.test.ts,**/*.integration.test.ts,**/*.e2e.test.ts,test/**/*.ts"
+alwaysApply: false
+---
+
+# Testing standards
+
+Use .ai/skills/testing-standards as the complete reference.
+
+- Test names describe business rules, not implementation mechanics.
+- Use AAA with blank lines between Arrange, Act and Assert.
+- Tests must be fast, isolated, repeatable, self-validating and timely.
+- Use InMemory repositories for UseCase unit tests.
+- Do not mock repositories.
+- Never weaken a test to make implementation pass.
+- Use fake non-production secrets only.
+- Run pnpm test or the smallest focused script available.
