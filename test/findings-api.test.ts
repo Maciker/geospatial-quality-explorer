@@ -43,6 +43,18 @@ async function start(run?: ValidationRun, jobs?: InProcessValidationJobs) {
   return { base: await listen(server), repository };
 }
 
+function cleanCollection(): unknown {
+  return JSON.parse(readFileSync(new URL("../packages/quality/fixtures/vector/clean.geojson", import.meta.url), "utf8")) as unknown;
+}
+
+function importClean(base: string, collection: unknown): Promise<Response> {
+  return fetch(`${base}/api/v1/imports`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ datasetName: "clean", sourceCrs: "EPSG:4326", license: "CC0-1.0", geojson: collection }),
+  });
+}
+
 async function waitForTerminal(base: string, jobId: string) {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     const response = await fetch(`${base}/api/v1/jobs/${jobId}`);
@@ -113,12 +125,7 @@ describe("The findings API", () => {
 
   it("imports inline GeoJSON and rejects a remote URL or archive", async () => {
     const { base } = await start();
-    const collection = JSON.parse(readFileSync(new URL("../packages/quality/fixtures/vector/clean.geojson", import.meta.url), "utf8")) as unknown;
-    const created = await fetch(`${base}/api/v1/imports`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasetName: "clean", sourceCrs: "EPSG:4326", license: "CC0-1.0", geojson: collection }),
-    });
+    const created = await importClean(base, cleanCollection());
     const job = await created.json() as { jobId: string };
     const finished = await waitForTerminal(base, job.jobId);
     const remote = await fetch(`${base}/api/v1/imports`, {
@@ -145,12 +152,8 @@ describe("The findings API", () => {
     const repository = new InMemoryValidationRunRepository();
     const jobs = new InProcessValidationJobs(repository, engine, digest, () => startedAt, () => gate);
     const started = await start(undefined, jobs);
-    const collection = JSON.parse(readFileSync(new URL("../packages/quality/fixtures/vector/clean.geojson", import.meta.url), "utf8")) as unknown;
-    const created = await fetch(`${started.base}/api/v1/imports`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasetName: "clean", sourceCrs: "EPSG:4326", license: "CC0-1.0", geojson: collection }),
-    });
+    const collection = cleanCollection();
+    const created = await importClean(started.base, collection);
     const job = await created.json() as { jobId: string };
     const cancelled = await fetch(`${started.base}/api/v1/jobs/${job.jobId}/cancel`, { method: "POST" });
     release();
