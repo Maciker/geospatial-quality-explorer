@@ -23,7 +23,7 @@ pnpm quality:fast
 pnpm build
 ```
 
-See [local development](docs/development.md), [project specification](docs/project-spec.md), [architecture](docs/architecture.md) and [roadmap](docs/roadmap.md).
+See [the five-minute demo](docs/demo.md), [CLI](docs/cli.md), [API](docs/api.md), [QGIS review](docs/qgis-review.md), [local development](docs/development.md), [project specification](docs/project-spec.md), [architecture](docs/architecture.md) and [roadmap](docs/roadmap.md).
 
 ## Agent workflow
 

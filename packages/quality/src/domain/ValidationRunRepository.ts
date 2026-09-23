@@ -2,12 +2,12 @@ import { DomainError } from "./DomainError.js";
 import type { ValidationRun } from "./geometry.js";
 import type { Maybe } from "./Maybe.js";
 
-export type StoredRunIdentity = {
+type StoredRunIdentity = {
   readonly status: ValidationRun["status"];
   readonly sourceHash: string;
 };
 
-export type SaveDecision = "insert" | "keep" | "replace";
+type SaveDecision = "insert" | "keep" | "replace";
 
 export function decideSave(existing: StoredRunIdentity | null, incoming: StoredRunIdentity): SaveDecision {
   if (existing === null) return "insert";

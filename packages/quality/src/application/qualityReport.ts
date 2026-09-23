@@ -43,6 +43,41 @@ export function buildQualityReport(run: ValidationRun): QualityReport {
   };
 }
 
+export function runFromReport(report: QualityReport): ValidationRun {
+  return {
+    runId: report.runId,
+    datasetName: report.dataset.name,
+    sourceHash: report.dataset.sourceHash,
+    sourceCrs: report.dataset.sourceCrs,
+    license: report.dataset.license,
+    featureCount: report.dataset.featureCount,
+    rulesetId: report.ruleset.id,
+    rulesetVersion: report.ruleset.version,
+    parameters: report.parameters,
+    status: "succeeded",
+    limitations: report.limitations,
+    findings: report.findings,
+    startedAt: "1970-01-01T00:00:00.000Z",
+    completedAt: "1970-01-01T00:00:00.000Z",
+    failureMessage: null,
+  };
+}
+
+export function conciseReport(run: ValidationRun): string {
+  const lines = [
+    `Run ${run.runId}`,
+    `Ruleset ${run.rulesetId}@${run.rulesetVersion}`,
+    `Source ${run.sourceHash}`,
+    `CRS ${run.sourceCrs}`,
+    `Findings: ${run.findings.length}`,
+  ];
+  for (const finding of run.findings) {
+    lines.push(`- [${finding.severity}] ${finding.ruleId} ${finding.featureId}: ${finding.explanation}`);
+  }
+  if (run.findings.length === 0) lines.push("No findings.");
+  return `${lines.join("\n")}\n`;
+}
+
 export function assertReportRoundTrip(report: QualityReport): void {
   const encoded = JSON.stringify(report.findings);
   const decoded = JSON.parse(encoded) as Finding[];

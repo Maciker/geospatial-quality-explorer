@@ -15,8 +15,28 @@ stages:
           - checkout: self
             fetchDepth: 0
           - template: templates/pnpm-setup.yml
+          - script: |
+              docker run -d --name gqe-postgis -p 5432:5432 \
+                -e POSTGRES_USER=explorer \
+                -e POSTGRES_PASSWORD=explorer \
+                -e POSTGRES_DB=geospatial_quality_explorer \
+                postgis/postgis:16-3.4
+              for i in $(seq 1 30); do
+                docker exec gqe-postgis pg_isready -U explorer -d geospatial_quality_explorer && exit 0
+                sleep 2
+              done
+              exit 1
+            displayName: 'Start PostGIS'
           - script: pnpm quality:ci
             displayName: 'Run deterministic quality gates'
+            env:
+              GEOSPATIAL_POSTGIS_URL: postgres://explorer:explorer@127.0.0.1:5432/geospatial_quality_explorer
+          - script: |
+              pnpm exec playwright install --with-deps chromium
+              pnpm test:e2e
+            displayName: 'Run browser journey'
+            env:
+              GEOSPATIAL_POSTGIS_URL: postgres://explorer:explorer@127.0.0.1:5432/geospatial_quality_explorer
           - publish: .quality
             artifact: quality-report
             condition: always()

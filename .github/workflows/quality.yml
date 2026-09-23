@@ -17,7 +17,23 @@ jobs:
   quality:
     name: Quality (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    env:
+      GEOSPATIAL_POSTGIS_URL: postgres://explorer:explorer@127.0.0.1:5432/geospatial_quality_explorer
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: geospatial_quality_explorer
+          POSTGRES_USER: explorer
+          POSTGRES_PASSWORD: explorer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U explorer -d geospatial_quality_explorer"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     strategy:
       fail-fast: false
       matrix:
@@ -44,6 +60,10 @@ jobs:
           pnpm build
       - name: Deterministic quality gates
         run: pnpm quality:ci
+      - name: Browser journey
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm test:e2e
       - name: Adapter and scaffold validation
         run: pnpm quality:stabilization
       - name: Reject generated drift or tracked changes

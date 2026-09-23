@@ -2,7 +2,7 @@ import { DomainError } from "../domain/DomainError.js";
 import type { Finding, GeoJsonGeometry } from "../domain/geometry.js";
 import { DATASET_LIMITS } from "../domain/limits.js";
 
-export type FindingQuery = {
+type FindingQuery = {
   readonly severity: Finding["severity"] | null;
   readonly ruleId: string | null;
   readonly bbox: readonly [number, number, number, number] | null;
@@ -10,7 +10,7 @@ export type FindingQuery = {
   readonly cursor: string | null;
 };
 
-export type FindingPage = {
+type FindingPage = {
   readonly findings: readonly Finding[];
   readonly nextCursor: string | null;
 };
@@ -50,7 +50,7 @@ export function pageFindings(findings: readonly Finding[], query: FindingQuery):
   return { findings: page, nextCursor: next ? findingCursor(next) : null };
 }
 
-export function findingCursor(finding: Finding): string {
+function findingCursor(finding: Finding): string {
   return Buffer.from(`${finding.featureIndex}:${finding.ruleId}:${finding.findingId}`, "utf8").toString("base64url");
 }
 

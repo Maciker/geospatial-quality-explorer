@@ -48,7 +48,9 @@
     "setup:hooks": "bash scripts/install-githooks.sh",
     "build:server": "tsc -p tsconfig.build.json",
     "dev:api": "pnpm build:server && node dist/apps/api/src/main.js",
-    "dev:web": "pnpm --filter ./apps/web dev"
+    "dev:web": "pnpm --filter ./apps/web dev",
+    "gis": "tsx apps/cli/src/main.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "yaml": "^2.7.0"
@@ -60,11 +62,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
+    "@playwright/test": "1.55.0",
     "@types/node": "^22.10.0",
     "dependency-cruiser": "^16.9.0",
     "eslint": "^9.18.0",
     "jscpd": "4.0.1",
     "knip": "^5.42.0",
+    "tsx": "4.20.5",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.20.0",
     "vitest": "^3.0.0"

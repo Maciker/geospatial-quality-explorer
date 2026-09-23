@@ -1,7 +1,7 @@
 import type { ValidationRun } from "../domain/geometry.js";
 import { buildQualityReport } from "./qualityReport.js";
 
-export type QgisBundle = {
+type QgisBundle = {
   readonly geojson: string;
   readonly metadata: string;
   readonly project: string;

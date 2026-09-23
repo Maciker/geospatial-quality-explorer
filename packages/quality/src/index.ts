@@ -12,7 +12,7 @@ export type { DatasetDeclaration } from "./application/parseFeatureCollection.js
 export { validateDataset } from "./application/validateDataset.js";
 export type { Digest } from "./application/validateDataset.js";
 export { pageFindings, parseFindingQuery } from "./application/pageFindings.js";
-export { buildQualityReport } from "./application/qualityReport.js";
+export { assertReportRoundTrip, buildQualityReport, conciseReport, runFromReport } from "./application/qualityReport.js";
 export type { QualityReport } from "./application/qualityReport.js";
 export { buildQgisBundle } from "./application/qgisBundle.js";
 export type { ValidationJob } from "./application/ValidationJob.js";

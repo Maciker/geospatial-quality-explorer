@@ -3,8 +3,8 @@
 ## Outcome
 Validate a small vector dataset, save traceable findings in PostGIS, and inspect them in QGIS and a browser.
 
-## Foundation delivered by this branch
-A Node HTTP API serves /health and an empty /api/v1/findings scaffold; React consumes the contract through a Vite proxy. Validation, persistence, imports and the map are pending.
+## MVP delivered by this branch
+A developer can validate the CC0 fixtures, store a run in PostGIS, read a bounded GeoJSON page, export a QGIS bundle and a provenance report, and review or import a dataset in the browser.
 
 ## Constraints
 - TypeScript application code, Node 22/24, pnpm workspaces.

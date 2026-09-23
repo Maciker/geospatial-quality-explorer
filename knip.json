@@ -1,14 +1,18 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreDependencies": ["tsx"],
   "workspaces": {
     ".": {
       "entry": [
         "tools/**/*.mjs",
-        "test/**/*.test.ts"
+        "test/**/*.test.ts",
+        "playwright.config.ts",
+        "test/global-setup.ts"
       ],
       "project": [
         "tools/**/*.mjs",
-        "test/**/*.ts"
+        "test/**/*.ts",
+        "playwright.config.ts"
       ]
     },
     "apps/*": {

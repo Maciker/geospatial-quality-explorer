@@ -1,0 +1,86 @@
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.eyebrow {
+  color: #46745b;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.page h1 {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  max-width: 16ch;
+}
+
+.panel,
+.filters {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #c6cec4;
+  background: #fff;
+}
+
+.filters,
+.panel form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.filters label,
+.panel label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.list button {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid #c6cec4;
+  background: #fff;
+}
+
+.list button[aria-current="true"] {
+  border-color: #10221a;
+  outline: 2px solid #10221a;
+}
+
+.severity {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
