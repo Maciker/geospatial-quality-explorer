@@ -37,6 +37,10 @@ describe("The PostGIS validation store", () => {
   it("returns the same findings after a new connection", async () => {
     const run = portfolioRun();
     const invalidId = run.findings.find((finding) => finding.ruleId === "geometry.invalid")?.findingId;
+    const cleanup = new Pool({ connectionString: databaseUrl });
+    await cleanup.query("DELETE FROM quality.finding_geometries WHERE run_id = $1", [run.runId]);
+    await cleanup.query("DELETE FROM quality.validation_runs WHERE run_id = $1", [run.runId]);
+    await cleanup.end();
     const first = await openPostgis(databaseUrl);
     await first.repository.save(run);
     await first.repository.save(run);

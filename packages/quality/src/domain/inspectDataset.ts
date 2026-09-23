@@ -32,8 +32,9 @@ export function inspectDataset(
   const findings: Finding[] = [];
   for (const feature of features) {
     const featureId = feature.featureId ?? `index:${feature.featureIndex}`;
+    const copiedGeometry = geometryPolicy === "include" ? storedGeometry(feature) : null;
     if (feature.featureId === null) {
-      findings.push(finding(runId, feature, featureId, "identifier.missing", "The feature has no feature id.", null));
+      findings.push(finding(runId, feature, featureId, "identifier.missing", "The feature has no feature id.", copiedGeometry));
     } else if ((counts.get(feature.featureId) ?? 0) > 1) {
       findings.push(finding(
         runId,
@@ -41,7 +42,7 @@ export function inspectDataset(
         featureId,
         "identifier.duplicate",
         `Feature id ${feature.featureId} is used more than once.`,
-        null,
+        copiedGeometry,
       ));
     }
     const assessment = engine.assess(feature.geometry);
@@ -57,14 +58,13 @@ export function inspectDataset(
         null,
       ));
     } else if (assessment.status === "invalid") {
-      const geometry = geometryPolicy === "include" ? storedGeometry(feature) : null;
       findings.push(finding(
         runId,
         feature,
         featureId,
         "geometry.invalid",
         INVALID_EXPLANATION[assessment.reason] ?? "The geometry is invalid.",
-        geometry,
+        copiedGeometry,
       ));
     }
   }

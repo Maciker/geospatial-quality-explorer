@@ -70,6 +70,12 @@ describe("The reference fixtures", () => {
     },
   );
 
+  it("keeps duplicate polygons available for review", () => {
+    const run = validateNamed("duplicate-ids");
+
+    expect(run.findings.every((finding) => finding.geometry?.type === "Polygon")).toBe(true);
+  });
+
   it("keeps the bowtie coordinates unchanged", () => {
     const run = validateNamed("invalid-polygon");
     const geometry = run.findings[0]?.geometry;
