@@ -30,7 +30,7 @@ module.exports = {
       name: "no-orphans",
       severity: "warn",
       comment: "Orphan modules are usually dead code or a missing wiring.",
-      from: { orphan: true, pathNot: ["\\.d\\.ts$", "(^|/)index\\.ts$"] },
+      from: { orphan: true, pathNot: ["\\.d\\.ts$", "(^|/)index\\.ts$", "(^|/)vite\\.config\\.ts$"] },
       to: {},
     },
   ],
