@@ -1,0 +1,20 @@
+---
+description: "Code design rules for naming, functions, classes, modules, error handling, CQS and Maybe usage."
+globs: "apps/**/*.ts,apps/**/*.tsx,packages/**/*.ts,packages/**/*.tsx,tools/**/*.mjs,test/**/*.ts"
+alwaysApply: false
+---
+
+# Design principles
+
+Use .ai/skills/design-principles as the complete reference.
+
+- Use concrete, pronounceable English names.
+- Avoid helper, util, manager, data, info, temp and x names.
+- Functions have one responsibility and verb names.
+- Avoid boolean flags that switch behavior.
+- Use guard clauses and low indentation.
+- Follow CQS: commands mutate and return void; queries return values and do not mutate.
+- Use DomainError factory methods for domain failures.
+- Return Maybe for optional domain values.
+- Prefer composition over inheritance.
+- No JS getters/setters or underscore private prefixes.

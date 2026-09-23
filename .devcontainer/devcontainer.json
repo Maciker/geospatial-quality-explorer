@@ -1,0 +1,22 @@
+{
+  "name": "agent-workflow-code-ts",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "onCreateCommand": "corepack enable && corepack prepare pnpm@10.17.1 --activate",
+  "postCreateCommand": "pnpm install --prefer-offline",
+  "remoteEnv": {
+    "AI_PROVIDER": "${localEnv:AI_PROVIDER}",
+    "AI_MODEL": "${localEnv:AI_MODEL}",
+    "AI_BASE_URL": "${localEnv:AI_BASE_URL}",
+    "AI_API_KEY": "${localEnv:AI_API_KEY}",
+    "AI_QA_PROVIDER": "${localEnv:AI_QA_PROVIDER}",
+    "AI_QA_MODEL": "${localEnv:AI_QA_MODEL}"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "vitest.explorer"]
+    }
+  }
+}

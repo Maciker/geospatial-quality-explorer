@@ -1,0 +1,32 @@
+---
+description: "Hexagonal architecture rules for TypeScript modules, layers, ports, adapters, use cases and factories."
+globs: "apps/**/*.ts,apps/**/*.tsx,packages/**/*.ts,packages/**/*.tsx"
+alwaysApply: false
+---
+
+# Hexagonal architecture
+
+Use .ai/skills/architecture-hexagonal as the complete reference.
+
+## Dependency rule
+
+Infrastructure -> Application -> Domain
+
+- Domain never imports Application or Infrastructure.
+- Application never imports Infrastructure.
+- Infrastructure may import Application and Domain.
+- A UseCase must not import another UseCase from another module.
+- Business logic belongs in Domain or Application, never Infrastructure.
+
+## Module shape
+
+Use vertical business modules:
+
+```text
+src/[module]/domain
+src/[module]/application
+src/[module]/infrastructure
+src/[module]/tests
+```
+
+Use ports before adapters. Use Factory for explicit wiring.

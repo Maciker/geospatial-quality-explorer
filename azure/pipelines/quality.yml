@@ -1,0 +1,59 @@
+parameters:
+  - name: runQaCrossModel
+    type: boolean
+    default: false
+
+stages:
+  - stage: deterministic_quality
+    displayName: Deterministic quality
+    jobs:
+      - job: quality
+        displayName: quality:ci
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 0
+          - template: templates/pnpm-setup.yml
+          - script: pnpm quality:ci
+            displayName: 'Run deterministic quality gates'
+          - publish: .quality
+            artifact: quality-report
+            condition: always()
+            displayName: 'Publish quality report'
+
+  - stage: qa_cross_model
+    displayName: Cross-model QA gate
+    dependsOn: deterministic_quality
+    condition: and(succeeded(), eq('${{ parameters.runQaCrossModel }}', 'true'))
+    jobs:
+      - job: qa
+        displayName: qa:gate
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            fetchDepth: 0
+          - template: templates/pnpm-setup.yml
+          - script: |
+              set -eu
+              mkdir -p .ai/workspace/qa/outputs
+              if [ -n "${QA_REVIEW_JSON_B64:-}" ]; then
+                printf '%s' "$QA_REVIEW_JSON_B64" | base64 -d > .ai/workspace/qa/outputs/qa-review.json
+                pnpm qa:gate
+              else
+                pnpm qa:prepare -- --base origin/main --head HEAD
+                echo "QA_REVIEW_JSON_B64 is missing. Published qa-input artifact for external review."
+                exit 1
+              fi
+            env:
+              QA_REVIEW_JSON_B64: $(QA_REVIEW_JSON_B64)
+            displayName: 'Run cross-model QA gate'
+          - publish: .ai/workspace/qa
+            artifact: qa-workspace
+            condition: always()
+            displayName: 'Publish QA workspace'
+          - publish: .quality
+            artifact: qa-quality-report
+            condition: always()
+            displayName: 'Publish QA quality report'

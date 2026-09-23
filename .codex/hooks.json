@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/pre_tool_use_policy.mjs\"",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"node (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/pre_tool_use_policy.mjs')\"",
+            "timeout": 30,
+            "statusMessage": "Checking repository guardrails"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/post_tool_use_quality_hint.mjs\"",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"node (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/post_tool_use_quality_hint.mjs')\"",
+            "timeout": 30,
+            "statusMessage": "Checking quality hints"
+          }
+        ]
+      }
+    ]
+  }
+}

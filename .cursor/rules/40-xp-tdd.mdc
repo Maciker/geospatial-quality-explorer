@@ -1,0 +1,18 @@
+---
+description: "XP and TDD workflow: REASON, RED, GREEN, REFACTOR, RE-EVALUATE, TPP and inside-out development."
+alwaysApply: false
+---
+
+# XP and TDD
+
+Use .ai/skills/xp-tdd-practices as the complete reference.
+
+Cycle:
+
+1. REASON: list examples from simplest to complex.
+2. RED: write one failing test.
+3. GREEN: implement the smallest code that passes.
+4. REFACTOR: improve without behavior changes.
+5. RE-EVALUATE: mark the case and choose the next one.
+
+Apply TPP in GREEN. Commit only after green and refactor.
