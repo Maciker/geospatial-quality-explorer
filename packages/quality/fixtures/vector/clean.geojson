@@ -1,0 +1,14 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "parcel-1",
+      "properties": { "name": "clean parcel" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+      }
+    }
+  ]
+}

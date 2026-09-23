@@ -4,7 +4,11 @@ Validate a small vector dataset, save traceable findings in PostGIS, and inspect
 
 ## Current state
 
-A Node HTTP API serves /health and an empty /api/v1/findings scaffold; React consumes the contract through a Vite proxy. Validation, persistence, imports and the map are pending. This is a foundation, not a completed GIS product.
+The API, CLI, and browser review a bounded GeoJSON dataset. Validation rules, PostGIS storage, QGIS export, and the local import job are described in [the glossary](docs/glossary.md) and [vector contracts](docs/contracts.md).
+
+## Reference fixture
+
+`packages/quality/fixtures/vector/clean.geojson` is a CC0 square in an explicit `EPSG:4326` declaration. Its reviewed expectation is an empty finding list. See `packages/quality/fixtures/LICENSE.md`.
 
 All application, CLI and API code uses TypeScript on Node.js. QGIS desktop and PostGIS SQL remain GIS tools. There is no Python, FastAPI or PyQGIS runtime.
 

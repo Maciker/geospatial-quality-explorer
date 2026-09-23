@@ -1,0 +1,7 @@
+[
+  { "ruleId": "geometry.empty", "featureId": "empty-1" },
+  { "ruleId": "identifier.duplicate", "featureId": "same-parcel" },
+  { "ruleId": "identifier.duplicate", "featureId": "same-parcel" },
+  { "ruleId": "geometry.invalid", "featureId": "bowtie-1" },
+  { "ruleId": "geometry.unsupported", "featureId": "point-1" }
+]

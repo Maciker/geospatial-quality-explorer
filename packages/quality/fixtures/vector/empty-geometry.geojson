@@ -1,0 +1,11 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "empty-1",
+      "properties": { "name": "missing geometry" },
+      "geometry": null
+    }
+  ]
+}

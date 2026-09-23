@@ -67,7 +67,7 @@ importers:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@22.19.20)(jiti@2.7.0)(yaml@2.9.0)
 
-  packages/domain: {}
+  packages/quality: {}
 
 packages:
 

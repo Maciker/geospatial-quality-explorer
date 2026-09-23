@@ -1,0 +1,4 @@
+[
+  { "ruleId": "identifier.duplicate", "featureId": "same-parcel" },
+  { "ruleId": "identifier.duplicate", "featureId": "same-parcel" }
+]
