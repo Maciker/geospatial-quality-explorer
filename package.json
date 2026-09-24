@@ -47,7 +47,7 @@
     "doctor": "node tools/diagnostics/doctor.mjs",
     "setup:hooks": "bash scripts/install-githooks.sh",
     "build:server": "tsc -p tsconfig.build.json",
-    "dev:api": "pnpm build:server && node dist/apps/api/src/main.js",
+    "dev:api": "tsx apps/api/src/main.ts",
     "dev:web": "pnpm --filter ./apps/web dev",
     "gis": "tsx apps/cli/src/main.ts",
     "test:e2e": "playwright test"
