@@ -19,7 +19,7 @@ Grill answers (2026-09-24):
 3. Planning “done” means durable artifacts and vertical tickets before new product features.
 4. Stale product docs are updated in the same batch, after rehearsal evidence where the text depends on a live walkthrough.
 
-Execution map: `.ai/workspace/tasks/stabilize-mvp-qgis/`. Do not start feature work outside those tickets. Do not publish new Linear/GitHub issues unless the owner authorizes tracker writes.
+Execution map: `.ai/workspace/tasks/stabilize-mvp-qgis/`. Linear tracker: [MAC-50](https://linear.app/maciker/issue/MAC-50) with children [MAC-51](https://linear.app/maciker/issue/MAC-51), [MAC-52](https://linear.app/maciker/issue/MAC-52), [MAC-53](https://linear.app/maciker/issue/MAC-53). Do not start feature work outside those tickets.
 
 ## Alternatives and trade-offs
 

@@ -3,8 +3,9 @@
 ## Parent and source
 
 - Parent task: [stabilize-mvp-qgis](../index.md)
+- Linear: [MAC-53](https://linear.app/maciker/issue/MAC-53) (parent [MAC-50](https://linear.app/maciker/issue/MAC-50); blocked by [MAC-52](https://linear.app/maciker/issue/MAC-52))
 - Decision: [ADR 0004](../../../../../docs/adr/0004-post-mvp-stabilization.md)
-- Depends on rehearsal notes from [02](02-prove-qgis-reviewer-path.md)
+- Depends on rehearsal notes from [02](02-prove-qgis-reviewer-path.md) / MAC-52
 
 ## What this slice delivers
 

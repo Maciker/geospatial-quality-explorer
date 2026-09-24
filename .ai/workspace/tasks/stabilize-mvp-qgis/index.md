@@ -16,11 +16,13 @@ Stabilize the merged GIS MVP so a QGIS reviewer can validate the CC0 portfolio f
 
 ## Tickets
 
-| ID | Outcome | Status | Blocked by |
-| --- | --- | --- | --- |
-| [01](tickets/01-land-dev-api-runtime-fix.md) | `pnpm dev:api` starts for the full local demo | ready | none |
-| [02](tickets/02-prove-qgis-reviewer-path.md) | QGIS reviewer path proven on the portfolio fixture | ready | none |
-| [03](tickets/03-refresh-post-mvp-docs.md) | Roadmap and product docs match post-MVP truth | blocked | 02 |
+| ID | Linear | Outcome | Status | Blocked by |
+| --- | --- | --- | --- | --- |
+| [01](tickets/01-land-dev-api-runtime-fix.md) | [MAC-51](https://linear.app/maciker/issue/MAC-51) | `pnpm dev:api` starts for the full local demo | ready | none |
+| [02](tickets/02-prove-qgis-reviewer-path.md) | [MAC-52](https://linear.app/maciker/issue/MAC-52) | QGIS reviewer path proven on the portfolio fixture | ready | none |
+| [03](tickets/03-refresh-post-mvp-docs.md) | [MAC-53](https://linear.app/maciker/issue/MAC-53) | Roadmap and product docs match post-MVP truth | blocked | 02 / MAC-52 |
+
+Parent roadmap: [MAC-50](https://linear.app/maciker/issue/MAC-50)
 
 ## Current status
 

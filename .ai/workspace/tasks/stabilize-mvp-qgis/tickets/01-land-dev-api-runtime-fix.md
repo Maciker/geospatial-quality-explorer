@@ -3,6 +3,7 @@
 ## Parent and source
 
 - Parent task: [stabilize-mvp-qgis](../index.md)
+- Linear: [MAC-51](https://linear.app/maciker/issue/MAC-51) (parent [MAC-50](https://linear.app/maciker/issue/MAC-50))
 - Decision: [ADR 0004](../../../../../docs/adr/0004-post-mvp-stabilization.md)
 - Existing PR: [#16](https://github.com/Maciker/geospatial-quality-explorer/pull/16) (`cursor/fix-dev-api-pg-runtime-c146`)
 
