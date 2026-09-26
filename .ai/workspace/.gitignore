@@ -13,3 +13,6 @@ repo-analysis/*
 !repo-analysis/.gitkeep
 tasks/*
 !tasks/.gitkeep
+# Durable post-MVP stabilization handoff (grill → to-tickets).
+!tasks/stabilize-mvp-qgis/
+!tasks/stabilize-mvp-qgis/**
