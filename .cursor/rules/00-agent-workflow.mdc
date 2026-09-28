@@ -14,7 +14,7 @@ Follow the repository contract in AGENTS.md. The canonical source is .ai/.
 3. Human approval before executor changes production code.
 4. TDD for behavior changes.
 5. Review after implementation.
-6. Run deterministic quality gates.
+6. Run quality gates before finishing.
 7. Before opening a PR for agent-generated changes, invoke qa-cross-model with a clean context and run the pre-PR gate (pnpm prepr:gate).
 8. Do not open a PR if exact-SHA QA or distinct-model evidence is missing.
 

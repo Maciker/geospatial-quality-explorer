@@ -16,7 +16,7 @@ Read and follow the nearest AGENTS.md file first. The canonical source for workf
 - Install with pnpm install.
 - Fast local validation: pnpm quality:fast.
 - Full validation: pnpm quality:full.
-- QA gate: pnpm qa:gate after a cross-model QA JSON exists.
+- Pre-PR gate: pnpm prepr:gate after a verified exact-SHA cross-model QA run.
 - Do not grow quality baselines automatically.
 
 ## Architecture and code rules
@@ -29,7 +29,3 @@ Read and follow the nearest AGENTS.md file first. The canonical source for workf
 ## Vendor adapter policy
 
 Files under .github/instructions and .github/prompts are generated from .ai/ by pnpm sync:ai. Edit .ai/ first.
-
-## Mandatory pre-PR gate
-
-Before PR creation, run `pnpm prepr:gate` after exact-SHA `qa-cross-model` review and verified distinct-model evidence. Do not open the PR if the gate fails; external/API PR routes are outside this local coverage.
