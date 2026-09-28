@@ -25,7 +25,7 @@
     "quality:fast": "pnpm typecheck && pnpm lint && pnpm test",
     "quality:full": "pnpm typecheck && pnpm lint && pnpm test && pnpm arch && pnpm deadcode && pnpm dup && pnpm quality:ratchet",
     "quality:ci": "pnpm typecheck && pnpm lint && pnpm test && pnpm arch && pnpm deadcode && pnpm dup && pnpm quality:ratchet",
-    "quality:agent": "pnpm quality:full && pnpm qa:gate",
+    "quality:agent": "pnpm quality:full && pnpm prepr:gate",
     "loop": "node tools/loop/verify-and-iterate.mjs run",
     "loop:status": "node tools/loop/verify-and-iterate.mjs status",
     "loop:reset": "node tools/loop/verify-and-iterate.mjs reset",
@@ -50,7 +50,9 @@
     "dev:api": "tsx apps/api/src/main.ts",
     "dev:web": "pnpm --filter ./apps/web dev",
     "gis": "tsx apps/cli/src/main.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "qa:record": "node tools/qa/record-qa-run.mjs",
+    "prepr:gate": "node tools/qa/pre-pr-gate.mjs"
   },
   "dependencies": {
     "yaml": "^2.7.0"

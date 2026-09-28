@@ -29,3 +29,7 @@ Read and follow the nearest AGENTS.md file first. The canonical source for workf
 ## Vendor adapter policy
 
 Files under .github/instructions and .github/prompts are generated from .ai/ by pnpm sync:ai. Edit .ai/ first.
+
+## Mandatory pre-PR gate
+
+Before PR creation, run `pnpm prepr:gate` after exact-SHA `qa-cross-model` review and verified distinct-model evidence. Do not open the PR if the gate fails; external/API PR routes are outside this local coverage.

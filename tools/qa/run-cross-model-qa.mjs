@@ -5,6 +5,7 @@ import path from "node:path";
 import { createLLMClient, resolveConfig } from "../ai/llm-client.mjs";
 import { ensureDirFor, resolveAiDir } from "../lib/workspace.mjs";
 import { argHelpers } from "../lib/args.mjs";
+import { sha256 } from "./qa-context.mjs";
 
 const root = process.cwd();
 const { value: argValue, flag: hasFlag } = argHelpers();
@@ -12,6 +13,8 @@ const { value: argValue, flag: hasFlag } = argHelpers();
 const ai = resolveAiDir(root);
 const inputPath = argValue("--input", path.join(ai, "workspace/qa/inputs/qa-input.md"));
 const outputPath = argValue("--output", path.join(ai, "workspace/qa/outputs/qa-review.json"));
+const contextPath = argValue("--context", path.join(ai, "workspace/qa/inputs/qa-context.json"));
+const runManifestPath = argValue("--manifest", path.join(ai, "workspace/qa/outputs/qa-run.json"));
 const promptPath = argValue("--prompt", path.join(ai, "prompts/qa-cross-model.md"));
 const schemaPath = argValue("--schema", "quality/schemas/qa-review.schema.json");
 const base = argValue("--base", "origin/main");
@@ -25,15 +28,14 @@ function readFileOrFail(relative, hint) {
   return fs.readFileSync(absolute, "utf8");
 }
 
-function ensureInput() {
+function ensureInput(implementerModel, implementerProvider) {
   const absolute = path.isAbsolute(inputPath) ? inputPath : path.join(root, inputPath);
   if (fs.existsSync(absolute)) return;
   console.log(`[qa] ${inputPath} not found; generating it with prepare-qa-input.mjs`);
-  const result = spawnSync(
-    process.execPath,
-    ["tools/qa/prepare-qa-input.mjs", "--base", base, "--head", head, "--out", inputPath, "--quiet"],
-    { cwd: root, stdio: "inherit" },
-  );
+  const prepareArgs = ["tools/qa/prepare-qa-input.mjs", "--base", base, "--head", head, "--out", inputPath, "--quiet"];
+  if (implementerProvider) prepareArgs.push("--implementer-provider", implementerProvider);
+  if (implementerModel) prepareArgs.push("--implementer-model", implementerModel);
+  const result = spawnSync(process.execPath, prepareArgs, { cwd: root, stdio: "inherit" });
   if ((result.status ?? 1) !== 0) throw new Error("Failed to prepare QA input");
 }
 
@@ -48,15 +50,21 @@ async function main() {
     model: argValue("--qa-model", undefined),
   });
 
-  const implementerModel = argValue("--implementer-model", process.env.AI_MODEL);
-  if (implementerModel && qaConfig.model && implementerModel === qaConfig.model) {
+  const contextAbsolute = path.isAbsolute(contextPath) ? contextPath : path.join(root, contextPath);
+  let context = fs.existsSync(contextAbsolute) ? JSON.parse(fs.readFileSync(contextAbsolute, "utf8")) : null;
+  const implementerProvider = argValue("--implementer-provider", process.env.AI_PROVIDER ?? context?.implementerProvider ?? undefined);
+  const implementerModel = argValue("--implementer-model", process.env.AI_MODEL ?? context?.implementerModel ?? undefined);
+  const implementerIdentity = implementerProvider && implementerModel ? `${implementerProvider}:${implementerModel}` : implementerModel;
+  const reviewerIdentity = qaConfig.provider && qaConfig.model ? `${qaConfig.provider}:${qaConfig.model}` : qaConfig.model;
+  if (implementerIdentity && reviewerIdentity && implementerIdentity === reviewerIdentity) {
     throw new Error(
-      `Cross-model QA must use a different model than the implementer (${implementerModel}). ` +
+      `Cross-model QA must use a different provider/model identity than the implementer (${implementerIdentity}). ` +
         "Set AI_QA_PROVIDER / AI_QA_MODEL or pass --qa-provider/--qa-model.",
     );
   }
 
-  ensureInput();
+  ensureInput(implementerModel, implementerProvider);
+  if (!context && fs.existsSync(contextAbsolute)) context = JSON.parse(fs.readFileSync(contextAbsolute, "utf8"));
 
   const system = readFileOrFail(promptPath, "Generate vendor adapters or restore the canonical prompt.");
   const qaInput = readFileOrFail(inputPath);
@@ -93,6 +101,33 @@ async function main() {
     `${JSON.stringify(review, null, 2)}\n`,
   );
   console.log(`[qa] wrote review to ${outputPath} (score=${review.score}, decision=${review.decision})`);
+
+  const outputAbsolute = path.isAbsolute(outputPath) ? outputPath : path.join(root, outputPath);
+  const runManifestAbsolute = path.isAbsolute(runManifestPath) ? runManifestPath : path.join(root, runManifestPath);
+  const modelDistinct = Boolean(implementerIdentity && reviewerIdentity && implementerIdentity !== reviewerIdentity);
+  const runManifest = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    contextPath,
+    inputPath,
+    inputSha256: context?.inputSha256 ?? null,
+    headSha: context?.headSha ?? null,
+    outputPath,
+    reviewSha256: sha256(fs.readFileSync(outputAbsolute, "utf8")),
+    reviewerProvider: qaConfig.provider ?? null,
+    reviewerModel: qaConfig.model ?? null,
+    implementerProvider: implementerProvider ?? null,
+    implementerModel: implementerModel ?? null,
+    reviewerIdentity: reviewerIdentity ?? null,
+    implementerIdentity: implementerIdentity ?? null,
+    modelDistinct,
+    modelVerification: modelDistinct ? "verified" : "unverified",
+  };
+  fs.mkdirSync(path.dirname(runManifestAbsolute), { recursive: true });
+  fs.writeFileSync(runManifestAbsolute, JSON.stringify(runManifest, null, 2) + "\n");
+  if (hasFlag("--gate") && !modelDistinct) {
+    throw new Error("Cross-model QA requires verifiable, distinct implementer and reviewer models");
+  }
 
   const validate = spawnSync(process.execPath, ["tools/qa/validate-qa-review.mjs", outputPath], { cwd: root, stdio: "inherit" });
   if ((validate.status ?? 1) !== 0) throw new Error("QA review failed schema validation");

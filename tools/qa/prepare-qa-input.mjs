@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { argHelpers } from "../lib/args.mjs";
+import { resolveRefSha, sha256, workingTreeSnapshot } from "./qa-context.mjs";
 
 const root = process.cwd();
 const { valueLoose: argValue, flag: hasFlag } = argHelpers();
@@ -14,6 +15,9 @@ const prd = argValue("--prd", undefined);
 const plan = argValue("--plan", undefined);
 const summary = argValue("--summary", undefined);
 const review = argValue("--review", undefined);
+const contextPath = argValue("--context", ".ai/workspace/qa/inputs/qa-context.json");
+const implementerProvider = argValue("--implementer-provider", process.env.AI_PROVIDER ?? null);
+const implementerModel = argValue("--implementer-model", process.env.AI_MODEL ?? null);
 
 function readOptional(filePath) {
   if (!filePath) return "";
@@ -36,6 +40,8 @@ function section(title, body) {
   return `\n## ${title}\n\n${content}\n`;
 }
 
+const baseSha = resolveRefSha(root, base);
+const headSha = resolveRefSha(root, head);
 const prompt = readOptional(".ai/prompts/qa-cross-model.md");
 const agents = readOptional("AGENTS.md");
 const qualityReport = readOptional(".quality/ratchet-report.json");
@@ -68,6 +74,22 @@ Return JSON only, using the schema in the instructions above.
 const absoluteOut = path.isAbsolute(out) ? out : path.join(root, out);
 fs.mkdirSync(path.dirname(absoluteOut), { recursive: true });
 fs.writeFileSync(absoluteOut, output);
+
+const contextAbsolute = path.isAbsolute(contextPath) ? contextPath : path.join(root, contextPath);
+fs.mkdirSync(path.dirname(contextAbsolute), { recursive: true });
+fs.writeFileSync(contextAbsolute, `${JSON.stringify({
+  schemaVersion: 1,
+  generatedAt: new Date().toISOString(),
+  baseRef: base,
+  baseSha,
+  headRef: head,
+  headSha,
+  inputPath: out,
+  inputSha256: sha256(output),
+  workingTree: workingTreeSnapshot(root),
+  implementerProvider: implementerProvider || null,
+  implementerModel: implementerModel || null,
+}, null, 2)}\n`);
 
 if (!hasFlag("--quiet")) {
   console.log(`QA input written to ${path.relative(root, absoluteOut)}`);
