@@ -26,11 +26,13 @@ score < 60 or stop                     -> human decision required
 
 ## Local workflow
 
-Generate the QA input:
+Generate the QA input and exact-SHA context:
 
 ```bash
-pnpm qa:prepare -- --base origin/main --head HEAD
+pnpm qa:prepare -- --base origin/main --head HEAD --implementer-model <verified-implementer-model>
 ```
+
+The command writes `.ai/workspace/qa/inputs/qa-context.json`, including the resolved base/head SHAs and a working-tree snapshot. Any change after review invalidates the report.
 
 Send this file to a different model:
 

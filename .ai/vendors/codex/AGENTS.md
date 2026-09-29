@@ -130,3 +130,15 @@ The owner requested migration of the existing scaffold and adoption of this work
 Use pnpm workspaces under apps/ and packages/. Canonical skills are in .ai/skills; regenerate all vendor adapters after edits.
 OpenCode should read root AGENTS.md and the explicitly named skill/command files; automatic discovery is not assumed.
 Keep numerical/spatial claims deterministic and preserve source data, CRS, NoData and provenance.
+
+
+## Mandatory pre-PR cross-model QA
+
+Before Cursor opens a PR for agent-generated changes:
+
+1. Run the deterministic checks required by this repository, including `pnpm quality:full`.
+2. Run `pnpm qa:prepare` against the exact base/head SHA and clean worktree snapshot.
+3. Invoke `qa-cross-model` read-only with a fresh context and a verifiable model identity distinct from the implementer.
+4. Record and validate the JSON report, then run `pnpm prepr:gate`.
+5. Stop on `stop`, P0/P1, failed deterministic checks/tests, or unavailable independent model. Limit correction rounds to two and repeat the gate after every change.
+6. Do not open a PR if the report, SHA, input hash, worktree snapshot or model evidence is missing. A direct GitHub/API/vendor PR route may bypass this local workflow gate and is outside its coverage.

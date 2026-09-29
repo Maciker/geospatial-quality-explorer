@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/Maciker/agent-workflow-code-ts",
-  "commit": "97d01f03436cbbf35936c172008e74e55be56dd5",
-  "workflowVersion": "0.8.0",
+  "commit": "c30e547b1306e10af31bbb8c6aa464832f5cf1b0",
+  "workflowVersion": "0.9.0",
   "imported": [
     ".ai",
     "tools",
@@ -17,7 +17,10 @@
     "quality and ratchet scan apps/packages/test/tools",
     "vendor glob coverage",
     "project instructions and docs",
-    "project-specific scaffold validation"
+    "project-specific scaffold validation",
+    "exact-SHA cross-model QA context and worktree snapshot",
+    "mandatory pre-PR gate with verifiable distinct-model evidence",
+    "two-round correction limit and supported-PR-path coverage"
   ],
   "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally."
 }

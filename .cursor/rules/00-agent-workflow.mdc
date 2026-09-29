@@ -15,11 +15,15 @@ Follow the repository contract in AGENTS.md. The canonical source is .ai/.
 4. TDD for behavior changes.
 5. Review after implementation.
 6. Run quality gates before finishing.
+7. Before opening a PR for agent-generated changes, invoke qa-cross-model with a clean context and run the pre-PR gate (pnpm prepr:gate).
+8. Do not open a PR if exact-SHA QA or distinct-model evidence is missing.
 
 ## Guardrails
 
 - Do not implement ambiguous work. Ask one material question or create a discovery artifact.
 - Review agents are read-only. They produce findings, not fixes.
+- qa-cross-model is read-only and must not edit files.
 - Executor is the only agent allowed to apply implementation changes.
+- Do not open a PR until pnpm prepr:gate passes.
 - Never grow quality baselines automatically.
 - Prefer small vertical slices over broad edits.

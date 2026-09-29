@@ -16,7 +16,7 @@ Read and follow the nearest AGENTS.md file first. The canonical source for workf
 - Install with pnpm install.
 - Fast local validation: pnpm quality:fast.
 - Full validation: pnpm quality:full.
-- QA gate: pnpm qa:gate after a cross-model QA JSON exists.
+- Pre-PR gate: pnpm prepr:gate after a verified exact-SHA cross-model QA run.
 - Do not grow quality baselines automatically.
 
 ## Architecture and code rules
