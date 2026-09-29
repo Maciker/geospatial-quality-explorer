@@ -12,7 +12,7 @@ Geospatial Quality Explorer is a local-first, open-source workflow that runs det
 
 - Validate a small GeoJSON dataset against documented rules.
 - Produce a structured report and persist its run/finding history locally.
-- Serve findings as bounded GeoJSON through FastAPI.
+- Serve findings as bounded GeoJSON through a Node/TypeScript loopback API.
 - Inspect results in QGIS and a MapLibre browser view.
 
 ## Non-goals for the first release
