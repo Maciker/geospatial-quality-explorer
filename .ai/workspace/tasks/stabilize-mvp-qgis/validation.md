@@ -9,12 +9,13 @@ Already on `main` (`826dfbf`): `dev:api` uses `tsx apps/api/src/main.ts`. Not re
 | Criterion | Result |
 | --- | --- |
 | `pnpm gis validate` on portfolio produces run id | Pass — `72db8116…60cfb3` |
-| Run stored | CLI report file only (`--output`); PostGIS unavailable (no Docker) — recorded |
+| Run stored | Pass — report-file path and PostGIS `--run-id` path both exercised |
 | `export qgis` writes geojson/qgs/qml/metadata | Pass |
 | Bundle matches `docs/qgis-review.md` | Pass — relative datasource, severity categories, CRS/limitations in metadata |
 | Evidence in `findings.md` | Pass |
 | Desktop QGIS visual | Owner-owned |
 | `packages/quality` delivery tests | Pass (3/3) |
+| `pnpm quality:full` | Pass (40 tests incl. PostGIS integration) |
 
 ## MAC-53
 

@@ -26,8 +26,8 @@ Parent roadmap: [MAC-50](https://linear.app/maciker/issue/MAC-50)
 
 ## Current status
 
-MAC-51 landed on `main`. MAC-52 CLI/report-file QGIS path rehearsed; PostGIS and desktop QGIS marked owner-owned. MAC-53 docs updated from that evidence.
+MAC-51 landed on `main`. MAC-52 CLI + PostGIS persist + QGIS export rehearsed; desktop QGIS visual and browser walkthrough marked owner-owned. MAC-53 docs updated from that evidence.
 
 ## Next step
 
-Maintainer review of the docs/evidence PR; owner visual open of `findings.qgs` when QGIS Desktop is available; optional PostGIS + browser re-proof on a Docker host.
+Maintainer review of the docs/evidence PR; owner visual open of `findings.qgs` when QGIS Desktop is available; optional browser `?run=` re-proof.
