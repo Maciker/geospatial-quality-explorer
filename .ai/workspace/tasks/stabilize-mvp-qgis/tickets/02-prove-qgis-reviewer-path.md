@@ -44,4 +44,4 @@ None. The CLI `gis` entry already uses `tsx`; this path does not depend on ticke
 
 ## Status and evidence
 
-done (agent) — evidence in [`../findings.md`](../findings.md) (2026-09-29). PostGIS persist and desktop QGIS visual remain owner-owned.
+done (agent) — evidence in [`../findings.md`](../findings.md) (2026-09-29). Report-file and PostGIS `--run-id` paths proven; desktop QGIS visual remains owner-owned.

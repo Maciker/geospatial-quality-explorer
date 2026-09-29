@@ -2,12 +2,13 @@
 
 Date: 2026-09-29  
 Environment: Cursor Cloud Agent (`bc-01a0ef35-a71e-72c4-a2ff-86944d14174f`), Node 22.14.0, pnpm 10.17.1  
-Branch base: `main` @ `ece07a7` (includes MAC-51 `dev:api` tsx fix)
+Branch base: `main` @ `ece07a7` (includes MAC-51 `dev:api` tsx fix)  
+Note: Docker was not available (`docker: command not found`). Local PostgreSQL 16 + PostGIS were installed via apt for the second pass. Browser walkthrough was not exercised in this session (QGIS-first focus per ADR 0004).
 
 ## Demo order (target 4–5 minutes)
 
 1. CLI validate portfolio fixture → run id + report
-2. Browser: open same run (`pnpm dev:api` + `pnpm dev:web` + `?run=<id>`) — **not exercised here** (no Docker/PostGIS)
+2. Browser: open same run (`pnpm dev:api` + `pnpm dev:web` + `?run=<id>`) — **not exercised here** (owner-owned / optional; API and UI already on `main`)
 3. Export QGIS bundle from that run
 4. Open `findings.qgs` in QGIS Desktop — **owner-owned** (QGIS 3 not installed in this environment)
 
