@@ -24,7 +24,7 @@ Three independently verifiable vertical slices. Tickets 01 and 02 are ready and 
 ## Steps
 
 - [x] Execute [01](tickets/01-land-dev-api-runtime-fix.md) — verification: `pnpm dev:api` serves `GET /health` → 200 (on `main` via MAC-51 / `826dfbf`)
-- [x] Execute [02](tickets/02-prove-qgis-reviewer-path.md) — verification: export bundle matches `docs/qgis-review.md`; evidence in `findings.md` (PostGIS + desktop QGIS owner-owned)
+- [x] Execute [02](tickets/02-prove-qgis-reviewer-path.md) — verification: export bundle matches `docs/qgis-review.md`; evidence in `findings.md` (desktop QGIS owner-owned)
 - [x] Execute [03](tickets/03-refresh-post-mvp-docs.md) — verification: roadmap/brief/guide no longer claim pre-merge or FastAPI; QGIS path documented accurately
 - [x] Write `validation.md` and `summary.md` for this task workspace
 
