@@ -32,12 +32,12 @@ function evaluate(input) {
 }
 test("approves complete independent evidence", () => assert.equal(evaluate(base).status, "APPROVED"));
 test("keeps pending checks pending", () => {
-  const input = structuredClone(base);
+  const input = JSON.parse(JSON.stringify(base));
   input.checks = { status: "pending", requiredCount: 1, items: [{ name: "quality", required: true, status: "in_progress", conclusion: "unknown" }] };
   assert.equal(evaluate(input).status, "PENDING");
 });
 test("blocks stale SHA evidence", () => {
-  const input = structuredClone(base);
+  const input = JSON.parse(JSON.stringify(base));
   input.current.headSha = "3333333333333333333333333333333333333333";
   assert.equal(evaluate(input).status, "BLOCKED");
 });
