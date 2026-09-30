@@ -52,3 +52,5 @@ describe("post-PR review state machine", () => {
     expect(evaluate(input).status).toBe("CHANGES_REQUESTED");
   });
 });
+
+// Keep the repository-native Vitest runner explicit.
