@@ -13,11 +13,11 @@ Product-facing docs no longer describe a pre-merge tracker state or a FastAPI st
 
 ## Acceptance criteria
 
-- [ ] [`docs/roadmap.md`](../../../../../docs/roadmap.md) states the MVP is on `main`, names stabilization / QGIS rehearsal as the current focus, and stops forbidding all work “until merge”.
-- [ ] [`docs/product-brief.md`](../../../../../docs/product-brief.md) describes the Node/TypeScript API (not FastAPI) and keeps non-goals intact.
-- [ ] [`docs/weekly-guide.md`](../../../../../docs/weekly-guide.md) points at this stabilization task (or equivalent) instead of “review foundation #9” as the active weekly focus.
-- [ ] [`docs/qgis-review.md`](../../../../../docs/qgis-review.md) / [`docs/demo.md`](../../../../../docs/demo.md) / [`docs/limitations.md`](../../../../../docs/limitations.md) incorporate only gaps proven in ticket 02 (no speculative feature promises).
-- [ ] No feature tickets outside `stabilize-mvp-qgis` are implied as authorized.
+- [x] [`docs/roadmap.md`](../../../../../docs/roadmap.md) states the MVP is on `main`, names stabilization / QGIS rehearsal as the current focus, and stops forbidding all work “until merge”.
+- [x] [`docs/product-brief.md`](../../../../../docs/product-brief.md) describes the Node/TypeScript API (not FastAPI) and keeps non-goals intact.
+- [x] [`docs/weekly-guide.md`](../../../../../docs/weekly-guide.md) points at this stabilization task (or equivalent) instead of “review foundation #9” as the active weekly focus.
+- [x] [`docs/qgis-review.md`](../../../../../docs/qgis-review.md) / [`docs/demo.md`](../../../../../docs/demo.md) / [`docs/limitations.md`](../../../../../docs/limitations.md) incorporate only gaps proven in ticket 02 (no speculative feature promises).
+- [x] No feature tickets outside `stabilize-mvp-qgis` are implied as authorized.
 
 ## Verification
 
@@ -35,4 +35,4 @@ Product-facing docs no longer describe a pre-merge tracker state or a FastAPI st
 
 ## Status and evidence
 
-blocked — waiting on ticket 02 evidence before editing walkthrough-dependent text. Factual “MVP merged / not FastAPI” edits may be prepared as a draft in the same PR once 02 starts, but must not be marked verified until 02 evidence exists.
+done (agent) — docs updated from ticket 02 evidence (2026-09-29). Awaiting maintainer review.

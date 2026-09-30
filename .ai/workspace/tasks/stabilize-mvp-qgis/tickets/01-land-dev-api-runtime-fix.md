@@ -13,10 +13,10 @@ A developer following [`docs/demo.md`](../../../../../docs/demo.md) can run `pnp
 
 ## Acceptance criteria
 
-- [ ] `dev:api` runs the API from TypeScript source via `tsx` (same pattern as `gis` and the Playwright webServer), or an equivalent fix that resolves `pg` under pnpm isolation.
-- [ ] `GET /health` returns HTTP 200 after start.
-- [ ] The change is on `main` (merge PR #16 or land an equivalent one-line fix).
-- [ ] No new application logic or dependency graph changes beyond the start script.
+- [x] `dev:api` runs the API from TypeScript source via `tsx` (same pattern as `gis` and the Playwright webServer), or an equivalent fix that resolves `pg` under pnpm isolation.
+- [x] `GET /health` returns HTTP 200 after start.
+- [x] The change is on `main` (merge PR #16 or land an equivalent one-line fix).
+- [x] No new application logic or dependency graph changes beyond the start script.
 
 ## Verification
 
@@ -39,4 +39,4 @@ None.
 
 ## Status and evidence
 
-ready — PR #16 already proposes the fix; this ticket tracks landing and verifying it on the stabilization path.
+done — landed on `main` via PR #18 at `826dfbf` (Linear MAC-51).
