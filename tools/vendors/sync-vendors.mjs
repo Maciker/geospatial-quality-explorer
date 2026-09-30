@@ -109,7 +109,7 @@ const cursorRules = [
       description: 'Repository-wide agent workflow: discovery, plan, approval, TDD execution, review, and quality gates.',
       alwaysApply: true,
     },
-    body: `# Agent workflow\n\nFollow the repository contract in AGENTS.md. The canonical source is .ai/.\n\n## Required flow\n\n1. Discovery before solution design when the request is ambiguous.\n2. Plan before implementation.\n3. Human approval before executor changes production code.\n4. TDD for behavior changes.\n5. Review after implementation.\n6. Run quality gates before finishing.\n7. Before opening a PR for agent-generated changes, invoke qa-cross-model with a clean context and run the pre-PR gate (pnpm prepr:gate).\n8. Do not open a PR if exact-SHA QA or distinct-model evidence is missing.\n\n## Guardrails\n\n- Do not implement ambiguous work. Ask one material question or create a discovery artifact.\n- Review agents are read-only. They produce findings, not fixes.\n- qa-cross-model is read-only and must not edit files.\n- Executor is the only agent allowed to apply implementation changes.\n- Do not open a PR until pnpm prepr:gate passes.\n- Never grow quality baselines automatically.\n- Prefer small vertical slices over broad edits.\n`,
+    body: `# Agent workflow\n\nFollow the repository contract in AGENTS.md. The canonical source is .ai/.\n\n## Required flow\n\n1. Discovery before solution design when the request is ambiguous.\n2. Plan before implementation.\n3. Human approval before executor changes production code.\n4. TDD for behavior changes.\n5. Review after implementation.\n6. Run quality gates before finishing.\n7. Before opening a PR for agent-generated changes, invoke qa-cross-model with a clean context and run the pre-PR gate (pnpm prepr:gate).\n8. After creating a PR, invoke the portable post-PR review command, inspect the complete diff/checks/comments/reviews and run pnpm pr:review against the exact PR base/head SHA.\n9. Do not open or merge a PR if exact-SHA evidence is missing, or if post-PR review is PENDING, BLOCKED or CHANGES_REQUESTED.\n\n## Guardrails\n\n- Do not implement ambiguous work. Ask one material question or create a discovery artifact.\n- Review agents are read-only. They produce findings, not fixes.\n- qa-cross-model is read-only and must not edit files.\n- Executor is the only agent allowed to apply implementation changes.\n- Do not open a PR until pnpm prepr:gate passes.\n- Never grow quality baselines automatically.\n- Prefer small vertical slices over broad edits.\n`,
   },
   {
     file: '10-architecture-hexagonal.mdc',
@@ -236,6 +236,7 @@ const promptMappings = [
   'review',
   'qa',
   'pre-pr',
+  'post-pr-review',
   'quality',
   'validate',
   'refactor',

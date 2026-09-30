@@ -38,3 +38,7 @@ Run `pnpm quality:full`, `pnpm prepr:gate` and `pnpm quality:stabilization` befo
 Start with [foundation #9](https://github.com/Maciker/geospatial-quality-explorer/issues/9), then follow [MVP tracker #8](https://github.com/Maciker/geospatial-quality-explorer/issues/8). Tickets specify dependencies, acceptance tests and relevant skills. No feature is complete merely because its ticket exists.
 
 Keep source data immutable. Only tiny, licensed fixtures belong in Git; real datasets and generated outputs stay local.
+
+## Post-PR review
+
+After creating a PR, run `pnpm run pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>`. Only `APPROVED` is eligible for human merge consideration; the workflow never merges or deploys.

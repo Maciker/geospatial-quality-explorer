@@ -16,7 +16,8 @@ Follow the repository contract in AGENTS.md. The canonical source is .ai/.
 5. Review after implementation.
 6. Run quality gates before finishing.
 7. Before opening a PR for agent-generated changes, invoke qa-cross-model with a clean context and run the pre-PR gate (pnpm prepr:gate).
-8. Do not open a PR if exact-SHA QA or distinct-model evidence is missing.
+8. After creating a PR, invoke the portable post-PR review command, inspect the complete diff/checks/comments/reviews and run pnpm pr:review against the exact PR base/head SHA.
+9. Do not open or merge a PR if exact-SHA evidence is missing, or if post-PR review is PENDING, BLOCKED or CHANGES_REQUESTED.
 
 ## Guardrails
 

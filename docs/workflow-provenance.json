@@ -10,7 +10,10 @@
     ".githooks",
     "docs",
     "examples",
-    "test/vendor-sync.test.ts"
+    "test/vendor-sync.test.ts",
+    ".ai/commands/post-pr-review.md",
+    "tools/pr/post-pr-review-state.mjs",
+    "quality/schemas/post-pr-review-input.schema.json"
   ],
   "adaptations": [
     "pnpm workspace apps/packages layout",
@@ -22,5 +25,16 @@
     "mandatory pre-PR gate with verifiable distinct-model evidence",
     "two-round correction limit and supported-PR-path coverage"
   ],
-  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally."
+  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally.",
+  "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
+  "postPrReview": {
+    "canonical": ".ai/commands/post-pr-review.md",
+    "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
+    "statuses": [
+      "APPROVED",
+      "CHANGES_REQUESTED",
+      "PENDING",
+      "BLOCKED"
+    ]
+  }
 }
