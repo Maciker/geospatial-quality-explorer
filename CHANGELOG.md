@@ -6,6 +6,8 @@ The entries below belong to the imported agent-workflow-code-ts snapshot, not re
 
 ## Unreleased
 
+- Added thirteen optional design and frontend skills from Emil Kowalski's reviewed MIT source, with generated vendor projections and attribution.
+
 - Curated six knowledge skills and nine workflow commands from reviewed
   learning sources, with explicit source revisions and MIT attribution.
 - Added spec, ticket, diagnosis and domain-document templates; extended existing

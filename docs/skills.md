@@ -44,3 +44,25 @@ See `docs/skill-curation.md` for the curation rules.
 
 - `architecture-hexagonal`: core module/layer/ports-and-adapters rules.
 - `design-principles`: core naming/function/class/error-handling rules.
+
+## Design and frontend skills (optional)
+
+The following skills are available for UI work. Use only the ones that match the task and the project's framework.
+
+| Skill | Use when |
+| --- | --- |
+| `animate` | Designing or implementing web motion and transitions |
+| `animate-expo` | Building or debugging animation in React Native or Expo |
+| `animation-vocabulary` | Finding the name of a described animation effect |
+| `apple-design` | Reviewing or designing gesture-driven, spring-based web UI |
+| `ask-sonner` | Implementing or troubleshooting Sonner toasts in React |
+| `emil-design-eng` | Improving UI craft, component polish, and interaction details |
+| `find-animation-opportunities` | Read-only discovery of useful places for motion |
+| `improve-animations` | Read-only audit and prioritized motion improvement plan |
+| `mobile-native` | Fixing mobile web, touch, viewport, or PWA behavior |
+| `pick-ui-library` | Explicitly invoked selection of a frontend library |
+| `ui-prototype` | Explicitly invoked comparison of live UI variants; imported upstream as `prototype` |
+| `review-animations` | Explicitly invoked, read-only animation review |
+| `write-swift` | Writing, reviewing, or debugging Swift |
+
+`ui-prototype` is distinct from the existing `/prototype` command, which records experiment evidence and runs the repository's guarded prototyping workflow. The selected animation or UI prototype is handed to canonical `/plan` and `/execute`; audit and review skills do not replace approval, TDD, review, deterministic quality, or cross-model QA gates. Source revisions and license details are in [source intake](source-intake.md) and [third-party notices](../THIRD_PARTY_NOTICES.md).

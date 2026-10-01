@@ -5,6 +5,7 @@
 - Destination baseline: `Maciker/agent-workflow-code-ts@ee7e1ccb91760e91f1ba48cca5d93ab6a7b55570`.
 - Training collection: `Maciker/ai-learnings@c614b59c2da8bc87fe072f671c85317647ba6016`.
 - Matt Pocock: `mattpocock/skills@c55ee46073ed923f86ce59a5eb3b6d895095d1b7`.
+- Emil Kowalski: `emilkowalski/skills@d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128` (reviewed 2026-09-23).
 
 The recursive default-branch trees were inventoried; relevant instructions, skills, rule sets and READMEs were compared with the existing core. This is a workflow-content intake, not a runtime/security audit of every course application or a survey of unmerged branches. Immutable links below make the reviewed revision reproducible. Re-evaluate later upstream changes rather than automatically mirroring them.
 
@@ -78,6 +79,32 @@ The recursive default-branch trees were inventoried; relevant instructions, skil
 - Use existing user authorization. Writing a local spec is not permission to post issues, contact reporters, close tickets, deploy, or merge.
 - Preserve existing templates, framework profiles and adapters. No new package dependencies, workflow engines, source application code or provider accounts are introduced.
 - Course materials are summarized in original language, not vendored. See [attribution and licensing boundaries](../THIRD_PARTY_NOTICES.md).
+
+## Emil Kowalski — design and frontend skills (2026-10-01)
+
+Source: [`emilkowalski/skills`](https://github.com/emilkowalski/skills), reviewed at commit `d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128` (2026-09-23).
+
+| Upstream skill | Local skill | Decision and trigger |
+| --- | --- | --- |
+| [`animate-expo`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/animate-expo/SKILL.md) | `animate-expo` | Imported; Expo/React Native motion. |
+| [`animate`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/animate/SKILL.md) | `animate` | Imported; Web motion implementation. |
+| [`animation-vocabulary`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/animation-vocabulary/SKILL.md) | `animation-vocabulary` | Imported; Naming an animation effect. |
+| [`apple-design`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/apple-design/SKILL.md) | `apple-design` | Imported; Apple-inspired web interaction and visual principles. |
+| [`ask-sonner`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/ask-sonner/SKILL.md) | `ask-sonner` | Imported; React Sonner toast implementation and troubleshooting. |
+| [`emil-design-eng`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/emil-design-eng/SKILL.md) | `emil-design-eng` | Imported; General UI craft and interaction polish. |
+| [`find-animation-opportunities`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/find-animation-opportunities/SKILL.md) | `find-animation-opportunities` | Imported; Read-only motion opportunity discovery. |
+| [`improve-animations`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/improve-animations/SKILL.md) | `improve-animations` | Imported; Read-only motion audit and implementation planning. |
+| [`mobile-native`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/mobile-native/SKILL.md) | `mobile-native` | Imported; Mobile web and PWA behavior. |
+| [`pick-ui-library`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/pick-ui-library/SKILL.md) | `pick-ui-library` | Imported; Explicitly invoked UI library selection. |
+| [`prototype`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/prototype/SKILL.md) | `ui-prototype` | Imported; Explicitly invoked UI variant comparison; renamed locally to avoid `/prototype` command collision. |
+| [`review-animations`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/review-animations/SKILL.md) | `review-animations` | Imported; Explicitly invoked, read-only animation review. |
+| [`write-swift`](https://github.com/emilkowalski/skills/blob/d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128/skills/write-swift/SKILL.md) | `write-swift` | Imported; Swift-specific implementation and review. |
+
+All thirteen skills are optional and remain available through the canonical `.ai/skills/` source and generated vendor projections. Concise, platform-specific descriptions keep the Codex skill index within its 8,000-byte budget. The upstream `prototype` skill is named `ui-prototype` locally to avoid colliding with the existing `/prototype` workflow command. Three narrow workflow adaptations apply: `animate-expo` uses the declared package manager; `improve-animations` and its plan template store candidate plans under the task workspace and hand execution to the canonical approved workflow; and `ui-prototype` records evidence and routes production work through that workflow. Other skill bodies and companion files are unchanged.
+
+Companion files are included beside their skills: `animate/RECIPES.md`, `animate-expo/RECIPES.md`, `ask-sonner/API.md`, `improve-animations/AUDIT.md`, `improve-animations/PLAN-TEMPLATE.md`, `ui-prototype/PICKER.md`, and `review-animations/STANDARDS.md`. The upstream MIT license is preserved at [`licenses/emilkowalski-skills-MIT.txt`](../licenses/emilkowalski-skills-MIT.txt).
+
+Local workflow contracts still govern execution: these skills do not bypass discovery, an approved plan, human authorization, TDD, review, quality gates, or cross-model QA. Read-only audit and review skills remain read-only. Expo, mobile-web, Sonner, and Swift guidance should only be used when the project actually uses those technologies. No dependency or external service is installed by this intake.
 
 ## Maintainer intake checklist
 

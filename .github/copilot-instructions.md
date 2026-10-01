@@ -10,6 +10,7 @@ Read and follow the nearest AGENTS.md file first. The canonical source for workf
 4. TDD for behavior changes.
 5. Review after implementation.
 6. Run quality gates before finishing.
+7. After creating a PR, run pnpm pr:review against the exact PR base/head SHA; do not treat PENDING, BLOCKED or CHANGES_REQUESTED as approval.
 
 ## Build and validation
 
