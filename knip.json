@@ -6,8 +6,10 @@
       "entry": [
         "tools/**/*.mjs",
         "test/**/*.test.ts",
+        "test/**/*.e2e.ts",
         "playwright.config.ts",
-        "test/global-setup.ts"
+        "test/global-setup.ts",
+        "api/**/*.ts"
       ],
       "project": [
         "tools/**/*.mjs",
@@ -31,6 +33,15 @@
       ],
       "project": [
         "src/**/*.ts"
+      ]
+    },
+    "packages/alexa-sim": {
+      "entry": [
+        "src/index.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
       ]
     }
   }

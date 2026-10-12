@@ -26,3 +26,19 @@ pnpm gis migrate
 `pnpm gis migrate` applies `packages/persistence/migrations`. The Docker init script only enables PostGIS. Credentials are for local development. Do not expose the database or API to a public network. Integration tests use `GEOSPATIAL_POSTGIS_URL` or the same local URL.
 
 `PORT` changes the API port (also update Vite's proxy target when using a different port). No Python environment is needed. The production web build is static and requires a same-origin /api reverse proxy; deployment is outside this foundation.
+
+## Alexa+ simulation (MAC-231)
+
+The labeled Alexa+ web simulation uses deterministic tools from `packages/alexa-tools` and an OpenAI-compatible LLM.
+
+```sh
+export ALEXA_SIM_MOCK_LLM=deterministic   # CI and local UI without API keys
+# Optional live model (never commit keys):
+# export NAN_API_KEY=...
+# export NAN_BASE_URL=https://api.nan.builders/v1
+# export NAN_MODEL=qwen3.6
+pnpm dev:api
+pnpm dev:web
+```
+
+Open the web app, choose **Alexa+ simulation**, or visit `/?sim=alexa`. Chat posts to `POST /api/v1/alexa-sim/chat`. For Vercel, `vercel.json` rewrites that path to `api/alexa-sim.ts`. Configure deployed origins with `ALEXA_SIM_CORS_ORIGINS` (comma-separated HTTPS origins).

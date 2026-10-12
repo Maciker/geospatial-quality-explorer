@@ -22,19 +22,33 @@ Template for [MAC-371](https://linear.app/maciker/issue/MAC-371) (Devpost Produc
 
 ---
 
-## Example (delete before submit)
+## Entry 2026-10-12 — dual env var names for NaN LLM
 
-| Field | Example |
+| Field | Your notes |
 | --- | --- |
 | **Date (UTC)** | 2026-10-12 |
-| **Task** | Configure LLM base URL for local dev |
-| **Steps** | 1. Set `ALEXA_SIM_LLM_API_KEY`. 2. Start web dev server. 3. Open simulation panel. |
-| **Expected** | Chat uses NaN OpenAI-compatible endpoint. |
-| **Actual** | Missing env docs in README caused 401 until key name was found in ADR. |
+| **Task** | Wire OpenAI-compatible Alexa persona for local demo |
+| **Steps** | 1. Follow ADR `ALEXA_SIM_LLM_*` names. 2. Hackathon brief uses `NAN_*`. 3. Start API without keys. |
+| **Expected** | One documented env prefix toggles live LLM vs deterministic mock. |
+| **Actual** | ADR and ticket text disagree on prefix; missing key silently falls back to mock, which is good for CI but easy to misread as a broken live model. |
 | **Severity** | minor |
-| **Workaround** | Read `docs/hackathon/adr-001-alexa-simulation.md`. |
-| **Actionable suggestion** | Add `.env.example` with non-secret defaults in delivery PR. |
-| **Evidence** | MAC-371 |
+| **Workaround** | `readNanLlmConfig()` accepts both prefixes; set `ALEXA_SIM_MOCK_LLM=deterministic` for tests. |
+| **Actionable suggestion** | Document a single canonical prefix in delivery README and keep alias support. |
+| **Evidence** | MAC-231, `packages/alexa-sim/src/infrastructure/readNanLlmConfig.ts` |
+
+## Entry 2026-10-12 — loopback guard vs public Alexa routes
+
+| Field | Your notes |
+| --- | --- |
+| **Date (UTC)** | 2026-10-12 |
+| **Task** | Expose `/api/v1/alexa-sim/chat` for Vercel while keeping legacy loopback API |
+| **Steps** | 1. Add alexa route to `apps/api`. 2. Hit route through Vite proxy. 3. Compare with `/api/v1/imports` guard. |
+| **Expected** | Alexa sim works behind proxy and on serverless without loopback-only 403. |
+| **Actual** | Global loopback middleware blocked new routes until alexa paths were routed before the guard; global OPTIONS also skipped alexa-specific CORS headers. |
+| **Severity** | major |
+| **Workaround** | Route `/api/v1/alexa-sim/*` before loopback check; dedicated CORS via `ALEXA_SIM_CORS_ORIGINS`. |
+| **Actionable suggestion** | Split “demo loopback API” and “public sim API” into named routers in `apps/api` to avoid ordering bugs. |
+| **Evidence** | MAC-231, `apps/api/src/server.ts` |
 
 ---
 
@@ -43,6 +57,6 @@ Template for [MAC-371](https://linear.app/maciker/issue/MAC-371) (Devpost Produc
 | Severity | Count |
 | --- | --- |
 | blocker | 0 |
-| major | 0 |
-| minor | 0 |
+| major | 1 |
+| minor | 1 |
 | cosmetic | 0 |
