@@ -33,6 +33,7 @@ describe("prioritizeFindings", () => {
     expect(first.findings[0]?.findingId).toBe("1");
     expect(first.nextCursor).not.toBeNull();
     const second = pagePrioritizedFindings(findings, 1, first.nextCursor);
-    expect(second.findings[0]?.findingId).not.toBe(first.findings[0]?.findingId);
+    expect(second.findings[0]?.findingId).toBe("2");
+    expect(second.nextCursor).toBeNull();
   });
 });

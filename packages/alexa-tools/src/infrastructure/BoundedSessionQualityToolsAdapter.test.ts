@@ -86,6 +86,33 @@ describe("BoundedSessionQualityToolsAdapter", () => {
     expect(exported.data.files.project).toContain("qgis");
   });
 
+  it("pages findings with the adapter-issued cursor", async () => {
+    const adapter = createAdapter();
+    const session = await adapter.listFixtures({});
+    if (!session.ok) throw new Error("session failed");
+    const validated = await adapter.runValidation({ sessionId: session.sessionId, fixtureId: "portfolio" });
+    if (!validated.ok) throw new Error("validation failed");
+    const first = await adapter.listFindings({ sessionId: session.sessionId, runId: validated.data.runId, limit: 1 });
+    if (!first.ok || !first.data.nextCursor) throw new Error("first page failed");
+    const second = await adapter.listFindings({
+      sessionId: session.sessionId,
+      runId: validated.data.runId,
+      limit: 1,
+      cursor: first.data.nextCursor,
+    });
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.data.findings[0]?.findingId).not.toBe(first.data.findings[0]?.findingId);
+  });
+
+  it("returns invalid_request for a malformed sessionId", async () => {
+    const adapter = createAdapter();
+    const result = await adapter.runValidation({ sessionId: "short", fixtureId: "clean" });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe("invalid_request");
+  });
+
   it("returns not_found for an unknown runId", async () => {
     const adapter = createAdapter();
     const session = await adapter.listFixtures({});

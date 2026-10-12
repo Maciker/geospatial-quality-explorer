@@ -54,12 +54,15 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async listFixtures(input: ListFixturesInput): Promise<ToolResult<ListFixturesOutput>> {
-    const sessionId = this.openSession(input.sessionId);
-    return toolSuccess(sessionId, { fixtures: listFixtureCatalog(this.fixturesDirectory) });
+    const opened = this.openSession(input.sessionId);
+    if (!opened.ok) return opened;
+    return toolSuccess(opened.sessionId, { fixtures: listFixtureCatalog(this.fixturesDirectory) });
   }
 
   async runValidation(input: RunValidationInput): Promise<ToolResult<RunValidationOutput>> {
-    const sessionId = this.requireSessionId(input.sessionId);
+    const sessionCheck = this.requireSessionId(input.sessionId);
+    if (!sessionCheck.ok) return sessionCheck;
+    const sessionId = sessionCheck.sessionId;
     const session = this.touchSession(sessionId);
     if (session === null) {
       return toolError(sessionId, "session_expired", "This session expired. Start a new session with list_fixtures.");
@@ -108,7 +111,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async listFindings(input: ListFindingsInput): Promise<ToolResult<ListFindingsOutput>> {
-    const sessionId = this.requireSessionId(input.sessionId);
+    const sessionCheck = this.requireSessionId(input.sessionId);
+    if (!sessionCheck.ok) return sessionCheck;
+    const sessionId = sessionCheck.sessionId;
     const session = this.touchSession(sessionId);
     if (session === null) {
       return toolError(sessionId, "session_expired", "This session expired.");
@@ -130,11 +135,8 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
     }
     const cursor = input.cursor ?? null;
     const ordered = pagePrioritizedFindings(run.findings, limit, cursor);
-    if (cursor !== null && ordered.findings.length === 0 && run.findings.length > 0) {
-      const probe = pagePrioritizedFindings(run.findings, limit, null);
-      if (probe.findings.length > 0) {
-        return toolError(sessionId, "invalid_request", "cursor does not match this result.", { cursor });
-      }
+    if (ordered.invalidCursor) {
+      return toolError(sessionId, "invalid_request", "cursor does not match this result.", { cursor });
     }
     return toolSuccess(sessionId, {
       runId: run.runId,
@@ -144,7 +146,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async explainFinding(input: ExplainFindingInput): Promise<ToolResult<ExplainFindingOutput>> {
-    const sessionId = this.requireSessionId(input.sessionId);
+    const sessionCheck = this.requireSessionId(input.sessionId);
+    if (!sessionCheck.ok) return sessionCheck;
+    const sessionId = sessionCheck.sessionId;
     const session = this.touchSession(sessionId);
     if (session === null) {
       return toolError(sessionId, "session_expired", "This session expired.");
@@ -165,7 +169,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async exportQgis(input: ExportQgisInput): Promise<ToolResult<ExportQgisOutput>> {
-    const sessionId = this.requireSessionId(input.sessionId);
+    const sessionCheck = this.requireSessionId(input.sessionId);
+    if (!sessionCheck.ok) return sessionCheck;
+    const sessionId = sessionCheck.sessionId;
     const session = this.touchSession(sessionId);
     if (session === null) {
       return toolError(sessionId, "session_expired", "This session expired.");
@@ -190,11 +196,11 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
     });
   }
 
-  private openSession(sessionId: string | undefined): string {
+  private openSession(sessionId: string | undefined): ToolResult<{ readonly sessionId: string }> {
     this.evictExpiredSessions();
     if (sessionId !== undefined) {
       if (!this.limits.sessionIdPattern.test(sessionId)) {
-        throw new Error("sessionId must match [a-zA-Z0-9_-]{8,128}.");
+        return toolError(sessionId, "invalid_request", "sessionId must match [a-zA-Z0-9_-]{8,128}.");
       }
       if (!this.sessions.has(sessionId)) {
         this.ensureSessionCapacity();
@@ -202,19 +208,19 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       } else {
         this.touchSession(sessionId);
       }
-      return sessionId;
+      return toolSuccess(sessionId, { sessionId });
     }
     this.ensureSessionCapacity();
     const created = mintSessionId();
     this.sessions.set(created, { runs: new Map(), lastAccessAtMs: this.now() });
-    return created;
+    return toolSuccess(created, { sessionId: created });
   }
 
-  private requireSessionId(sessionId: string): string {
+  private requireSessionId(sessionId: string): ToolResult<{ readonly sessionId: string }> {
     if (!this.limits.sessionIdPattern.test(sessionId)) {
-      throw new Error("sessionId must match [a-zA-Z0-9_-]{8,128}.");
+      return toolError(sessionId, "invalid_request", "sessionId must match [a-zA-Z0-9_-]{8,128}.");
     }
-    return sessionId;
+    return toolSuccess(sessionId, { sessionId });
   }
 
   private touchSession(sessionId: string): SessionRecord | null {

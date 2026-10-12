@@ -26,13 +26,18 @@ export function pagePrioritizedFindings(
   findings: readonly Finding[],
   limit: number,
   cursor: string | null,
-): { readonly findings: readonly Finding[]; readonly nextCursor: string | null } {
+): { readonly findings: readonly Finding[]; readonly nextCursor: string | null; readonly invalidCursor: boolean } {
   const ordered = prioritizeFindings(findings);
-  const start = cursor === null ? 0 : ordered.findIndex((finding) => findingPageCursor(finding) === cursor) + 1;
-  if (cursor !== null && start === 0) {
-    return { findings: [], nextCursor: null };
+  const start =
+    cursor === null ? 0 : ordered.findIndex((finding) => findingPageCursor(finding) === cursor);
+  if (cursor !== null && start === -1) {
+    return { findings: [], nextCursor: null, invalidCursor: true };
   }
   const page = ordered.slice(start, start + limit);
   const next = ordered[start + limit];
-  return { findings: page, nextCursor: next ? findingPageCursor(next) : null };
+  return {
+    findings: page,
+    nextCursor: next ? findingPageCursor(next) : null,
+    invalidCursor: false,
+  };
 }

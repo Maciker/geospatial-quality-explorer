@@ -118,7 +118,7 @@ Does not return full findings (use `list_findings`).
 | `sessionId` | yes | |
 | `runId` | yes | |
 | `limit` | no | 1–100, default 50 |
-| `cursor` | no | Opaque cursor from previous page |
+| `cursor` | no | Opaque cursor from previous page (`nextCursor` is the first finding on the next page) |
 
 **Output `data`**
 
