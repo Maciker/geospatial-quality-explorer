@@ -60,13 +60,12 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async runValidation(input: RunValidationInput): Promise<ToolResult<RunValidationOutput>> {
-    const sessionCheck = this.requireSessionId(input.sessionId);
-    if (!sessionCheck.ok) return sessionCheck;
-    const sessionId = sessionCheck.sessionId;
-    const session = this.touchSession(sessionId);
-    if (session === null) {
-      return toolError(sessionId, "session_expired", "This session expired. Start a new session with list_fixtures.");
-    }
+    const active = this.resolveActiveSession(
+      input.sessionId,
+      "This session expired. Start a new session with list_fixtures.",
+    );
+    if (!active.ok) return active;
+    const { sessionId, session } = active.data;
     if (!this.limits.fixtureIdPattern.test(input.fixtureId) || !this.fixtureIds.has(input.fixtureId)) {
       return toolError(sessionId, "not_found", `Unknown fixture ${input.fixtureId}.`, { fixtureId: input.fixtureId });
     }
@@ -111,20 +110,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async listFindings(input: ListFindingsInput): Promise<ToolResult<ListFindingsOutput>> {
-    const sessionCheck = this.requireSessionId(input.sessionId);
-    if (!sessionCheck.ok) return sessionCheck;
-    const sessionId = sessionCheck.sessionId;
-    const session = this.touchSession(sessionId);
-    if (session === null) {
-      return toolError(sessionId, "session_expired", "This session expired.");
-    }
-    if (!this.limits.runIdPattern.test(input.runId)) {
-      return toolError(sessionId, "invalid_request", "runId must be a 64 character hex digest.");
-    }
-    const run = session.runs.get(input.runId);
-    if (!run) {
-      return toolError(sessionId, "not_found", `Unknown run ${input.runId}.`, { runId: input.runId });
-    }
+    const runContext = this.resolveActiveRun(input.sessionId, input.runId);
+    if (!runContext.ok) return runContext;
+    const { sessionId, run } = runContext.data;
     const limit = this.parsePageLimit(input.limit);
     if (limit === null) {
       return toolError(
@@ -146,13 +134,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async explainFinding(input: ExplainFindingInput): Promise<ToolResult<ExplainFindingOutput>> {
-    const sessionCheck = this.requireSessionId(input.sessionId);
-    if (!sessionCheck.ok) return sessionCheck;
-    const sessionId = sessionCheck.sessionId;
-    const session = this.touchSession(sessionId);
-    if (session === null) {
-      return toolError(sessionId, "session_expired", "This session expired.");
-    }
+    const active = this.resolveActiveSession(input.sessionId);
+    if (!active.ok) return active;
+    const { sessionId, session } = active.data;
     if (session.runs.size === 0) {
       return toolError(sessionId, "refused", "Run validation before asking for a finding explanation.");
     }
@@ -169,20 +153,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   }
 
   async exportQgis(input: ExportQgisInput): Promise<ToolResult<ExportQgisOutput>> {
-    const sessionCheck = this.requireSessionId(input.sessionId);
-    if (!sessionCheck.ok) return sessionCheck;
-    const sessionId = sessionCheck.sessionId;
-    const session = this.touchSession(sessionId);
-    if (session === null) {
-      return toolError(sessionId, "session_expired", "This session expired.");
-    }
-    if (!this.limits.runIdPattern.test(input.runId)) {
-      return toolError(sessionId, "invalid_request", "runId must be a 64 character hex digest.");
-    }
-    const run = session.runs.get(input.runId);
-    if (!run) {
-      return toolError(sessionId, "not_found", `Unknown run ${input.runId}.`, { runId: input.runId });
-    }
+    const runContext = this.resolveActiveRun(input.sessionId, input.runId);
+    if (!runContext.ok) return runContext;
+    const { sessionId, run } = runContext.data;
     const bundle = buildQgisBundle(run);
     return toolSuccess(sessionId, {
       runId: run.runId,
@@ -221,6 +194,47 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       return toolError(sessionId, "invalid_request", "sessionId must match [a-zA-Z0-9_-]{8,128}.");
     }
     return toolSuccess(sessionId, { sessionId });
+  }
+
+  private resolveActiveSession(
+    sessionId: string,
+    expiredMessage = "This session expired.",
+  ): ToolResult<{ readonly sessionId: string; readonly session: SessionRecord }> {
+    const sessionCheck = this.requireSessionId(sessionId);
+    if (!sessionCheck.ok) return sessionCheck;
+    const activeSessionId = sessionCheck.sessionId;
+    const session = this.touchSession(activeSessionId);
+    if (session === null) {
+      return toolError(activeSessionId, "session_expired", expiredMessage);
+    }
+    return toolSuccess(activeSessionId, { sessionId: activeSessionId, session });
+  }
+
+  private resolveActiveRun(
+    sessionId: string,
+    runId: string,
+  ): ToolResult<{ readonly sessionId: string; readonly run: ValidationRun }> {
+    const active = this.resolveActiveSession(sessionId);
+    if (!active.ok) return active;
+    const { sessionId: activeSessionId, session } = active.data;
+    const runLookup = this.resolveRun(activeSessionId, session, runId);
+    if (!runLookup.ok) return runLookup;
+    return toolSuccess(activeSessionId, { sessionId: activeSessionId, run: runLookup.data.run });
+  }
+
+  private resolveRun(
+    sessionId: string,
+    session: SessionRecord,
+    runId: string,
+  ): ToolResult<{ readonly run: ValidationRun }> {
+    if (!this.limits.runIdPattern.test(runId)) {
+      return toolError(sessionId, "invalid_request", "runId must be a 64 character hex digest.");
+    }
+    const run = session.runs.get(runId);
+    if (!run) {
+      return toolError(sessionId, "not_found", `Unknown run ${runId}.`, { runId });
+    }
+    return toolSuccess(sessionId, { run });
   }
 
   private touchSession(sessionId: string): SessionRecord | null {
