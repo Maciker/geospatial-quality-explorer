@@ -14,7 +14,13 @@ export default defineConfig({
       command: "pnpm exec tsx apps/api/src/main.ts",
       url: "http://127.0.0.1:8000/health",
       timeout: 60_000,
-      env: { ...process.env, HOST: "127.0.0.1", PORT: "8000", GEOSPATIAL_POSTGIS_URL: databaseUrl },
+      env: {
+        ...process.env,
+        HOST: "127.0.0.1",
+        PORT: "8000",
+        GEOSPATIAL_POSTGIS_URL: databaseUrl,
+        ALEXA_SIM_MOCK_LLM: "deterministic",
+      },
     },
     {
       command: "pnpm --filter geospatial-quality-explorer-web build && pnpm --filter geospatial-quality-explorer-web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",

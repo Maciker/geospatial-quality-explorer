@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm --filter geospatial-quality-explorer-web build",
+  "outputDirectory": "apps/web/dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/v1/alexa-sim/:path*", "destination": "/api/alexa-sim" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -10,6 +10,7 @@ import {
   parseFindingQuery,
   type ValidationRunRepository,
 } from "../../../packages/quality/src/index.js";
+import { handleAlexaSimRoute } from "./alexaSimRoute.js";
 import { openApiDocument } from "./openapi.js";
 
 type ApiDependencies = {
@@ -53,13 +54,17 @@ async function route(
   repository: ValidationRunRepository,
   jobs: InProcessValidationJobs,
 ): Promise<void> {
+  const url = new URL(request.url ?? "/", "http://127.0.0.1");
+  if (url.pathname.startsWith("/api/v1/alexa-sim")) {
+    await handleAlexaSimRoute(request, response);
+    return;
+  }
   applyCors(request, response);
   if (request.method === "OPTIONS") {
     response.statusCode = 204;
     response.end();
     return;
   }
-  const url = new URL(request.url ?? "/", "http://127.0.0.1");
   try {
     if (request.method === "GET" && url.pathname === "/health") {
       send(response, 200, { status: "ok", service: "geospatial-quality-explorer-api", timestamp: new Date().toISOString() });
