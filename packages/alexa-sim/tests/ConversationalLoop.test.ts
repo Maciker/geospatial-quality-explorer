@@ -31,6 +31,8 @@ describe("ConversationalLoop", () => {
     });
     expect(first.sessionId.length).toBeGreaterThan(0);
     expect(first.runId).toMatch(/^[a-f0-9]{64}$/);
+    expect(first.refused).toBe(false);
+    expect(first.assistantMessage).toContain(first.runId!);
     const second = await loop.run({
       sessionId: first.sessionId,
       messages: [

@@ -138,7 +138,13 @@ export class ConversationalLoop {
         };
       }
       const citesLoadedFindings = findingCards.some((card) => text.includes(card.findingId));
-      if (assistantClaimsFindings(text) && !citesLoadedFindings && !assistantCitesKnownIds(text, knownIds)) {
+      const citesStoredRun = runId !== null && text.includes(runId);
+      if (
+        assistantClaimsFindings(text)
+        && !citesLoadedFindings
+        && !assistantCitesKnownIds(text, knownIds)
+        && !citesStoredRun
+      ) {
         return {
           sessionId,
           assistantMessage: refusalTextForMissingCitation(),

@@ -165,7 +165,7 @@ export class DeterministicMockLlm implements LlmPort {
           finishReason: "stop",
           message: {
             role: "assistant",
-            content: `Validation finished for portfolio with runId ${state.runId}. Ask me to list findings when you are ready.`,
+            content: `Validation finished for portfolio. runId ${state.runId}. Ask when you want the prioritized list.`,
           },
         };
       }
