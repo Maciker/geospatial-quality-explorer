@@ -17,4 +17,4 @@ The API is a Node HTTP server. It binds to `127.0.0.1` by default and rejects a 
 
 Finding query parameters are `severity`, `ruleId`, `bbox`, `limit`, and `cursor`. Malformed values, including injection-like rule ids, return 400. An unknown run returns 404. Limits are 1 to 100. `bbox` is `minLon,minLat,maxLon,maxLat` and uses envelope overlap. Findings without geometry stay in an unfiltered list and drop out of a bbox query.
 
-Imports accept only the keys `datasetName`, `sourceCrs`, `license`, and `geojson`. URLs, file paths, and zip archives are rejected. Bodies larger than 1,048,576 bytes return 413.
+Imports accept only the keys `datasetName`, `sourceCrs`, `license`, and `geojson`. Send `geojson` as the original file text: the source hash and run id then match `pnpm gis validate` on the same file. A parsed JSON object is still accepted and hashed as compact `JSON.stringify` output, so its run id differs from the CLI's. URLs, file paths, and zip archives are rejected. Bodies larger than 1,048,576 bytes return 413.

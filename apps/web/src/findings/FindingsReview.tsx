@@ -231,9 +231,8 @@ function ImportPanel(props: {
             return;
           }
           file.text().then((text) => {
-            let geojson: unknown;
             try {
-              geojson = JSON.parse(text) as unknown;
+              JSON.parse(text);
             } catch {
               props.onError("The file is not JSON. Archives and remote URLs are not accepted.");
               return;
@@ -242,7 +241,7 @@ function ImportPanel(props: {
               datasetName: String(data.get("datasetName") ?? ""),
               sourceCrs: String(data.get("sourceCrs") ?? ""),
               license: String(data.get("license") ?? ""),
-              geojson,
+              geojson: text,
             });
           }).then((next) => {
             if (next) props.onImported(next);

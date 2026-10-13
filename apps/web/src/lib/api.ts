@@ -72,7 +72,8 @@ export async function importDataset(body: {
   datasetName: string;
   sourceCrs: string;
   license: string;
-  geojson: unknown;
+  /** Original file text, so the source hash matches `pnpm gis validate` on the same file. */
+  geojson: string;
 }): Promise<ImportJob> {
   return request("/api/v1/imports", { method: "POST", body: JSON.stringify(body) });
 }

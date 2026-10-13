@@ -170,13 +170,23 @@ async function importDataset(request: IncomingMessage, response: ServerResponse,
   if (typeof body.datasetName !== "string" || typeof body.sourceCrs !== "string" || typeof body.license !== "string") {
     throw DomainError.createValidation("import.invalid: datasetName, sourceCrs, and license are required.");
   }
-  const sourceBytes = Buffer.from(JSON.stringify(body.geojson));
+  const { collection, sourceBytes } = readInlineGeoJson(body.geojson);
   const job = jobs.submit({
     declaration: { name: body.datasetName, sourceCrs: body.sourceCrs, license: body.license, parameters: {} },
-    collection: body.geojson,
+    collection,
     sourceBytes,
   });
   send(response, 202, job);
+}
+
+/** GeoJSON text is hashed byte for byte, like a CLI file; a parsed object is hashed as compact JSON. */
+function readInlineGeoJson(geojson: unknown): { collection: unknown; sourceBytes: Buffer } {
+  if (typeof geojson !== "string") return { collection: geojson, sourceBytes: Buffer.from(JSON.stringify(geojson)) };
+  try {
+    return { collection: JSON.parse(geojson) as unknown, sourceBytes: Buffer.from(geojson, "utf8") };
+  } catch {
+    throw DomainError.createValidation("dataset.invalid_json: The geojson text is not JSON.");
+  }
 }
 
 async function readJob(
