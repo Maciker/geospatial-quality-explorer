@@ -16,3 +16,6 @@ tasks/*
 # Durable post-MVP stabilization handoff (grill → to-tickets).
 !tasks/stabilize-mvp-qgis/
 !tasks/stabilize-mvp-qgis/**
+# Durable audit remediation handoff (2026-10-13).
+!tasks/audit-remediation/
+!tasks/audit-remediation/**
