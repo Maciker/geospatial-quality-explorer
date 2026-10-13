@@ -1,35 +1,52 @@
 import type { GeometryAssessment, GeometryEngine, GeometryInvalidReason } from "../domain/GeometryEngine.js";
 import type { FeatureGeometry, Position } from "../domain/geometry.js";
+import {
+  orientation,
+  pointOnRing,
+  pointStrictlyInRing,
+  ringSegments,
+  ringsCrossProperly,
+  samePosition,
+  segmentsIntersect,
+  twiceSignedArea,
+  withoutRepeatedPositions,
+} from "./planarPredicates.js";
+
+type Rings = readonly (readonly Position[])[];
 
 export class PlanarPolygonEngine implements GeometryEngine {
   readonly name = "planar-polygon-engine";
-  readonly version = "1.0.0";
+  readonly version = "1.1.0";
 
   assess(geometry: FeatureGeometry): GeometryAssessment {
     if (geometry.kind === "empty") return { status: "empty" };
     if (geometry.kind === "unsupported") return { status: "unsupported", geometryType: geometry.geometryType };
     if (geometry.kind === "polygon") return assessPolygon(geometry.geometry.coordinates);
-    for (const polygon of geometry.geometry.coordinates) {
+    const parts = geometry.geometry.coordinates;
+    for (const polygon of parts) {
       const assessment = assessPolygon(polygon);
       if (assessment.status !== "valid") return assessment;
     }
+    if (anyPartsOverlap(parts)) return { status: "invalid", reason: "parts-overlap" };
     return { status: "valid" };
   }
 }
 
-function assessPolygon(rings: readonly (readonly Position[])[]): GeometryAssessment {
+function assessPolygon(rings: Rings): GeometryAssessment {
   if (rings.length === 0) return { status: "empty" };
   const exterior = rings[0];
   if (!exterior) return { status: "invalid", reason: "missing-exterior" };
   const exteriorProblem = ringProblem(exterior);
   if (exteriorProblem) return { status: "invalid", reason: exteriorProblem };
-  for (const hole of rings.slice(1)) {
+  const holes = rings.slice(1);
+  for (const hole of holes) {
     const holeProblem = ringProblem(hole);
     if (holeProblem) return { status: "invalid", reason: holeProblem };
-    const probe = hole[0];
-    if (!probe || !pointInRing(probe, exterior)) return { status: "invalid", reason: "hole-outside" };
-    if (ringsCross(exterior, hole)) return { status: "invalid", reason: "hole-crosses-exterior" };
+    const probe = hole.find((position) => !pointOnRing(position, exterior)) ?? hole[0];
+    if (!probe || !pointStrictlyInRing(probe, exterior)) return { status: "invalid", reason: "hole-outside" };
+    if (ringsCrossProperly(exterior, hole)) return { status: "invalid", reason: "hole-crosses-exterior" };
   }
+  if (anyRingsOverlap(holes)) return { status: "invalid", reason: "holes-overlap" };
   return { status: "valid" };
 }
 
@@ -37,57 +54,78 @@ function ringProblem(ring: readonly Position[]): GeometryInvalidReason | null {
   if (ring.length < 4) return "ring-short";
   const first = ring[0];
   const last = ring[ring.length - 1];
-  if (!first || !last || first[0] !== last[0] || first[1] !== last[1]) return "ring-open";
-  if (anySegmentsCross(ring, ring, true)) return "self-intersection";
+  if (!first || !last || !samePosition(first, last)) return "ring-open";
+  const distinct = withoutRepeatedPositions(ring);
+  if (distinct.length < 4 || twiceSignedArea(distinct) === 0) return "ring-degenerate";
+  if (selfIntersects(distinct)) return "self-intersection";
   return null;
 }
 
-function ringsCross(exterior: readonly Position[], hole: readonly Position[]): boolean {
-  return anySegmentsCross(exterior, hole, false);
-}
-
-function anySegmentsCross(leftRing: readonly Position[], rightRing: readonly Position[], skipAdjacent: boolean): boolean {
-  const leftCount = leftRing.length - 1;
-  const rightCount = rightRing.length - 1;
-  for (let left = 0; left < leftCount; left += 1) {
-    for (let right = 0; right < rightCount; right += 1) {
-      if (skipAdjacent && (right === left || right === left + 1 || (left === 0 && right === leftCount - 1))) continue;
-      const start = leftRing[left];
-      const end = leftRing[left + 1];
-      const otherStart = rightRing[right];
-      const otherEnd = rightRing[right + 1];
-      if (!start || !end || !otherStart || !otherEnd) continue;
-      if (segmentsCross(start, end, otherStart, otherEnd)) return true;
+function selfIntersects(ring: readonly Position[]): boolean {
+  const segments = ringSegments(ring);
+  const last = segments.length - 1;
+  for (let left = 0; left < segments.length; left += 1) {
+    for (let right = left + 1; right < segments.length; right += 1) {
+      const leftSegment = segments[left];
+      const rightSegment = segments[right];
+      if (!leftSegment || !rightSegment) continue;
+      if (right === left + 1) {
+        if (doublesBack(leftSegment[0], leftSegment[1], rightSegment[1])) return true;
+      } else if (left === 0 && right === last) {
+        if (doublesBack(leftSegment[1], leftSegment[0], rightSegment[0])) return true;
+      } else if (segmentsIntersect(leftSegment[0], leftSegment[1], rightSegment[0], rightSegment[1])) {
+        return true;
+      }
     }
   }
   return false;
 }
 
-function segmentsCross(a: Position, b: Position, c: Position, d: Position): boolean {
-  const first = orientation(a, b, c);
-  const second = orientation(a, b, d);
-  const third = orientation(c, d, a);
-  const fourth = orientation(c, d, b);
-  return first !== 0 && second !== 0 && third !== 0 && fourth !== 0 && first !== second && third !== fourth;
+/** Adjacent segments overlap when the path turns back along the same line at the shared vertex. */
+function doublesBack(before: Position, shared: Position, after: Position): boolean {
+  if (orientation(before, shared, after) !== 0) return false;
+  return (before[0] - shared[0]) * (after[0] - shared[0]) + (before[1] - shared[1]) * (after[1] - shared[1]) > 0;
 }
 
-function orientation(start: Position, end: Position, probe: Position): number {
-  const value = (end[0] - start[0]) * (probe[1] - start[1]) - (end[1] - start[1]) * (probe[0] - start[0]);
-  if (value > 0) return 1;
-  if (value < 0) return -1;
-  return 0;
-}
-
-function pointInRing(point: Position, ring: readonly Position[]): boolean {
-  let inside = false;
-  for (let index = 0, previous = ring.length - 1; index < ring.length - 1; previous = index, index += 1) {
-    const current = ring[index];
-    const prior = ring[previous];
-    if (!current || !prior) continue;
-    const crosses = (current[1] > point[1]) !== (prior[1] > point[1]);
-    if (!crosses) continue;
-    const edgeX = ((prior[0] - current[0]) * (point[1] - current[1])) / (prior[1] - current[1]) + current[0];
-    if (point[0] < edgeX) inside = !inside;
+function anyRingsOverlap(rings: Rings): boolean {
+  for (let left = 0; left < rings.length; left += 1) {
+    for (let right = left + 1; right < rings.length; right += 1) {
+      const first = rings[left];
+      const second = rings[right];
+      if (!first || !second) continue;
+      if (ringsCrossProperly(first, second)) return true;
+      if (first.some((position) => pointStrictlyInRing(position, second))) return true;
+      if (second.some((position) => pointStrictlyInRing(position, first))) return true;
+      if (sameVertices(first, second)) return true;
+    }
   }
-  return inside;
+  return false;
+}
+
+function anyPartsOverlap(parts: readonly Rings[]): boolean {
+  for (let left = 0; left < parts.length; left += 1) {
+    for (let right = left + 1; right < parts.length; right += 1) {
+      const first = parts[left];
+      const second = parts[right];
+      const firstExterior = first?.[0];
+      const secondExterior = second?.[0];
+      if (!first || !second || !firstExterior || !secondExterior) continue;
+      if (ringsCrossProperly(firstExterior, secondExterior)) return true;
+      if (secondExterior.some((position) => pointStrictlyInPolygon(position, first))) return true;
+      if (firstExterior.some((position) => pointStrictlyInPolygon(position, second))) return true;
+      if (sameVertices(firstExterior, secondExterior)) return true;
+    }
+  }
+  return false;
+}
+
+function pointStrictlyInPolygon(point: Position, rings: Rings): boolean {
+  const [exterior, ...holes] = rings;
+  if (!exterior || !pointStrictlyInRing(point, exterior)) return false;
+  return holes.every((hole) => !pointOnRing(point, hole) && !pointStrictlyInRing(point, hole));
+}
+
+function sameVertices(left: readonly Position[], right: readonly Position[]): boolean {
+  const key = (ring: readonly Position[]) => [...new Set(ring.map((position) => `${position[0]},${position[1]}`))].sort().join(";");
+  return key(left) === key(right);
 }

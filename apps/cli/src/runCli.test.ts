@@ -66,7 +66,7 @@ describe("The validation CLI", () => {
     expect(report.findings).toEqual([]);
     expect(report.dataset.sourceHash).toHaveLength(64);
     expect(await readFile(join(directory, "report.txt"), "utf8")).toContain("No findings.");
-    expect(io.text()).toContain("Ruleset vector-core@1.0.0");
+    expect(io.text()).toContain("Ruleset vector-core@1.1.0");
   });
 
   it("rejects a missing input argument", async () => {

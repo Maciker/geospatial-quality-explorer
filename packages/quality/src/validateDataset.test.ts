@@ -105,9 +105,59 @@ describe("The reference fixtures", () => {
 describe("The planar polygon engine", () => {
   const polygonEngine = new PlanarPolygonEngine();
 
+  const square = (minimum: number, maximum: number): Array<[number, number]> => [
+    [minimum, minimum], [maximum, minimum], [maximum, maximum], [minimum, maximum], [minimum, minimum],
+  ];
+  const assessPolygon = (coordinates: Array<Array<[number, number]>>) =>
+    polygonEngine.assess({ kind: "polygon", geometry: { type: "Polygon", coordinates } });
+  const assessMultiPolygon = (coordinates: Array<Array<Array<[number, number]>>>) =>
+    polygonEngine.assess({ kind: "multipolygon", geometry: { type: "MultiPolygon", coordinates } });
+
   it("names and versions the geometry engine", () => {
     expect(polygonEngine.name).toBe("planar-polygon-engine");
-    expect(polygonEngine.version).toBe("1.0.0");
+    expect(polygonEngine.version).toBe("1.1.0");
+  });
+
+  it("rejects a collinear spike that doubles back on itself", () => {
+    expect(assessPolygon([[[0, 0], [2, 0], [1, 0], [1, 1], [0, 0]]])).toEqual({ status: "invalid", reason: "self-intersection" });
+  });
+
+  it("rejects a ring that touches itself at a vertex", () => {
+    expect(assessPolygon([[[0, 0], [2, 0], [1, 1], [2, 2], [0, 2], [1, 1], [0, 0]]])).toEqual({ status: "invalid", reason: "self-intersection" });
+  });
+
+  it("rejects a ring with zero area", () => {
+    expect(assessPolygon([[[0, 0], [1, 0], [2, 0], [0, 0]]])).toEqual({ status: "invalid", reason: "ring-degenerate" });
+  });
+
+  it("accepts repeated consecutive positions", () => {
+    expect(assessPolygon([[[0, 0], [1, 0], [1, 0], [1, 1], [0, 1], [0, 0]]])).toEqual({ status: "valid" });
+  });
+
+  it("rejects holes that overlap each other", () => {
+    expect(assessPolygon([square(0, 10), square(1, 5), square(2, 6)])).toEqual({ status: "invalid", reason: "holes-overlap" });
+  });
+
+  it("rejects a hole nested inside another hole", () => {
+    expect(assessPolygon([square(0, 10), square(1, 8), square(2, 3)])).toEqual({ status: "invalid", reason: "holes-overlap" });
+  });
+
+  it("accepts separate holes and a hole touching the exterior at one point", () => {
+    expect(assessPolygon([square(0, 10), square(1, 3), square(5, 7)])).toEqual({ status: "valid" });
+    expect(assessPolygon([square(0, 10), [[0, 5], [5, 2], [5, 8], [0, 5]]])).toEqual({ status: "valid" });
+  });
+
+  it("rejects MultiPolygon parts that overlap", () => {
+    expect(assessMultiPolygon([[square(0, 2)], [square(1, 3)]])).toEqual({ status: "invalid", reason: "parts-overlap" });
+  });
+
+  it("rejects a MultiPolygon part inside another part", () => {
+    expect(assessMultiPolygon([[square(0, 10)], [square(2, 3)]])).toEqual({ status: "invalid", reason: "parts-overlap" });
+  });
+
+  it("accepts an island inside another part's hole and parts touching at a corner", () => {
+    expect(assessMultiPolygon([[square(0, 10), square(2, 8)], [square(4, 6)]])).toEqual({ status: "valid" });
+    expect(assessMultiPolygon([[square(0, 1)], [square(1, 2)]])).toEqual({ status: "valid" });
   });
 
   it("accepts a hole and rejects a hole outside the exterior", () => {

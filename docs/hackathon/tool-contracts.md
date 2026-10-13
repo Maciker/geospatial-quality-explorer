@@ -81,7 +81,7 @@ Default CRS for fixtures: `EPSG:4326`. License: `CC0-1.0`.
 
 ### `run_validation`
 
-**Purpose:** Run ruleset `vector-core` 1.0.0 on a catalog fixture. Stores the full `ValidationRun` in the session.
+**Purpose:** Run ruleset `vector-core` 1.1.0 on a catalog fixture. Stores the full `ValidationRun` in the session.
 
 **Input**
 
