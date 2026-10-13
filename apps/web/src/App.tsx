@@ -1,16 +1,14 @@
 import { useState } from "react";
 
 import AlexaSimPanel from "./alexa/AlexaSimPanel";
+import { resolveAppMode, type AppMode } from "./appMode";
 import FindingsReview from "./findings/FindingsReview";
 
-type AppMode = "review" | "alexa";
+const initialMode = resolveAppMode(window.location.search, import.meta.env.VITE_APP_MODE);
 
 export default function App() {
   const [search, setSearch] = useState(() => window.location.search);
-  const [mode, setMode] = useState<AppMode>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("sim") === "alexa" ? "alexa" : "review";
-  });
+  const [mode, setMode] = useState<AppMode>(initialMode.mode);
 
   function switchMode(next: AppMode): void {
     setMode(next);
@@ -21,6 +19,8 @@ export default function App() {
     window.history.replaceState(null, "", nextSearch || window.location.pathname);
     setSearch(nextSearch || window.location.search);
   }
+
+  if (!initialMode.canSwitch) return <AlexaSimPanel />;
 
   return (
     <>
