@@ -8,6 +8,7 @@ test.beforeAll(() => {
 test("Alexa+ simulation validates portfolio and cites findings with mock LLM", async ({ page }) => {
   await page.goto("/?sim=alexa");
   await expect(page.getByRole("note")).toContainText("Simulation of Alexa+ — not an Amazon product");
+  await expect(page.getByLabel("Language model mode")).toContainText("deterministic mock");
   const chat = page.getByLabel("Alexa simulation chat");
   await page.getByLabel("Message Alexa simulation").fill("Validate the portfolio fixture.");
   await page.getByRole("button", { name: "Send" }).click();

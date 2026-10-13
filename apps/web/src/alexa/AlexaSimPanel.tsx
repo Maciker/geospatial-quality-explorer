@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FindingsMap from "../findings/FindingsMap";
 import type { FindingFeature, GeoJsonGeometry } from "../lib/api";
 import {
+  getAlexaSimLlmMode,
   postAlexaSimChat,
   type AlexaChatMessage,
   type AlexaFindingCard,
@@ -36,10 +37,21 @@ export default function AlexaSimPanel() {
   const [error, setError] = useState<string | null>(null);
   const [lastQgisResponse, setLastQgisResponse] = useState<Awaited<ReturnType<typeof postAlexaSimChat>> | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const mapFeatures = useMemo(() => toFindingFeatures(findings), [findings]);
   const selected = findings.find((finding) => finding.findingId === selectedFindingId) ?? null;
+
+  useEffect(() => {
+    let active = true;
+    void getAlexaSimLlmMode().then((mode) => {
+      if (active) setLlmMode(mode);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!voiceEnabled) return undefined;
@@ -77,6 +89,7 @@ export default function AlexaSimPanel() {
     try {
       const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
       setSessionId(response.sessionId);
+      if (response.llmMode) setLlmMode(response.llmMode);
       setFindings(response.findings);
       if (response.findings[0] && !selectedFindingId) setSelectedFindingId(response.findings[0].findingId);
       setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
@@ -93,6 +106,11 @@ export default function AlexaSimPanel() {
     <main className={styles.page}>
       <p className={styles.simBadge} role="note">
         Simulation of Alexa+ — not an Amazon product
+      </p>
+      <p className={styles.modelBadge} aria-label="Language model mode">
+        {llmMode === "live" && "Model: live LLM"}
+        {llmMode === "mock" && "Model: deterministic mock (no API key configured)"}
+        {llmMode === null && "Model: checking…"}
       </p>
       <header>
         <h1>Alexa+ simulation for geospatial quality review</h1>

@@ -46,7 +46,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (savedKey !== undefined) process.env.NAN_API_KEY = savedKey;
+  if (savedKey === undefined) delete process.env.NAN_API_KEY;
+  else process.env.NAN_API_KEY = savedKey;
   resetDeterministicMockLlmState();
   resetSharedToolsAdapterForTests();
 });
@@ -92,7 +93,17 @@ describe("The Alexa simulation HTTP handler", () => {
     const result = await send(chatRequest({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] }));
 
     expect(result.status).toBe(200);
-    expect(JSON.parse(result.body)).toMatchObject({ refused: false });
+    expect(JSON.parse(result.body)).toMatchObject({ refused: false, llmMode: "mock" });
+  });
+
+  it("reports whether the model is the mock or a live provider", async () => {
+    const health = { method: "GET", headers: {}, pathname: "/api/v1/alexa-sim/health" };
+    const mock = await send(health);
+    process.env.NAN_API_KEY = "test-key";
+    const live = await send(health);
+
+    expect(JSON.parse(mock.body)).toMatchObject({ llmMode: "mock" });
+    expect(JSON.parse(live.body)).toMatchObject({ llmMode: "live" });
   });
 
   it("limits requests per client and window", async () => {

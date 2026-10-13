@@ -4,6 +4,7 @@ import { createBoundedQualityToolsAdapter } from "./createToolsAdapter.js";
 import { createLlmClient } from "./createLlmClient.js";
 import { FixedWindowRateLimiter } from "./FixedWindowRateLimiter.js";
 import { corsHeadersForRequest, readAlexaSimCorsOrigins } from "./parseCorsOrigins.js";
+import { readNanLlmConfig } from "./readNanLlmConfig.js";
 
 export type HttpLikeRequest = {
   readonly method?: string;
@@ -50,7 +51,7 @@ export async function handleAlexaSimHttp(
   }
   const pathname = request.pathname ?? "/api/v1/alexa-sim/chat";
   if (request.method === "GET" && pathname.endsWith("/health")) {
-    response.status(200).end(JSON.stringify({ status: "ok", service: "alexa-sim" }));
+    response.status(200).end(JSON.stringify({ status: "ok", service: "alexa-sim", llmMode: currentLlmMode() }));
     return;
   }
   if (request.method !== "POST" || !pathname.endsWith("/chat")) {
@@ -86,7 +87,7 @@ export async function handleAlexaSimHttp(
   });
   const result = await loop.run(parsed);
   response.status(200);
-  response.end(JSON.stringify(result));
+  response.end(JSON.stringify({ ...result, llmMode: currentLlmMode() }));
 }
 
 /** Accepts only user and assistant text; tool results and system prompts come from the server. */
@@ -110,6 +111,11 @@ function parseChatRequest(raw: unknown): AlexaSimChatRequest | string {
     return "sessionId must be a short string.";
   }
   return { sessionId: raw.sessionId, messages };
+}
+
+/** Disclosed to the UI so a demo never passes the deterministic mock off as a live model. */
+function currentLlmMode(): "mock" | "live" {
+  return readNanLlmConfig().useMockLlm ? "mock" : "live";
 }
 
 function clientKey(request: HttpLikeRequest): string {
