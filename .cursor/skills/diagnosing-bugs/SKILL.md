@@ -17,4 +17,6 @@ Pass the reproduction and supported cause into the normal plan/executor workflow
 
 Output: reproduction, evidence, eliminated hypotheses, supported cause, regression coverage, remaining uncertainty. Use repository-root `.ai/templates/tasks/diagnosis.md`.
 
+If you force a failing test by temporarily mutating code or a fixture, compare against the pristine version to prove the intended mutation landed. Confirm that the failure exposes the target symptom rather than a setup error, then restore temporary mutations before testing the real fix.
+
 Adapted from Matt Pocock's `diagnosing-bugs`; see repository-root `THIRD_PARTY_NOTICES.md`.

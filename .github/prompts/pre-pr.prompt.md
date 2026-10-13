@@ -48,9 +48,10 @@ Use this command after the executor finishes an implementation and before Cursor
    This checks the exact head SHA, the working-tree snapshot, the QA-input digest, model distinction, schema and QA decision. A passing qa:gate alone is not sufficient.
 8. If the decision is iterate, apply only the listed fixes, at most two rounds. After every fix repeat steps 2–7. If the decision is stop, a P0/P1 blocker remains, deterministic checks fail, or the independent model is unavailable, stop and return control to the human.
 9. Only after pnpm prepr:gate passes may Cursor use its supported PR-creation action. Include the commands, exact models, score/decision, limitations and the fact that Cursor will perform a separate PR review. Do not merge or deploy.
+10. Immediately after the PR is created, invoke `.ai/commands/post-pr-review.md`. The post-PR reviewer must inspect the complete PR diff, checks, comments and existing reviews, then run `pnpm pr:review` against the exact PR base/head SHA. Do not mark the PR ready to merge while the result is `PENDING`, `BLOCKED` or `CHANGES_REQUESTED`.
 
 The gate protects the supported workflow path. A vendor or external integration that creates a PR without running this command may bypass it and must be documented as outside the covered path.
 
-## Post-PR review
+## PR description
 
-Immediately after creating a PR, run `pnpm run pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>`. Review the complete diff, checks, comments and existing reviews in a clean read-only context. A changed head SHA invalidates the report. Only `APPROVED` with durable evidence may proceed to human merge consideration; `PENDING`, `BLOCKED` and `CHANGES_REQUESTED` stop the flow.
+Use repository-root `docs/pr-descriptions.md` after the gate passes. Describe resulting behavior, provide relevant before/after evidence, and state rollback difficulty and affected consumers. Scale detail to the change; a diagram is optional and never replaces verification. Preserve the repository's existing PR template and exact-SHA review evidence.

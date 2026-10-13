@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/Maciker/agent-workflow-code-ts",
-  "commit": "c30e547b1306e10af31bbb8c6aa464832f5cf1b0",
+  "commit": "876f15097dae10ca49396c6458e73d53e1a717cf",
+  "initialImportCommit": "c30e547b1306e10af31bbb8c6aa464832f5cf1b0",
+  "syncedOn": "2026-10-13",
   "workflowVersion": "0.9.0",
   "imported": [
     ".ai",
@@ -25,8 +27,9 @@
     "mandatory pre-PR gate with verifiable distinct-model evidence",
     "two-round correction limit and supported-PR-path coverage"
   ],
-  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally.",
+  "skills": "All canonical .ai/skills, .ai/agents and the commands execute, retro, to-tickets and pre-pr match upstream commit 876f150 verbatim. .ai/commands/post-pr-review.md keeps the local `pnpm run pr:review` form. Generated adapters are regenerated locally.",
   "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
+  "sourceCommitNote": "Checked 2026-10-13: sourceCommit 44913ee is not reachable from any upstream branch, and skillUpdates.sourceCommit 7e21474 exists only on upstream branch feature/emil-design-skills-20261001. Both are kept as historical records; `commit` is the authoritative pin.",
   "postPrReview": {
     "canonical": ".ai/commands/post-pr-review.md",
     "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
