@@ -21,13 +21,15 @@ pnpm gis validate --input packages/quality/fixtures/vector/clean.geojson --sourc
 
 `--source-crs` is an EPSG code such as `EPSG:4326`. It is never inferred. A GeoJSON `crs` member is rejected.
 
+Arguments are strict: an option a command does not support (for example a mistyped `--ouput`) or a stray word without `--` fails with exit code 1 instead of being ignored.
+
 ## Exit codes
 
 | Code | Meaning |
 | --- | --- |
 | 0 | Validation finished with no findings |
 | 2 | Validation finished and reported one or more findings |
-| 1 | Invalid execution: missing file, malformed input, missing arguments, or database failure |
+| 1 | Invalid execution: missing file, malformed input, missing or unknown arguments, or database failure |
 
 ## Report
 
