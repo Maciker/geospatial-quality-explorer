@@ -45,6 +45,52 @@ describe("The vector contract", () => {
     })).toThrow(/crs members are not accepted/);
   });
 
+  it("rejects EPSG:4326 coordinates outside longitude and latitude bounds", () => {
+    const source = Buffer.from(JSON.stringify({
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        id: "utm-labelled-as-wgs84",
+        properties: {},
+        geometry: { type: "Polygon", coordinates: [[[500000, 4649776], [500100, 4649776], [500100, 4649876], [500000, 4649776]]] },
+      }],
+    }));
+
+    expect(() => validateDataset({
+      collection: JSON.parse(source.toString("utf8")) as unknown,
+      sourceBytes: source,
+      declaration: { name: "range", sourceCrs: "EPSG:4326", license: "CC0-1.0", parameters: {} },
+      digest,
+      engine,
+      startedAt,
+      completedAt: startedAt,
+    })).toThrow(/position\.out_of_range/);
+  });
+
+  it("does not apply WGS84 bounds to a projected CRS", () => {
+    const source = Buffer.from(JSON.stringify({
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        id: "utm",
+        properties: {},
+        geometry: { type: "Polygon", coordinates: [[[500000, 4649776], [500100, 4649776], [500100, 4649876], [500000, 4649776]]] },
+      }],
+    }));
+
+    const run = validateDataset({
+      collection: JSON.parse(source.toString("utf8")) as unknown,
+      sourceBytes: source,
+      declaration: { name: "utm", sourceCrs: "EPSG:25830", license: "CC0-1.0", parameters: {} },
+      digest,
+      engine,
+      startedAt,
+      completedAt: startedAt,
+    });
+
+    expect(run.findings).toEqual([]);
+  });
+
   it("rejects a missing source CRS", () => {
     const source = fixtureBytes("clean");
 

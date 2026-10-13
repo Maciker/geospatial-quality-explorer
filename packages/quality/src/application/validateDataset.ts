@@ -3,7 +3,7 @@ import type { GeometryEngine } from "../domain/GeometryEngine.js";
 import type { ValidationRun } from "../domain/geometry.js";
 import { NON_WGS84_LIMITATION, QUALITY_LIMITATION, VECTOR_CORE_RULESET } from "../domain/limits.js";
 import { canonicalRunMaterial } from "../domain/runMaterial.js";
-import { assertDeclaration, parseFeatureCollection, type DatasetDeclaration } from "./parseFeatureCollection.js";
+import { assertDeclaration, assertWgs84Range, parseFeatureCollection, type DatasetDeclaration } from "./parseFeatureCollection.js";
 
 export type Digest = {
   sha256(value: Uint8Array | string): string;
@@ -22,6 +22,7 @@ export function validateDataset(input: {
   const features = parseFeatureCollection(input.collection, input.sourceBytes.byteLength);
   const sourceHash = input.digest.sha256(input.sourceBytes);
   const geometryPolicy = input.declaration.sourceCrs === "EPSG:4326" ? "include" : "omit";
+  if (geometryPolicy === "include") assertWgs84Range(features);
   const limitations = [QUALITY_LIMITATION];
   if (geometryPolicy === "omit") limitations.push(NON_WGS84_LIMITATION);
   const runId = input.digest.sha256(canonicalRunMaterial({
