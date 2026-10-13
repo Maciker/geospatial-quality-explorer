@@ -41,4 +41,19 @@ pnpm dev:api
 pnpm dev:web
 ```
 
-Open the web app, choose **Alexa+ simulation**, or visit `/?sim=alexa`. Chat posts to `POST /api/v1/alexa-sim/chat`. For Vercel, `vercel.json` rewrites that path to `api/alexa-sim.ts`. Configure deployed origins with `ALEXA_SIM_CORS_ORIGINS` (comma-separated HTTPS origins).
+Open the web app, choose **Alexa+ simulation**, or visit `/?sim=alexa`. The panel shows whether replies come from the deterministic mock or a live LLM. Chat posts to `POST /api/v1/alexa-sim/chat`; `GET /api/v1/alexa-sim/health` reports `llmMode`. The canonical variable prefix is `NAN_*`; `ALEXA_SIM_LLM_BASE_URL`, `ALEXA_SIM_LLM_MODEL` and `ALEXA_SIM_LLM_API_KEY` remain accepted aliases. See `.env.example`.
+
+Chat requests are bounded: 64 KiB body, 40 messages, 4,000 characters per message, roles `user` and `assistant` only (tool results and the system prompt are produced on the server), and 20 requests per minute per client (`ALEXA_SIM_RATE_LIMIT_PER_MINUTE`). The panel trims older history to stay inside these limits.
+
+### Hosted demo (Vercel)
+
+`vercel.json` builds the web app with `VITE_APP_MODE=alexa-only`, so the hosted page is the simulation alone: the run review screen needs the local PostGIS API, which is not deployed. `/api/v1/alexa-sim/*` is rewritten to the `api/alexa-sim.ts` function, which bundles the CC0 fixtures.
+
+Before sharing the URL:
+
+1. Set `NAN_API_KEY` (and optionally `NAN_MODEL`) in the Vercel project, never in Git.
+2. Set a spend limit at the LLM provider. The rate limit is per serverless instance and only best-effort.
+3. Set `ALEXA_SIM_CORS_ORIGINS` only if the web app is served from another origin.
+4. Open the URL, check the badge reads **Model: live LLM**, and run the validate → list → explain → export script once.
+
+Sessions and runs live in function memory and can disappear on a cold start; start a new chat if a run id is no longer known.
