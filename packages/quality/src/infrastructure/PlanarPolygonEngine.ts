@@ -8,7 +8,6 @@ import {
   ringsCrossProperly,
   samePosition,
   segmentsIntersect,
-  twiceSignedArea,
   withoutRepeatedPositions,
 } from "./planarPredicates.js";
 
@@ -56,9 +55,16 @@ function ringProblem(ring: readonly Position[]): GeometryInvalidReason | null {
   const last = ring[ring.length - 1];
   if (!first || !last || !samePosition(first, last)) return "ring-open";
   const distinct = withoutRepeatedPositions(ring);
-  if (distinct.length < 4 || twiceSignedArea(distinct) === 0) return "ring-degenerate";
+  if (distinct.length < 4 || allCollinear(distinct)) return "ring-degenerate";
   if (selfIntersects(distinct)) return "self-intersection";
   return null;
+}
+
+/** A ring whose positions all lie on one line has zero area; a bowtie's signed area can also be zero, so area alone is not used. */
+function allCollinear(ring: readonly Position[]): boolean {
+  const [first, second] = ring;
+  if (!first || !second) return true;
+  return ring.every((position) => orientation(first, second, position) === 0);
 }
 
 function selfIntersects(ring: readonly Position[]): boolean {

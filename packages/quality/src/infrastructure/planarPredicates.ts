@@ -62,12 +62,6 @@ export function pointStrictlyInRing(point: Position, ring: readonly Position[]):
   return !pointOnRing(point, ring) && pointInRing(point, ring);
 }
 
-export function twiceSignedArea(ring: readonly Position[]): number {
-  let sum = 0;
-  for (const [start, end] of ringSegments(ring)) sum += start[0] * end[1] - end[0] * start[1];
-  return sum;
-}
-
 export function withoutRepeatedPositions(ring: readonly Position[]): Position[] {
   const kept: Position[] = [];
   for (const position of ring) {

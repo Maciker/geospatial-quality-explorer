@@ -172,6 +172,10 @@ describe("The planar polygon engine", () => {
     expect(assessPolygon([[[0, 0], [2, 0], [1, 1], [2, 2], [0, 2], [1, 1], [0, 0]]])).toEqual({ status: "invalid", reason: "self-intersection" });
   });
 
+  it("reports a bowtie as a self-intersection even though its signed area cancels out", () => {
+    expect(assessPolygon([[[0, 0], [1, 1], [0, 1], [1, 0], [0, 0]]])).toEqual({ status: "invalid", reason: "self-intersection" });
+  });
+
   it("rejects a ring with zero area", () => {
     expect(assessPolygon([[[0, 0], [1, 0], [2, 0], [0, 0]]])).toEqual({ status: "invalid", reason: "ring-degenerate" });
   });
