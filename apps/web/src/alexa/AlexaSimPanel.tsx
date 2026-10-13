@@ -7,6 +7,7 @@ import {
   type AlexaChatMessage,
   type AlexaFindingCard,
 } from "./alexaSimApi";
+import { boundedHistory } from "./boundedHistory";
 import { downloadQgisArtifacts } from "./downloadQgisZip";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -74,7 +75,7 @@ export default function AlexaSimPanel() {
     setMessages(nextMessages);
     setDraft("");
     try {
-      const response = await postAlexaSimChat({ sessionId, messages: nextMessages });
+      const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
       setSessionId(response.sessionId);
       setFindings(response.findings);
       if (response.findings[0] && !selectedFindingId) setSelectedFindingId(response.findings[0].findingId);

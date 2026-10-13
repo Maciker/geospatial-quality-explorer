@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { handleAlexaSimHttp } from "../../../packages/alexa-sim/src/infrastructure/handleAlexaSimHttp.js";
+import { ALEXA_SIM_LIMITS, handleAlexaSimHttp } from "../../../packages/alexa-sim/src/infrastructure/handleAlexaSimHttp.js";
 
 export async function handleAlexaSimRoute(request: IncomingMessage, response: ServerResponse): Promise<void> {
   const url = new URL(request.url ?? "/", "http://127.0.0.1");
@@ -10,6 +10,7 @@ export async function handleAlexaSimRoute(request: IncomingMessage, response: Se
       headers: request.headers as Record<string, string | string[] | undefined>,
       ...(body !== undefined ? { body } : {}),
       pathname: url.pathname,
+      ...(request.socket.remoteAddress ? { clientAddress: request.socket.remoteAddress } : {}),
     },
     {
       status(code: number) {
@@ -26,10 +27,15 @@ export async function handleAlexaSimRoute(request: IncomingMessage, response: Se
   );
 }
 
+/** Stops buffering one byte past the limit; the handler then answers 413 without holding the whole upload. */
 async function readTextBody(request: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
+  let total = 0;
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    if (total > ALEXA_SIM_LIMITS.maxBodyBytes) continue;
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    chunks.push(buffer);
+    total += buffer.length;
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks).subarray(0, ALEXA_SIM_LIMITS.maxBodyBytes + 1).toString("utf8");
 }
