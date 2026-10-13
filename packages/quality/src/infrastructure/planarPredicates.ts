@@ -11,14 +11,14 @@ export function samePosition(left: Position, right: Position): boolean {
   return left[0] === right[0] && left[1] === right[1];
 }
 
-export function pointOnSegment(point: Position, start: Position, end: Position): boolean {
+function pointOnSegment(point: Position, start: Position, end: Position): boolean {
   if (orientation(start, end, point) !== 0) return false;
   return point[0] >= Math.min(start[0], end[0]) && point[0] <= Math.max(start[0], end[0])
     && point[1] >= Math.min(start[1], end[1]) && point[1] <= Math.max(start[1], end[1]);
 }
 
 /** Proper crossing: the segments cross at a single point interior to both. */
-export function segmentsCrossProperly(a: Position, b: Position, c: Position, d: Position): boolean {
+function segmentsCrossProperly(a: Position, b: Position, c: Position, d: Position): boolean {
   const first = orientation(a, b, c);
   const second = orientation(a, b, d);
   const third = orientation(c, d, a);
@@ -47,7 +47,7 @@ export function pointOnRing(point: Position, ring: readonly Position[]): boolean
 }
 
 /** Even-odd test; the result is unspecified for points on the boundary. */
-export function pointInRing(point: Position, ring: readonly Position[]): boolean {
+function pointInRing(point: Position, ring: readonly Position[]): boolean {
   let inside = false;
   for (const [prior, current] of ringSegments(ring)) {
     const crosses = (current[1] > point[1]) !== (prior[1] > point[1]);

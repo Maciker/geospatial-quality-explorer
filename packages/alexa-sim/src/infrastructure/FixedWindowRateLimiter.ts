@@ -1,6 +1,6 @@
 type Window = { startedAtMs: number; count: number };
 
-export type RateDecision = { readonly allowed: true } | { readonly allowed: false; readonly retryAfterSeconds: number };
+type RateDecision = { readonly allowed: true } | { readonly allowed: false; readonly retryAfterSeconds: number };
 
 /**
  * Best-effort, per-process limiter. Each serverless instance keeps its own windows,

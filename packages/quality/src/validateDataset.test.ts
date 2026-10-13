@@ -30,6 +30,18 @@ function validateNamed(name: string, sourceCrs = "EPSG:4326") {
   });
 }
 
+function utmSquareBytes(): Buffer {
+  return Buffer.from(JSON.stringify({
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      id: "utm-square",
+      properties: {},
+      geometry: { type: "Polygon", coordinates: [[[500000, 4649776], [500100, 4649776], [500100, 4649876], [500000, 4649776]]] },
+    }],
+  }));
+}
+
 describe("The vector contract", () => {
   it("rejects a deprecated crs member instead of guessing a CRS", () => {
     const source = Buffer.from(JSON.stringify({ type: "FeatureCollection", crs: { type: "name" }, features: [] }));
@@ -46,15 +58,7 @@ describe("The vector contract", () => {
   });
 
   it("rejects EPSG:4326 coordinates outside longitude and latitude bounds", () => {
-    const source = Buffer.from(JSON.stringify({
-      type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        id: "utm-labelled-as-wgs84",
-        properties: {},
-        geometry: { type: "Polygon", coordinates: [[[500000, 4649776], [500100, 4649776], [500100, 4649876], [500000, 4649776]]] },
-      }],
-    }));
+    const source = utmSquareBytes();
 
     expect(() => validateDataset({
       collection: JSON.parse(source.toString("utf8")) as unknown,
@@ -68,15 +72,7 @@ describe("The vector contract", () => {
   });
 
   it("does not apply WGS84 bounds to a projected CRS", () => {
-    const source = Buffer.from(JSON.stringify({
-      type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        id: "utm",
-        properties: {},
-        geometry: { type: "Polygon", coordinates: [[[500000, 4649776], [500100, 4649776], [500100, 4649876], [500000, 4649776]]] },
-      }],
-    }));
+    const source = utmSquareBytes();
 
     const run = validateDataset({
       collection: JSON.parse(source.toString("utf8")) as unknown,
