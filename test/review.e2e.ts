@@ -8,7 +8,7 @@ function storedRunId(): string {
 test("reviews stored findings and reports an unknown run", async ({ page }) => {
   await page.goto(`/?run=${storedRunId()}`);
   await expect(page.getByLabel("Run provenance")).toContainText("portfolio");
-  await expect(page.getByLabel("Run provenance")).toContainText("vector-core 1.0.0");
+  await expect(page.getByLabel("Run provenance")).toContainText("vector-core 1.1.0");
   await expect(page.getByLabel("Findings map").locator("canvas")).toBeVisible();
   const finding = page.getByRole("button", { name: /geometry\.invalid/ });
   await finding.focus();

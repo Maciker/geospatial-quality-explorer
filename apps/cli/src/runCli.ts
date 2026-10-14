@@ -23,17 +23,35 @@ type CliIo = {
 const engine = new PlanarPolygonEngine();
 const digest = new Sha256Digest();
 
+type Command = {
+  readonly words: readonly string[];
+  readonly options: readonly string[];
+  readonly run: (options: Map<string, string>, io: CliIo) => Promise<number>;
+};
+
+const RUN_SOURCE = ["run-id", "input", "database"];
+
+const COMMANDS: readonly Command[] = [
+  { words: ["migrate"], options: ["database"], run: (options, io) => migrate(options, io) },
+  {
+    words: ["validate"],
+    options: ["input", "source-crs", "name", "license", "output", "report", "database"],
+    run: (options, io) => validate(options, io),
+  },
+  { words: ["runs", "show"], options: RUN_SOURCE, run: (options, io) => showRun(options, io) },
+  { words: ["export", "qgis"], options: [...RUN_SOURCE, "output"], run: (options, io) => exportQgis(options, io) },
+  { words: ["report"], options: [...RUN_SOURCE, "output"], run: (options, io) => exportReport(options, io) },
+];
+
 export async function runCli(argv: readonly string[], io: CliIo): Promise<number> {
   try {
-    const command = argv[0];
-    const options = readOptions(argv.slice(1));
-    if (command === "migrate") return await migrate(options, io);
-    if (command === "validate") return await validate(options, io);
-    if (command === "runs" && argv[1] === "show") return await showRun(options, io);
-    if (command === "export" && argv[1] === "qgis") return await exportQgis(options, io);
-    if (command === "report") return await exportReport(options, io);
-    io.stderr("Usage: gis validate|migrate|runs show|export qgis|report\n");
-    return 1;
+    const command = COMMANDS.find((candidate) => candidate.words.every((word, index) => argv[index] === word));
+    if (!command) {
+      io.stderr("Usage: gis validate|migrate|runs show|export qgis|report\n");
+      return 1;
+    }
+    const options = readOptions(argv.slice(command.words.length), command.options);
+    return await command.run(options, io);
   } catch (error) {
     io.stderr(`${error instanceof Error ? error.message : "Command failed."}\n`);
     return 1;
@@ -139,12 +157,16 @@ async function loadRun(options: Map<string, string>, io: CliIo): Promise<Validat
   }
 }
 
-function readOptions(argv: readonly string[]): Map<string, string> {
+function readOptions(argv: readonly string[], allowed: readonly string[]): Map<string, string> {
   const options = new Map<string, string>();
   for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
-    if (token === "show" || token === "qgis") continue;
-    if (!token?.startsWith("--")) continue;
+    const token = argv[index] ?? "";
+    if (!token.startsWith("--")) {
+      throw DomainError.createValidation(`argument.unexpected: ${token} is not an option. Options start with --.`);
+    }
+    if (!allowed.includes(token.slice(2))) {
+      throw DomainError.createValidation(`argument.unknown: ${token} is not supported here. Use ${allowed.map((name) => `--${name}`).join(", ")}.`);
+    }
     const value = argv[index + 1];
     if (value === undefined || value.startsWith("--")) {
       throw DomainError.createValidation(`argument.missing: ${token} requires a value.`);

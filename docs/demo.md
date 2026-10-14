@@ -2,6 +2,26 @@
 
 Use Node.js 22 or 24 and pnpm 10.17.1. The portfolio fixture is CC0 synthetic data in `packages/quality/fixtures/vector/portfolio.geojson`.
 
+## Fastest path: Alexa+ simulation (no database, no API key)
+
+```sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm dev:api
+pnpm dev:web
+```
+
+Open the Vite URL with `?sim=alexa`. The badges read *Simulation of Alexa+ — not an Amazon product* and *Model: deterministic mock*. Type or say, in order:
+
+1. `Validate the portfolio fixture.` — the reply cites a 64-character run id.
+2. `List the findings.` — finding cards appear with `findingId`, `ruleId` and `featureId`, and the map draws them.
+3. `Explain the next finding.` — the explanation comes from the deterministic core, not the model.
+4. `Export QGIS.` — download the bundle and open `findings.qgs` (see [qgis-review](qgis-review.md)).
+
+The mock understands these phrasings only; the live model accepts free wording. Asking it to repair geometry is refused by design.
+
+Set `NAN_API_KEY` before `pnpm dev:api` to use the live model instead; the badge then reads *Model: live LLM*.
+
 ## Full path (PostGIS + browser)
 
 ```sh
@@ -17,7 +37,7 @@ pnpm dev:web
 
 The validate command prints `Run <64 hex characters>`. Open the Vite URL with `?run=<that id>`.
 
-In the browser, read the dataset hash and ruleset, select a finding with the keyboard or the map, and filter severity to `warning` to see an empty match. Import `packages/quality/fixtures/vector/empty-geometry.geojson` from the form and open the new run. Cancel is available while a job is pending or running.
+In the browser, read the dataset hash and ruleset, select a finding with the keyboard or the map, and filter severity to `warning` to see an empty match (every `vector-core` rule reports severity `error`, so the filter demonstrates an empty result rather than a mixed list). Import `packages/quality/fixtures/vector/empty-geometry.geojson` from the form and open the new run. Cancel is available while a job is pending or running.
 
 Export the same run for QGIS and for a reviewer:
 

@@ -12,7 +12,11 @@ export type GeometryInvalidReason =
   | "ring-short"
   | "self-intersection"
   | "hole-outside"
-  | "hole-crosses-exterior";
+  | "hole-crosses-exterior"
+  | "ring-degenerate"
+  | "holes-overlap"
+  | "parts-overlap"
+  | "hole-touches-exterior";
 
 export interface GeometryEngine {
   readonly name: string;

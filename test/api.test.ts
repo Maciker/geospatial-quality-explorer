@@ -24,4 +24,19 @@ describe("The GIS API", () => {
     expect(isLoopbackAddress("::1")).toBe(true);
     expect(() => assertLoopbackHost("0.0.0.0")).toThrow(/loopback/);
   });
+
+  it("answers 413 to an oversized Alexa simulation request", async () => {
+    const server = createApiServer();
+    const base = await listen(server);
+    try {
+      const response = await fetch(`${base}/api/v1/alexa-sim/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: "x".repeat(200_000) }] }),
+      });
+      expect(response.status).toBe(413);
+    } finally {
+      await close(server);
+    }
+  });
 });

@@ -1,7 +1,13 @@
 {
-  "buildCommand": "pnpm --filter geospatial-quality-explorer-web build",
+  "buildCommand": "VITE_APP_MODE=alexa-only pnpm --filter geospatial-quality-explorer-web build",
   "outputDirectory": "apps/web/dist",
   "framework": "vite",
+  "functions": {
+    "api/alexa-sim.ts": {
+      "includeFiles": "packages/quality/fixtures/vector/**",
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/api/v1/alexa-sim/:path*", "destination": "/api/alexa-sim" },
     { "source": "/(.*)", "destination": "/index.html" }

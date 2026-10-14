@@ -19,6 +19,8 @@ export type AlexaChatResponse = {
   findings: AlexaFindingCard[];
   runId: string | null;
   refused: boolean;
+  /** "mock" is the deterministic scripted model used without an API key. */
+  llmMode?: "mock" | "live";
   qgisExport: {
     runId: string;
     files: {
@@ -46,4 +48,15 @@ export async function postAlexaSimChat(body: {
     throw new Error(payload?.message ?? `Alexa simulation request failed (${response.status}).`);
   }
   return response.json() as Promise<AlexaChatResponse>;
+}
+
+export async function getAlexaSimLlmMode(): Promise<"mock" | "live" | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/alexa-sim/health`);
+    if (!response.ok) return null;
+    const body = await response.json() as { llmMode?: "mock" | "live" };
+    return body.llmMode ?? null;
+  } catch {
+    return null;
+  }
 }

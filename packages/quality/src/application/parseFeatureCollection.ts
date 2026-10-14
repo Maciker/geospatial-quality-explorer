@@ -35,6 +35,24 @@ export function parseFeatureCollection(input: unknown, byteLength: number): Data
   return input.features.map((feature, featureIndex) => parseFeature(feature, featureIndex));
 }
 
+export function assertWgs84Range(features: readonly DatasetFeature[]): void {
+  for (const feature of features) {
+    for (const [longitude, latitude] of featurePositions(feature)) {
+      if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
+        throw DomainError.createValidation(
+          `position.out_of_range: Feature ${feature.featureIndex} has a position outside EPSG:4326 bounds (longitude -180..180, latitude -90..90). Check the declared source CRS.`,
+        );
+      }
+    }
+  }
+}
+
+function featurePositions(feature: DatasetFeature): readonly Position[] {
+  if (feature.geometry.kind === "polygon") return feature.geometry.geometry.coordinates.flat();
+  if (feature.geometry.kind === "multipolygon") return feature.geometry.geometry.coordinates.flat(2);
+  return [];
+}
+
 function parseFeature(feature: unknown, featureIndex: number): DatasetFeature {
   if (!isRecord(feature) || feature.type !== "Feature") {
     throw DomainError.createValidation(`feature.invalid: Feature ${featureIndex} must be a GeoJSON Feature.`);

@@ -20,3 +20,7 @@ The MVP must validate small GeoJSON datasets without inferring a CRS, repairing 
 ## Consequences
 
 Non-WGS84 datasets remain checkable for structure and topology, but QGIS and the browser receive null geometries for those findings until an explicit transform exists.
+
+## Amendment 2026-10-13
+
+`vector-core` `1.1.0` and `planar-polygon-engine` `1.1.0` add rejection of non-proper self-intersections (vertex touches, collinear spikes), zero-area rings, holes sharing an edge with or touching the exterior more than once, overlapping, nested or edge-sharing holes, and overlapping or edge-sharing MultiPolygon parts. Run ids change because the ruleset version is part of the run material. Runs stored under `1.0.0` stay readable and are not rewritten.

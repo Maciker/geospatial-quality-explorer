@@ -66,7 +66,7 @@ describe("The validation CLI", () => {
     expect(report.findings).toEqual([]);
     expect(report.dataset.sourceHash).toHaveLength(64);
     expect(await readFile(join(directory, "report.txt"), "utf8")).toContain("No findings.");
-    expect(io.text()).toContain("Ruleset vector-core@1.0.0");
+    expect(io.text()).toContain("Ruleset vector-core@1.1.0");
   });
 
   it("rejects a missing input argument", async () => {
@@ -76,5 +76,32 @@ describe("The validation CLI", () => {
 
     expect(code).toBe(1);
     expect(io.errors()).toContain("--input is required");
+  });
+
+  it("rejects a stray positional argument instead of ignoring it", async () => {
+    const io = capture();
+
+    const code = await runCli(["validate", "input", clean, "--source-crs", "EPSG:4326", "--name", "demo", "--license", "CC0-1.0"], io);
+
+    expect(code).toBe(1);
+    expect(io.errors()).toContain("argument.unexpected: input");
+  });
+
+  it("rejects an unknown option", async () => {
+    const io = capture();
+
+    const code = await runCli(["validate", "--input", clean, "--source-crs", "EPSG:4326", "--name", "demo", "--license", "CC0-1.0", "--ouput", "x.json"], io);
+
+    expect(code).toBe(1);
+    expect(io.errors()).toContain("argument.unknown: --ouput");
+  });
+
+  it("accepts the documented subcommands", async () => {
+    const io = capture();
+
+    const code = await runCli(["runs", "show"], io);
+
+    expect(code).toBe(1);
+    expect(io.errors()).toContain("--run-id is required");
   });
 });

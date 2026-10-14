@@ -1,6 +1,8 @@
 {
   "repository": "https://github.com/Maciker/agent-workflow-code-ts",
-  "commit": "c30e547b1306e10af31bbb8c6aa464832f5cf1b0",
+  "commit": "9fee87341827d8ad865f514f81b922a7e792ca23",
+  "initialImportCommit": "c30e547b1306e10af31bbb8c6aa464832f5cf1b0",
+  "syncedOn": "2026-10-14",
   "workflowVersion": "0.9.0",
   "imported": [
     ".ai",
@@ -23,9 +25,10 @@
     "project-specific scaffold validation",
     "exact-SHA cross-model QA context and worktree snapshot",
     "mandatory pre-PR gate with verifiable distinct-model evidence",
-    "two-round correction limit and supported-PR-path coverage"
+    "two-round correction limit and supported-PR-path coverage",
+    "local gis-data-integrity skill and repository skill scope in AGENTS.md (2026-10-14)"
   ],
-  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally.",
+  "skills": "All canonical .ai/skills and references match upstream commit 9fee873 verbatim, except the local gis-data-integrity skill. Generated adapters are regenerated locally.",
   "sourceCommit": "9fee87341827d8ad865f514f81b922a7e792ca23",
   "postPrReview": {
     "canonical": ".ai/commands/post-pr-review.md",

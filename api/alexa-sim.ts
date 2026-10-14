@@ -23,7 +23,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
       ...(request.method ? { method: request.method } : {}),
       headers: request.headers,
       ...(body !== undefined ? { body } : {}),
-      pathname: "/api/v1/alexa-sim/chat",
+      // The rewrite maps every /api/v1/alexa-sim/* path here; GET is the health probe and POST is chat.
+      pathname: request.method === "GET" ? "/api/v1/alexa-sim/health" : "/api/v1/alexa-sim/chat",
     },
     {
       status(code: number) {

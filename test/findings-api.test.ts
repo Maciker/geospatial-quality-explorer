@@ -144,6 +144,32 @@ describe("The findings API", () => {
     expect(archive.status).toBe(415);
   });
 
+  it("hashes GeoJSON text exactly as the CLI hashes the file bytes", async () => {
+    const { base } = await start();
+    const text = readFileSync(new URL("../packages/quality/fixtures/vector/portfolio.geojson", import.meta.url), "utf8");
+    const response = await fetch(`${base}/api/v1/imports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ datasetName: "portfolio", sourceCrs: "EPSG:4326", license: "CC0-1.0", geojson: text }),
+    });
+    const job = await response.json() as { jobId: string };
+    const finished = await waitForTerminal(base, job.jobId);
+
+    expect(response.status).toBe(202);
+    expect(finished.runId).toBe(runFor("portfolio").runId);
+  });
+
+  it("rejects GeoJSON text that is not JSON", async () => {
+    const { base } = await start();
+    const response = await fetch(`${base}/api/v1/imports`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ datasetName: "broken", sourceCrs: "EPSG:4326", license: "CC0-1.0", geojson: "{not json" }),
+    });
+
+    expect(response.status).toBe(400);
+  });
+
   it("cancels an import before storing a run", async () => {
     let release = (): void => {};
     const gate = new Promise<void>((resolve) => {

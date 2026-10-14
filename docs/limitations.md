@@ -1,8 +1,9 @@
 # Limitations
 
-- Ruleset `vector-core` 1.0.0 checks empty geometry, missing ids, duplicate ids, polygon ring validity, and unsupported geometry types. It does not certify positional accuracy, attributes, or topology between features.
+- Ruleset `vector-core` 1.1.0 checks empty geometry, missing ids, duplicate ids, polygon validity, and unsupported geometry types. It does not certify positional accuracy, attributes, or topology between features.
+- Polygon validity is planar and exact on the input numbers (no tolerance, no reprojection). It rejects open or short rings, zero-area rings, self-intersections including vertex touches and collinear spikes, holes outside or crossing the exterior, holes sharing an edge with the exterior or touching it at more than one point, overlapping, nested or edge-sharing holes, and overlapping or edge-sharing MultiPolygon parts. It does not detect an interior disconnected by a chain of holes that each touch at a single point, a MultiPolygon part that shares an edge with another part's hole, or near-coincident geometry within a tolerance, and it does not report every OGC `ST_IsValidDetail` reason. For an authoritative check, run `ST_IsValidDetail` in PostGIS or QGIS *Check validity* on the exported findings.
 - Only Polygon and MultiPolygon are spatially checked. Other types are reported as unsupported.
-- Source CRS must be declared. Coordinates are copied into RFC 7946 geometries only for `EPSG:4326`.
+- Source CRS must be declared. Coordinates are copied into RFC 7946 geometries only for `EPSG:4326`, and a declared `EPSG:4326` dataset with a Polygon or MultiPolygon position outside longitude -180..180 or latitude -90..90 is rejected (`position.out_of_range`) because the declaration is almost certainly wrong. Other CRSs are not range-checked or reprojected.
 - Inputs are bounded: 1,048,576 bytes, 500 features, and 10,000 positions in a ring.
 - The browser map has no remote basemap. It draws stored finding geometries on a plain background.
 - The API is an unauthenticated loopback Node/TypeScript service.

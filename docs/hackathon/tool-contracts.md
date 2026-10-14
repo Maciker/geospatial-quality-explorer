@@ -23,6 +23,9 @@ Aligned with `docs/contracts.md` and `DATASET_LIMITS`:
 | Max runs per session | 8 (adapter default) |
 | Max concurrent sessions (adapter) | 64 (adapter default) |
 | Session TTL | 30 minutes idle (adapter default) |
+| Chat request body | 65,536 bytes (`ALEXA_SIM_LIMITS`) |
+| Chat messages per request | 40, each at most 4,000 characters, roles `user` and `assistant` only |
+| Chat requests per client | 20 per minute per server instance (`ALEXA_SIM_RATE_LIMIT_PER_MINUTE`) |
 
 ## Response envelope
 
@@ -81,7 +84,7 @@ Default CRS for fixtures: `EPSG:4326`. License: `CC0-1.0`.
 
 ### `run_validation`
 
-**Purpose:** Run ruleset `vector-core` 1.0.0 on a catalog fixture. Stores the full `ValidationRun` in the session.
+**Purpose:** Run ruleset `vector-core` 1.1.0 on a catalog fixture. Stores the full `ValidationRun` in the session.
 
 **Input**
 
