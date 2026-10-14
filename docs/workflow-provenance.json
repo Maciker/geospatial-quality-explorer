@@ -25,9 +25,10 @@
     "project-specific scaffold validation",
     "exact-SHA cross-model QA context and worktree snapshot",
     "mandatory pre-PR gate with verifiable distinct-model evidence",
-    "two-round correction limit and supported-PR-path coverage"
+    "two-round correction limit and supported-PR-path coverage",
+    "local gis-data-integrity skill and repository skill scope in AGENTS.md (2026-10-14)"
   ],
-  "skills": "All canonical .ai/skills, .ai/agents and the commands execute, retro, to-tickets and pre-pr match upstream commit 876f150 verbatim. .ai/commands/post-pr-review.md keeps the local `pnpm run pr:review` form. Generated adapters are regenerated locally.",
+  "skills": "All canonical .ai/skills except the local gis-data-integrity, .ai/agents and the commands execute, retro, to-tickets and pre-pr match upstream commit 876f150 verbatim. .ai/commands/post-pr-review.md keeps the local `pnpm run pr:review` form. Generated adapters are regenerated locally.",
   "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
   "sourceCommitNote": "Checked 2026-10-13: sourceCommit 44913ee is not reachable from any upstream branch, and skillUpdates.sourceCommit 7e21474 exists only on upstream branch feature/emil-design-skills-20261001. Both are kept as historical records; `commit` is the authoritative pin.",
   "postPrReview": {

@@ -19,6 +19,6 @@ Run on 2026-10-13 against a local PostGIS 16 / PostGIS 3.4. Docker Hub was unrea
 - Desktop QGIS visual open of `findings.qgs`.
 - Cross-model QA (`qa:prepare` + `qa-cross-model` + `prepr:gate`): required by AGENTS.md before a PR is opened; no PR was opened.
 
-## Left for the owner
+## Follow-up 2026-10-14
 
-- Adding a `gis-data-integrity` skill and scoping the skill list in `AGENTS.md`: writing new agent instructions was blocked by the agent's permission policy, so the owner should decide and author it.
+With the owner's permission, added the `gis-data-integrity` skill, scoped skills for this repository in `AGENTS.md`, made the pre-PR gate vendor-neutral, regenerated adapters and re-ran `pnpm quality:full` and `pnpm quality:stabilization`.

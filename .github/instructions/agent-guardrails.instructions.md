@@ -131,10 +131,16 @@ Use pnpm workspaces under apps/ and packages/. Canonical skills are in .ai/skill
 OpenCode should read root AGENTS.md and the explicitly named skill/command files; automatic discovery is not assumed.
 Keep numerical/spatial claims deterministic and preserve source data, CRS, NoData and provenance.
 
+### Skill scope for this repository
+
+- Always relevant: `gis-data-integrity` for rules, geometry, CRS, fixtures, storage and exports; plus the v0.5 core skills above, `domain-modeling` and `qa-review`.
+- React work in `apps/web`: `frontend-patterns`; UI motion skills (`emil-design-eng`, `animate`, `review-animations`, `improve-animations`, `animation-performance`, `find-animation-opportunities`, `animation-vocabulary`) only when the task is about that UI.
+- Not applicable here (no mobile, Swift or native apps): `write-swift`, `mobile-native`, `animate-expo`, `apple-design`. They are kept for parity with the upstream workflow; do not load them.
+
 
 ## Mandatory pre-PR cross-model QA
 
-Before Cursor opens a PR for agent-generated changes:
+Before any agent or vendor tool (Cursor, Codex, Claude Code, Copilot, Hermes) opens a PR for agent-generated changes:
 
 1. Run the deterministic checks required by this repository, including `pnpm quality:full`.
 2. Run `pnpm qa:prepare` against the exact base/head SHA and clean worktree snapshot.
