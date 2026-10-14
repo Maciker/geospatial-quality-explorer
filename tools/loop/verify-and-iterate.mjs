@@ -20,7 +20,7 @@ function loadConfig() {
 const config = loadConfig();
 const qaGate = config.qa_gate ?? {};
 const level = argValue("--level", "fast");
-const maxIterations = Number(argValue("--max-iterations", qaGate.max_iterations ?? 3));
+const maxIterations = Number(argValue("--max-iterations", qaGate.max_iterations ?? 2));
 const verifyCmd = argValue("--verify-cmd", `pnpm quality:${level}`);
 const statePath = workspacePath("loop/state.json", root);
 

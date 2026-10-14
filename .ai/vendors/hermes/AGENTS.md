@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository is a guardrails boilerplate for agent-guided TypeScript development.
+This repository is geospatial-quality-explorer. It adopts the portable agent-workflow-code-ts workflow; project context is preserved below. This file is the current contract; version history lives in `CHANGELOG.md`.
 
 ## Operating principle
 
@@ -10,23 +10,30 @@ Never treat an agent response as accepted until checks have passed and a human h
 
 ## Required workflow
 
-1. Discovery before solution design.
+1. Discovery before solution design. Use `/repo-discovery` first on an unfamiliar repository.
 2. Plan before implementation.
-3. Human approval before execution.
+3. Human approval before execution: the plan's `Approval` section names the approver; the executor does not start without it.
 4. TDD for every logic change.
-5. Commit after each completed Red-Green-Refactor cycle.
+5. Commit on green; commit a refactor separately; never commit on red (see `git-strategy`).
 6. Review after execution.
 7. Run deterministic quality gates before opening or merging a PR.
 8. For agent-generated changes, run cross-model QA before final approval.
+9. Before opening an agent-generated PR, run `pnpm prepr:gate`; it validates the exact base/head SHA and that the declared reviewer and implementer models differ.
+10. After creating a PR, run `pnpm pr:review` against the exact PR base/head SHA and keep the result out of merge-ready states until it is APPROVED.
 
 ## Commands
 
 ```bash
 pnpm quality:fast
 pnpm quality:full
-pnpm qa:prepare -- --base origin/main --head HEAD
+pnpm qa:prepare -- --base origin/main --head HEAD --implementer-provider <provider> --implementer-model <model>
+pnpm qa:run                     # reviewer from AI_QA_*; or save a review and run qa:record
+pnpm qa:record -- --reviewer-provider <provider> --reviewer-model <model>
 pnpm qa:gate
+pnpm prepr:gate
+pnpm pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>
 pnpm quality:agent
+pnpm ai:sync && pnpm vendors:check   # after changing .ai/, AGENTS.md or vendor sync logic
 ```
 
 ## Done means
@@ -36,81 +43,31 @@ pnpm quality:agent
 - Typecheck, lint and tests pass.
 - Architecture rules pass.
 - The deterministic ratchet reports no new findings.
-- Cross-model QA passes for agent-generated changes.
-- The review report contains no blocking issues.
+- Cross-model QA passes for agent-generated changes, with no blocking findings.
+- `pnpm prepr:gate` passes against the exact current SHA with distinct reviewer and implementer identities; the PR states whether that evidence is `harness` or `declared`.
+- `pnpm pr:review` returns `APPROVED` for the current PR SHA, with published evidence and no actionable findings.
+
+## Skills
+
+- `xp-tdd-practices`: behavior changes, the TDD cycle and TPP.
+- `testing-standards`: writing or reviewing tests.
+- `git-strategy`: branches and commits.
+- `architecture-hexagonal`: module layout, dependency direction, ports/adapters and layer boundaries.
+- `design-principles`: naming, functions, classes/modules, comments and error handling.
+- `frontend-patterns`: React-profile tasks only.
 
 ## Context routing
 
-- Use `.ai/commands/` for reusable task prompts.
-- Use `.ai/agents/` for specialized agent instructions.
-- Use `.ai/skills/` for repeatable procedures.
-- Store generated PRDs, plans, summaries and reviews under `.ai/workspace/`.
-- Store QA inputs and outputs under `.ai/workspace/qa/`.
+- `.ai/commands/`: reusable task prompts. `/enforce-tdd` recovers the Red-Green-Refactor cycle, `/refactor` makes behavior-preserving changes after green, `/openspec-*` belong to the optional OpenSpec profile. `.ai/commands/pre-pr.md` is mandatory before the supported PR path; `.ai/commands/post-pr-review.md` is mandatory after PR creation.
+- `.ai/agents/`: specialized agent instructions. Review agents are read-only; the executor applies fixes only from an approved plan.
+- `.ai/skills/`: repeatable procedures.
+- `.ai/workspace/tasks/<task-id>/`: discovery, plan, progress, summary and review for one task (see `docs/task-workspace.md`). Pass these compact artifacts between phases instead of whole chat histories.
+- `.ai/workspace/qa/`: QA inputs and outputs for the current head.
+- `.ai/workspace/repo-analysis/`: `/repo-discovery` output.
+- `.ai/` is the canonical source. Vendor directories (`.cursor/`, `.codex/`, `.agents/`, `.github/instructions`, `.github/prompts`, `.github/copilot-instructions.md`, `.hermes/`) are generated; never edit them by hand.
 - Keep this file small. Move details to `docs/`.
 
-## Do not
-
-- Do not skip discovery for ambiguous work.
-- Do not implement without an approved plan.
-- Do not grow quality baselines automatically.
-- Do not use the same model for implementation and QA when another model is available.
-- Do not edit generated review reports to hide findings.
-- Do not mix feature work, refactoring and formatting in the same commit.
-
-
-## v0.4 Skill Policy
-
-- Use `xp-tdd-practices` for behavior changes.
-- Use `testing-standards` when writing or reviewing tests.
-- Use `git-strategy` for branches and commits.
-- Enable `frontend-patterns` only for React-profile tasks.
-- Review agents are read-only; fixes go through planner + executor.
-- This repository uses `pnpm`; do not introduce Bun-specific commands.
-
-
-## v0.5 Core Skills
-
-Use these skills when relevant:
-
-- `architecture-hexagonal`: module layout, dependency direction, ports/adapters, domain/application/infrastructure boundaries.
-- `design-principles`: naming, functions, classes/modules, comments, and error handling.
-- `xp-tdd-practices`: implementation cycle and TPP.
-- `testing-standards`: test naming, AAA, FIRST, pyramid, mocks, integration and E2E strategy.
-- `git-strategy`: feature branches, conventional commits, and commit-on-green discipline.
-
-## v0.5 Commands
-
-- `/enforce-tdd`: recover the Red-Green-Refactor cycle or apply TPP.
-- `/refactor`: behavior-preserving refactor after green.
-- `/openspec-*`: optional OpenSpec profile commands.
-
-Review agents are read-only. They produce findings. The executor applies fixes only from an approved plan.
-
-## v0.6 Vendor Adapters
-
-`.ai/` is the canonical source. Vendor directories are generated projections.
-
-Run after changing `.ai/`, `AGENTS.md`, or vendor sync logic:
-
-```bash
-pnpm ai:sync
-pnpm vendors:check
-```
-
-Generated targets:
-
-- Cursor: `.cursor/rules`, `.cursor/agents`, `.cursor/skills`, `.cursor/mcp.json`.
-- Codex: `.codex/config.toml`, `.codex/AGENTS.md`, `.agents/skills`.
-- GitHub Copilot: `.github/copilot-instructions.md`, `.github/instructions`, `.github/prompts`.
-- Hermes Agent: `.hermes/config.yaml`, `.hermes/skills`, `.hermes/AGENTS.md`, `.hermes/README.md`.
-
-Do not edit generated vendor files by hand. Edit the canonical source and regenerate.
-
-## v0.7.5 Repository Onboarding And Trust Model
-
-Use `/repo-discovery` before applying the workflow to an unfamiliar repository. It maps structure, validation commands, architecture, risks and suggested `AGENTS.md` updates under `.ai/workspace/repo-analysis/`.
-
-Trust is layered:
+## Trust layers
 
 1. Scope and artifact handoff.
 2. Deterministic checks.
@@ -119,7 +76,15 @@ Trust is layered:
 5. Cross-model QA.
 6. Human approval.
 
-Context is managed by artifacts. Do not pass entire chat histories between phases when a compact PRD, plan, summary or review artifact exists.
+## Do not
+
+- Do not skip discovery for ambiguous work.
+- Do not implement without an approved plan.
+- Do not grow quality baselines automatically.
+- Do not use the same model for implementation and QA, and do not invent model identities.
+- Do not edit generated review reports to hide findings.
+- Do not mix feature work, refactoring and formatting in the same commit.
+- Do not introduce Bun-specific commands; this repository uses `pnpm`.
 
 
 ## GIS project contract
@@ -131,24 +96,6 @@ Use pnpm workspaces under apps/ and packages/. Canonical skills are in .ai/skill
 OpenCode should read root AGENTS.md and the explicitly named skill/command files; automatic discovery is not assumed.
 Keep numerical/spatial claims deterministic and preserve source data, CRS, NoData and provenance.
 
-### Skill scope for this repository
+## Publication boundary
 
-- Always relevant: `gis-data-integrity` for rules, geometry, CRS, fixtures, storage and exports; plus the v0.5 core skills above, `domain-modeling` and `qa-review`.
-- React work in `apps/web`: `frontend-patterns`; UI motion skills (`emil-design-eng`, `animate`, `review-animations`, `improve-animations`, `animation-performance`, `find-animation-opportunities`, `animation-vocabulary`) only when the task is about that UI.
-- Not applicable here (no mobile, Swift or native apps): `write-swift`, `mobile-native`, `animate-expo`, `apple-design`. They are kept for parity with the upstream workflow; do not load them.
-
-
-## Mandatory pre-PR cross-model QA
-
-Before any agent or vendor tool (Cursor, Codex, Claude Code, Copilot, Hermes) opens a PR for agent-generated changes:
-
-1. Run the deterministic checks required by this repository, including `pnpm quality:full`.
-2. Run `pnpm qa:prepare` against the exact base/head SHA and clean worktree snapshot.
-3. Invoke `qa-cross-model` read-only with a fresh context and a verifiable model identity distinct from the implementer.
-4. Record and validate the JSON report, then run `pnpm prepr:gate`.
-5. Stop on `stop`, P0/P1, failed deterministic checks/tests, or unavailable independent model. Limit correction rounds to two and repeat the gate after every change.
-6. Do not open a PR if the report, SHA, input hash, worktree snapshot or model evidence is missing. A direct GitHub/API/vendor PR route may bypass this local workflow gate and is outside its coverage.
-
-## Mandatory post-PR review
-
-After creating a PR, invoke the portable post-PR review workflow and run `pnpm run pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>` against the exact base/head SHA. Use a verified independent reviewer when the provider exposes that identity. Repeat after every push; do not mark a PR ready to merge while the result is `PENDING`, `BLOCKED` or `CHANGES_REQUESTED`. Never merge, deploy or auto-merge from the agent workflow.
+Do not merge, deploy or enable auto-merge from the agent workflow.

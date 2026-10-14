@@ -7,38 +7,21 @@ agents/      specialized agent instructions
 commands/    reusable slash-command prompts
 skills/      focused procedures loaded when relevant
 prompts/     long-form reusable prompts
-workspace/   generated PRDs, plans, summaries, reviews and QA artifacts
+templates/   artifact templates for tasks, domain notes and repository analysis
+workspace/   generated task, QA and review artifacts (ignored by git)
 vendors/     symlinks or adapter files for specific tools
-mcp.json     optional MCP server configuration
+mcp.json     MCP server configuration projected to Cursor and Codex
 ```
 
 Generated artifacts:
 
 ```text
-workspace/prds/       discovery outputs
-workspace/plans/      approved or proposed plans
-workspace/summaries/  executor summaries
-workspace/reviews/    human or agent review reports
-workspace/findings/   additional finding reports
-workspace/qa/inputs/  clean QA prompts for cross-model review
-workspace/qa/outputs/ QA JSON responses
-workspace/qa/reports/ QA gate reports
+workspace/tasks/<task-id>/  discovery, plan (with approval), progress, summary, review per task
+workspace/repo-analysis/    /repo-discovery output
+workspace/qa/inputs/        clean QA prompt and exact-SHA context for cross-model review
+workspace/qa/outputs/       QA JSON response and run manifest
+workspace/pr-reviews/       local post-PR review reports
+workspace/loop/             pnpm loop state and correction requests
 ```
 
-## v0.5
-
-Core skills added:
-
-- `architecture-hexagonal`
-- `design-principles`
-
-Commands added:
-
-- `/enforce-tdd`
-- `/refactor`
-- `/openspec-explore`
-- `/openspec-propose`
-- `/openspec-apply-change`
-- `/openspec-archive-change`
-
-OpenSpec is optional and belongs to the `openspec` profile.
+OpenSpec commands (`/openspec-*`) are optional and belong to the `openspec` profile.

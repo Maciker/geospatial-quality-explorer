@@ -50,14 +50,14 @@ that `quality.yml` only described as policy (`max_iterations`). Each run:
 
 1. Executes the verify command (`pnpm quality:<level>` by default).
 2. Aggregates deterministic findings and the QA gate report.
-3. Decides `pass`, `iterate` or `stop` against `max_iterations`.
+3. Decides `pass`, `iterate` or `stop` against `max_iterations` (2 by default, matching the two fix rounds allowed by `.ai/commands/pre-pr.md`).
 4. On failure, writes a `correction-NN.md` artifact (prioritised findings + instructions) for
    the executor, and persists iteration state under `workspace/loop/state.json`.
 
 Exit codes: `0` pass, `2` iterate (apply the correction and run again), `1` stop (escalate).
 
 ```bash
-pnpm loop -- --level full --max-iterations 3
+pnpm loop -- --level full --max-iterations 2
 pnpm loop:status
 pnpm loop:reset
 ```
@@ -65,7 +65,9 @@ pnpm loop:reset
 ## 3. Reproducible sandbox
 
 `tools/sandbox/run-in-sandbox.mjs` (`pnpm sandbox`) runs the quality gates against a clean,
-isolated git worktree so agent-generated code is verified without contaminating the working tree.
+detached git worktree so agent-generated code is verified without contaminating the working tree.
+It installs the locked dependencies (`pnpm install --frozen-lockfile`). The worktree separates
+the checkout only: commands still run with your user's network and file-system access.
 
 ```bash
 pnpm sandbox -- --ref HEAD --cmd "pnpm quality:full"

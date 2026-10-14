@@ -92,7 +92,9 @@ try {
   writeFindings(findingsPath, allFindings, root);
 
   const hasCriticalBlocker = review.blocking_findings.some((finding) => ["P0", "P1"].includes(finding.severity));
-  const passed = review.score >= passScore && review.decision === "pass" && !hasCriticalBlocker;
+  // Any entry in blocking_findings blocks, whatever its severity; non-blocking issues belong in non_blocking_findings.
+  const hasBlocker = review.blocking_findings.length > 0;
+  const passed = review.score >= passScore && review.decision === "pass" && !hasBlocker;
   const report = {
     generatedAt: new Date().toISOString(),
     required: !optional,
@@ -115,7 +117,7 @@ try {
 
   if (!passed) {
     const action = review.score < retryScoreMin || review.decision === "stop" ? "stop" : "iterate";
-    fail(`QA gate failed: ${action}. Score=${review.score}, decision=${review.decision}, criticalBlocker=${hasCriticalBlocker}`);
+    fail(`QA gate failed: ${action}. Score=${review.score}, decision=${review.decision}, blockingFindings=${review.blocking_findings.length}, criticalBlocker=${hasCriticalBlocker}`);
   }
 } catch (error) {
   console.error(error.message);

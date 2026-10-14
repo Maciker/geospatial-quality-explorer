@@ -28,12 +28,11 @@
     "two-round correction limit and supported-PR-path coverage",
     "local gis-data-integrity skill and repository skill scope in AGENTS.md (2026-10-14)"
   ],
-  "skills": "All canonical .ai/skills except the local gis-data-integrity, .ai/agents and the commands execute, retro, to-tickets and pre-pr match upstream commit 876f150 verbatim. .ai/commands/post-pr-review.md keeps the local `pnpm run pr:review` form. Generated adapters are regenerated locally.",
-  "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
-  "sourceCommitNote": "Checked 2026-10-13: sourceCommit 44913ee is not reachable from any upstream branch, and skillUpdates.sourceCommit 7e21474 exists only on upstream branch feature/emil-design-skills-20261001. Both are kept as historical records; `commit` is the authoritative pin.",
+  "skills": "All canonical .ai/skills and references copied verbatim; generated adapters regenerated locally.",
+  "sourceCommit": "9fee87341827d8ad865f514f81b922a7e792ca23",
   "postPrReview": {
     "canonical": ".ai/commands/post-pr-review.md",
-    "sourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
+    "sourceCommit": "9fee87341827d8ad865f514f81b922a7e792ca23",
     "statuses": [
       "APPROVED",
       "CHANGES_REQUESTED",
@@ -50,5 +49,18 @@
       "integratedOn": "2026-10-01",
       "skillCount": 13
     }
-  ]
+  ],
+  "previousSourceCommit": "44913eefee32aaa9580a5090e4347bf371c6e6bd",
+  "sourceRepository": "https://github.com/Maciker/agent-workflow-code-ts",
+  "synchronizedOn": "2026-10-14",
+  "canonicalPath": ".ai",
+  "integration": {
+    "identityEvidence": [
+      "declared",
+      "harness"
+    ],
+    "blockingFindings": "all severities block",
+    "preserved": "Project instructions, stack, package manager, architecture, local skills, quality baselines and unmanaged vendor files",
+    "qaStatus": "pending independent review; no fabricated model evidence"
+  }
 }

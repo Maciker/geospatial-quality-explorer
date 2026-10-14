@@ -19,7 +19,7 @@ The model that reviews the change must be different from the model that implemen
 The QA agent is read-only. It reviews the clean input and returns JSON. It does not patch code.
 
 ```text
-score >= 80 + pass + no P0/P1 blockers -> continue
+score >= 80 + pass + no blockers       -> continue
 score 60-79 or iterate                 -> executor fixes and repeats
 score < 60 or stop                     -> human decision required
 ```
@@ -29,7 +29,7 @@ score < 60 or stop                     -> human decision required
 Generate the QA input and exact-SHA context:
 
 ```bash
-pnpm qa:prepare -- --base origin/main --head HEAD --implementer-model <verified-implementer-model>
+pnpm qa:prepare -- --base origin/main --head HEAD --implementer-provider <provider> --implementer-model <model>
 ```
 
 The command writes `.ai/workspace/qa/inputs/qa-context.json`, including the resolved base/head SHAs and a working-tree snapshot. Any change after review invalidates the report.
@@ -64,9 +64,10 @@ Run the gate:
 pnpm qa:gate
 ```
 
-Run deterministic gates plus QA:
+Record both identities (they are declared, not machine-verified; `pnpm qa:run` writes this record itself), then run deterministic gates plus the strict pre-PR gate:
 
 ```bash
+pnpm qa:record -- --reviewer-provider <provider> --reviewer-model <model>
 pnpm quality:agent
 ```
 

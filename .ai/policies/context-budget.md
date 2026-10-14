@@ -14,8 +14,8 @@ Context is a limited resource. Keep it fresh and task-focused.
 ## Artifact handoff
 
 - Repo onboarding produces `.ai/workspace/repo-analysis/*`.
-- Task discovery produces `.ai/workspace/prds/*`.
-- Planning produces `.ai/workspace/plans/*`.
-- Execution produces `.ai/workspace/summaries/*`.
-- Review produces `.ai/workspace/reviews/*`.
-- Validation produces command evidence in summaries or validation artifacts.
+- Task discovery produces `.ai/workspace/tasks/<task-id>/discovery.md`.
+- Planning produces `.ai/workspace/tasks/<task-id>/plan.md`.
+- Execution produces `.ai/workspace/tasks/<task-id>/summary.md`.
+- Review produces `.ai/workspace/tasks/<task-id>/review.md`.
+- Validation produces command evidence in `.ai/workspace/tasks/<task-id>/validation.md` or the summary.

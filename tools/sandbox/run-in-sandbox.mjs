@@ -49,7 +49,9 @@ function main() {
   let exitCode = 1;
   try {
     if (!skipInstall) {
-      exitCode = run(worktreePath, "pnpm install --prefer-offline");
+      // A detached git worktree isolates the checkout, not the network or the file system;
+      // install exactly the locked dependencies so the gate runs against reviewed versions.
+      exitCode = run(worktreePath, "pnpm install --frozen-lockfile --prefer-offline");
       if (exitCode !== 0) {
         console.error("[sandbox] dependency install failed");
         return;

@@ -15,11 +15,11 @@ Context management is part of the workflow. The goal is to keep every agent sess
 | Phase | Input | Output |
 | --- | --- | --- |
 | Repo onboarding | repository files | `.ai/workspace/repo-analysis/*` |
-| Discovery | problem statement + repo facts | `.ai/workspace/prds/*` |
-| Planning | approved discovery | `.ai/workspace/plans/*` |
-| Execution | approved plan | code changes + `.ai/workspace/summaries/*` |
-| Review | summary + diff | `.ai/workspace/reviews/*` |
-| Validation | commands + evidence | validation summary |
+| Discovery | problem statement + repo facts | `.ai/workspace/tasks/<task-id>/discovery.md` |
+| Planning | approved discovery | `.ai/workspace/tasks/<task-id>/plan.md` |
+| Execution | approved plan | code changes + `.ai/workspace/tasks/<task-id>/summary.md` |
+| Review | summary + diff | `.ai/workspace/tasks/<task-id>/review.md` |
+| Validation | commands + evidence | `.ai/workspace/tasks/<task-id>/validation.md` |
 
 ## Context refresh rule
 

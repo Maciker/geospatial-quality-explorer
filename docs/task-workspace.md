@@ -35,7 +35,10 @@ The task workspace prevents context rot:
 /compact-progress
 /review
 /validate
-/summarize
 ```
 
+`/execute` writes `summary.md` at the end of execution; there is no separate summarize command.
+
 Not every task needs every artifact. Small tasks may only need plan, validation and summary.
+
+The directory is ignored by git. The plan's `Approval` section is the local record of human approval; reference the plan from the PR description so that approval remains visible after the workspace is cleaned.

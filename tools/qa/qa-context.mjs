@@ -29,6 +29,27 @@ export function resolveRefSha(root, ref) {
   return sha;
 }
 
+/**
+ * Builds a comparable "provider:model" identity. Both parts are required and compared
+ * case-insensitively, so "OpenAI:GPT-X" and "openai:gpt-x" are the same model.
+ * Returns null when either part is missing.
+ */
+export function normalizeIdentity(provider, model) {
+  const providerPart = String(provider ?? "").trim().toLowerCase();
+  const modelPart = String(model ?? "").trim().toLowerCase();
+  if (!providerPart || !modelPart) return null;
+  return providerPart + ":" + modelPart;
+}
+
+/**
+ * How the model identities in a QA run manifest were obtained:
+ * - "harness": the reviewer identity comes from the provider call made by `pnpm qa:run`.
+ * - "declared": both identities were typed by a person or agent with `pnpm qa:record`.
+ * - "failed": identities are missing, equal, or the reviewer is the offline mock provider.
+ * The implementer identity is always declared; no tool can observe which model wrote the code.
+ */
+export const IDENTITY_EVIDENCE = Object.freeze(["harness", "declared", "failed"]);
+
 export function workingTreeSnapshot(root) {
   const status = runGit(root, ["status", "--short"]);
   const unstaged = runGit(root, ["diff", "--binary", "HEAD"]);

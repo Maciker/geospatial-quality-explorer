@@ -6,6 +6,8 @@ Source: https://github.com/mattpocock/skills
 
 Reviewed revision: `c55ee46073ed923f86ce59a5eb3b6d895095d1b7` (2026-09-18).
 
+Additional reviewed revision: `49dd158d1076134a641b33efb035946536778336` (2026-10-11 intake). The optional `retro` skill and `/retro` command are original local adaptations. Targeted updates cover test-boundary coverage, mutation evidence, standards discovery, tracker relationships, issue intake and interview recommendations. PR-description guidance summarizes principles without copying the upstream template or examples. Upstream `pr` credits Dex Horthy / Humanlayer's `show-me`: https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md.
+
 Copyright (c) 2026 Matt Pocock. Licensed under MIT; the complete notice is in [licenses/mattpocock-skills-MIT.txt](licenses/mattpocock-skills-MIT.txt).
 
 Adaptations cover the six added knowledge skills (`codebase-design`, `domain-modeling`, `diagnosing-bugs`, `writing-for-agents`, `grilling`, `grill-me`), the spec/ticket/design/diagnosis/prototype/triage/conflict commands and associated templates, behavior-oriented testing, migration guidance, separate review axes, primary-source research, and compact handoffs. Generated vendor projections carry these same adaptations and remain covered by this notice.
@@ -17,6 +19,8 @@ These are curated adaptations maintained here, not an upstream mirror, endorseme
 Source: https://github.com/emilkowalski/skills
 
 Reviewed revision: `d16ebe60d09a5ba2afcb7054ede9d0a10c9f6128` (2026-09-23).
+
+Additional reviewed revision: `2d228630ba1446365f614a108cb8252f1feda202` (2026-10-11 intake). Two further optional skills, `break-ui` and `animation-performance`, bring the pack to fifteen. `break-ui/CATALOG.md` is retained. Skill bodies have concise triggers, no canned introductory pause or invented firsthand persona, explicit executor/reviewer boundaries and canonical workflow handoffs. Animation guidance qualifies acceleration/driver claims and retains layout/accessibility semantics and measurement limitations. The existing thirteen bodies remain unchanged. Projections are covered by the preserved Emil MIT notice.
 
 Copyright (c) 2026 Emil Kowalski. Licensed under MIT; the complete notice is in [licenses/emilkowalski-skills-MIT.txt](licenses/emilkowalski-skills-MIT.txt).
 

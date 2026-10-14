@@ -42,4 +42,46 @@ Do not approve or mark ready-to-merge while the result is `PENDING`, `BLOCKED` o
 
 ## Provider adapters
 
-The contract deliberately does not call GitHub, Cursor, Hermes or a model directly. Cursor, Hermes, Codex and other agents provide an adapter that reads their available PR tools and writes the portable JSON input. This keeps the state machine portable and makes provider limitations visible instead of silently bypassing the review.
+The contract deliberately does not call GitHub, Cursor, Hermes or a model directly. This repository does not ship a provider adapter: whoever runs the review (a person or the agent) collects the evidence with the tools available and writes the portable JSON input. This keeps the state machine portable and makes provider limitations visible instead of silently bypassing the review.
+
+Every field in the input is supplied by the caller. `pnpm pr:review` checks that the evidence is consistent and complete; it cannot prove that the evidence is true, so keep the commands you used and link them from the published review.
+
+## Manual procedure with the GitHub CLI
+
+Start from [`examples/post-pr-review/input.example.json`](../examples/post-pr-review/input.example.json) and fill it in:
+
+1. PR identity and SHAs (`pr` and `current`; collect them again right before evaluating):
+
+   ```bash
+   gh pr view <number> --json number,url,baseRefOid,headRefOid
+   ```
+
+2. Diff (`diff`): review the complete diff and record its file list and digest.
+
+   ```bash
+   gh pr diff <number> > pr.diff
+   gh pr view <number> --json files --jq '.files[].path'
+   sha256sum pr.diff
+   ```
+
+3. Required checks (`checks`): use `complete` once every required check finished, `pending` while any runs, `failed` if any failed, and `none` only when the repository has no required checks.
+
+   ```bash
+   gh pr checks <number> --required --json name,state,bucket,link
+   ```
+
+4. Existing comments and reviews (`comments`, `reviews`); mark a `CHANGES_REQUESTED` review `resolved: true` only after its requests are addressed.
+
+   ```bash
+   gh pr view <number> --json comments,reviews
+   ```
+
+5. Independent review (`review`): run the read-only reviewer on a model different from the implementer and copy its `decision` and findings. Set `verified: true` only for identities you can name exactly; never invent them.
+
+6. Evaluate, publish, evaluate again. The first run returns `PENDING` with `review_evidence_not_published` because nothing has been published yet:
+
+   ```bash
+   pnpm pr:review -- --input post-pr-review-input.json --report .ai/workspace/pr-reviews/post-pr-review.json
+   ```
+
+   Publish the reviewer's findings and the report as a PR review or comment, set `publication.status` to `published` and `publication.url` to its URL, then run the same command again. Only that second run can return `APPROVED`.

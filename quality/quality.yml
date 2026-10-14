@@ -67,9 +67,9 @@ qa_gate:
   report: .quality/qa-gate-report.json
   pass_score: 80
   retry_score_min: 60
-  max_iterations: 3
+  max_iterations: 2
   policy:
-    pass: score >= 80 and decision == pass and no P0/P1 blocking findings
+    pass: score >= 80 and decision == pass and no blocking findings
     iterate: score 60-79 or decision == iterate
     stop: score < 60 or decision == stop or any P0 blocking finding
 

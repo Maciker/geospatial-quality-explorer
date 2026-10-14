@@ -106,6 +106,37 @@ Companion files are included beside their skills: `animate/RECIPES.md`, `animate
 
 Local workflow contracts still govern execution: these skills do not bypass discovery, an approved plan, human authorization, TDD, review, quality gates, or cross-model QA. Read-only audit and review skills remain read-only. Expo, mobile-web, Sonner, and Swift guidance should only be used when the project actually uses those technologies. No dependency or external service is installed by this intake.
 
+## Upstream refresh — 2026-10-11
+
+Compared current upstream trees and commit diffs against the previously recorded revisions: Emil at `2d228630ba1446365f614a108cb8252f1feda202`, Matt at `49dd158d1076134a641b33efb035946536778336`. Neither comparison changes the root license. This is a selective intake, not a blanket upgrade.
+
+| Upstream addition/change | Local decision |
+| --- | --- |
+| Emil `break-ui` (added 2026-10-02) | Import skill and catalog; executor owns dev-only fixtures/toggle, reviewers report findings, fixes follow the authorized workflow. Point to local `ui-prototype`. |
+| Emil `animation-performance` (added 2026-10-11) | Optional web diagnosis; remove canned pause/persona, qualify browser/library acceleration, preserve layout/accessibility semantics and active project profiles. Real-device improvements require measurements. |
+| Matt `retro` (promoted to `engineering`) | Adapted knowledge skill plus `/retro`: session evidence, deterministic checks for mechanical failures, read-only reviewers and canonical execution for accepted changes. |
+| Matt `pr` (promoted) | Original summary in `docs/pr-descriptions.md`, routed from `pre-pr`. Preserve Humanlayer provenance; no upstream template/examples copied. |
+| Matt `implement-spec` (promoted) | Deferred; parallel worktree/merger orchestration needs separate compatibility design. |
+| Matt experimental `chief-of-staff` | Not imported; compulsory delegation and proactive environment work widen coding tasks. |
+| Matt `diagnosing-bugs` | Verify a forced temporary mutation landed before trusting the failure; restore it and verify the original scenario. |
+| Matt `tdd` | State what each test boundary catches/misses; retain local Red–Green–Refactor and settled authorization. |
+| Matt `code-review` | Search applicable standards/contribution guidance; retain existing reviewer roles. |
+| Matt `to-tickets` | Native Linear parent/sub-issue and blocking edges; no imported GitHub triage labels. |
+| Matt `implement` | Fetch a passed issue identifier and state its title before execution. |
+| Matt `grilling` | A yes/no recommendation is phrased so yes accepts it; preserve multi-option decisions. |
+| Matt glossary/handoff/setup changes | Keep local domain/context paths and durable task artifacts; no provider-specific installer replacement. |
+| Matt removal of `resolving-merge-conflicts` | Keep the locally maintained `/resolve-conflicts` command. |
+
+The flat `.ai/skills/<name>/` layout is retained. Generate Cursor, portable/Codex and Hermes projections, including the catalog. `/retro` is a canonical command linked from the skill/catalog; this content intake does not change the hardcoded Copilot prompt map.
+
+Representative review scenarios: a read-only break-ui reviewer proposes preparation rather than editing fixtures; authorized preparation stays dev-only; performance findings distinguish inspection from profiling; a retro with no session evidence states the gap; strict React rules remain optional; PR-writing guidance cannot waive exact-SHA gates.
+
+Downstream propagation is a release step after canonical independent QA. Review the README's nine destinations through their own canonical layout and generator, pin the approved source commit, and record applicability. Do not distribute an unreviewed canonical snapshot.
+
+Validation for this intake: typecheck, lint, all 9 existing tests, architecture, dead-code, duplication and ratchet checks passed. Vendor parity, Codex adapter/index checks (5,702 / 8,000 bytes, 32 skills), dogfood and whitespace checks passed. These are instruction-content changes; no runtime logic, dependency or folder-layout change is included. UI/device scenarios above were reviewed as instruction paths, not executed against a product UI.
+
+Review limitation and maintainer direction: the current host does not expose a verified exact implementer model identifier, so this run cannot satisfy verified cross-model evidence or claim a passing `prepr:gate`. After this limitation was disclosed, the maintainer explicitly directed creation, review and merge of this PR on 2026-10-12. Treat that direction as an exception for this content-only intake, not a change to the repository gates. Perform an independent read-only agent review, inspect CI and publish the limitation with the review; do not fabricate model metadata or gate approval. Downstream propagation is tracked separately after the canonical merge.
+
 ## Maintainer intake checklist
 
 1. Compare source revisions and read relevant changes, including license/credit changes.
