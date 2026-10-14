@@ -47,7 +47,7 @@ The full path with PostGIS and the browser review is in [the five-minute demo](d
 
 ## What the rules check
 
-Ruleset `vector-core` 1.1.0 reports empty geometry, missing and duplicate feature ids, unsupported geometry types, and invalid Polygon/MultiPolygon geometry (open, short or zero-area rings, self-intersections, holes outside the shell or overlapping, overlapping parts).
+Ruleset `vector-core` 1.1.0 reports empty geometry, missing and duplicate feature ids, unsupported geometry types, and invalid Polygon/MultiPolygon geometry (open, short or zero-area rings, self-intersections, holes outside, touching or overlapping, overlapping or edge-sharing parts).
 
 - **CRS is never guessed.** `--source-crs` is required; a GeoJSON `crs` member is rejected; `EPSG:4326` coordinates outside ±180/±90 are rejected. Only `EPSG:4326` geometries are copied into RFC 7946 output.
 - **Bounded inputs:** 1 MiB, 500 features, 10,000 positions per ring.

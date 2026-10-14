@@ -17,8 +17,9 @@ const INVALID_EXPLANATION: Record<string, string> = {
   "hole-outside": "A hole lies outside its exterior ring.",
   "hole-crosses-exterior": "A hole crosses its exterior ring.",
   "ring-degenerate": "A ring has zero area or fewer than three distinct positions.",
-  "holes-overlap": "Two holes of the polygon overlap or one is nested in another.",
-  "parts-overlap": "Two parts of the MultiPolygon overlap or one lies inside another.",
+  "holes-overlap": "Two holes of the polygon overlap, share an edge, or one is nested in another.",
+  "parts-overlap": "Two parts of the MultiPolygon overlap, share an edge, or one lies inside another.",
+  "hole-touches-exterior": "A hole shares an edge with its exterior ring or touches it at more than one point.",
 };
 
 export function inspectDataset(

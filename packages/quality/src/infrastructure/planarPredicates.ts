@@ -71,6 +71,50 @@ export function withoutRepeatedPositions(ring: readonly Position[]): Position[] 
   return kept;
 }
 
+function midpoint(start: Position, end: Position): Position {
+  return [(start[0] + end[0]) / 2, (start[1] + end[1]) / 2];
+}
+
+/** Edges of `ring` split at every vertex of `other` lying on them, so each piece is wholly inside, outside or on `other`. */
+function splitSegments(ring: readonly Position[], other: readonly Position[]): Array<readonly [Position, Position]> {
+  const pieces: Array<readonly [Position, Position]> = [];
+  for (const [start, end] of ringSegments(ring)) {
+    const length = Math.abs(end[0] - start[0]) + Math.abs(end[1] - start[1]);
+    const cuts = other
+      .filter((position) => pointOnSegment(position, start, end))
+      .map((position) => (Math.abs(position[0] - start[0]) + Math.abs(position[1] - start[1])) / length);
+    const params = [...new Set([0, ...cuts, 1])].sort((left, right) => left - right);
+    for (let index = 0; index < params.length - 1; index += 1) {
+      const from = params[index] ?? 0;
+      const to = params[index + 1] ?? 1;
+      pieces.push([
+        [start[0] + (end[0] - start[0]) * from, start[1] + (end[1] - start[1]) * from],
+        [start[0] + (end[0] - start[0]) * to, start[1] + (end[1] - start[1]) * to],
+      ]);
+    }
+  }
+  return pieces;
+}
+
+/** Vertices plus the midpoint of every split piece: enough to tell where `ring`'s boundary runs relative to `other`. */
+export function boundarySamples(ring: readonly Position[], other: readonly Position[]): Position[] {
+  return [...ring, ...splitSegments(ring, other).map(([start, end]) => midpoint(start, end))];
+}
+
+/** True when the two rings share a boundary stretch of positive length. */
+export function sharesBoundarySegment(left: readonly Position[], right: readonly Position[]): boolean {
+  return splitSegments(left, right).some(([start, end]) => pointOnRing(midpoint(start, end), right));
+}
+
+/** Distinct points where the rings touch without crossing; only valid when there are no proper crossings. */
+export function touchPointCount(left: readonly Position[], right: readonly Position[]): number {
+  const touches = [
+    ...left.filter((position) => pointOnRing(position, right)),
+    ...right.filter((position) => pointOnRing(position, left)),
+  ];
+  return new Set(touches.map((position) => `${position[0]},${position[1]}`)).size;
+}
+
 export function ringsCrossProperly(left: readonly Position[], right: readonly Position[]): boolean {
   const rightSegments = ringSegments(right);
   return ringSegments(left).some(([a, b]) => rightSegments.some(([c, d]) => segmentsCrossProperly(a, b, c, d)));

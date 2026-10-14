@@ -193,6 +193,36 @@ describe("The planar polygon engine", () => {
     expect(assessPolygon([square(0, 10), [[0, 5], [5, 2], [5, 8], [0, 5]]])).toEqual({ status: "valid" });
   });
 
+  const rectangle = (minX: number, minY: number, maxX: number, maxY: number): Array<[number, number]> => [
+    [minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY], [minX, minY],
+  ];
+
+  it("rejects holes that overlap along collinear edges", () => {
+    expect(assessPolygon([square(0, 10), rectangle(1, 1, 3, 3), rectangle(2, 1, 4, 3)])).toEqual({ status: "invalid", reason: "holes-overlap" });
+  });
+
+  it("rejects holes that share an edge", () => {
+    expect(assessPolygon([square(0, 10), rectangle(1, 1, 3, 3), rectangle(3, 1, 5, 3)])).toEqual({ status: "invalid", reason: "holes-overlap" });
+  });
+
+  it("rejects a hole that shares an edge with the exterior or touches it twice", () => {
+    expect(assessPolygon([square(0, 10), rectangle(0, 2, 3, 4)])).toEqual({ status: "invalid", reason: "hole-touches-exterior" });
+    expect(assessPolygon([square(0, 10), [[0, 5], [5, 1], [10, 5], [5, 9], [0, 5]]])).toEqual({ status: "invalid", reason: "hole-touches-exterior" });
+  });
+
+  it("rejects MultiPolygon parts that overlap along collinear edges", () => {
+    expect(assessMultiPolygon([[rectangle(0, 0, 2, 2)], [rectangle(1, 0, 3, 2)]])).toEqual({ status: "invalid", reason: "parts-overlap" });
+  });
+
+  it("rejects MultiPolygon parts that share an edge", () => {
+    expect(assessMultiPolygon([[rectangle(0, 0, 1, 1)], [rectangle(1, 0, 2, 1)]])).toEqual({ status: "invalid", reason: "parts-overlap" });
+  });
+
+  it("accepts disjoint parts and holes that only meet at single points", () => {
+    expect(assessMultiPolygon([[rectangle(0, 0, 1, 1)], [rectangle(2, 0, 3, 1)]])).toEqual({ status: "valid" });
+    expect(assessPolygon([square(0, 10), rectangle(1, 1, 3, 3), rectangle(3, 3, 5, 5)])).toEqual({ status: "valid" });
+  });
+
   it("rejects MultiPolygon parts that overlap", () => {
     expect(assessMultiPolygon([[square(0, 2)], [square(1, 3)]])).toEqual({ status: "invalid", reason: "parts-overlap" });
   });

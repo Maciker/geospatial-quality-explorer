@@ -1,6 +1,7 @@
 import type { GeometryAssessment, GeometryEngine, GeometryInvalidReason } from "../domain/GeometryEngine.js";
 import type { FeatureGeometry, Position } from "../domain/geometry.js";
 import {
+  boundarySamples,
   orientation,
   pointOnRing,
   pointStrictlyInRing,
@@ -8,6 +9,8 @@ import {
   ringsCrossProperly,
   samePosition,
   segmentsIntersect,
+  sharesBoundarySegment,
+  touchPointCount,
   withoutRepeatedPositions,
 } from "./planarPredicates.js";
 
@@ -41,12 +44,20 @@ function assessPolygon(rings: Rings): GeometryAssessment {
   for (const hole of holes) {
     const holeProblem = ringProblem(hole);
     if (holeProblem) return { status: "invalid", reason: holeProblem };
-    const probe = hole.find((position) => !pointOnRing(position, exterior)) ?? hole[0];
-    if (!probe || !pointStrictlyInRing(probe, exterior)) return { status: "invalid", reason: "hole-outside" };
-    if (ringsCrossProperly(exterior, hole)) return { status: "invalid", reason: "hole-crosses-exterior" };
+    const holeProblemWithExterior = holeAgainstExterior(hole, exterior);
+    if (holeProblemWithExterior) return { status: "invalid", reason: holeProblemWithExterior };
   }
   if (anyRingsOverlap(holes)) return { status: "invalid", reason: "holes-overlap" };
   return { status: "valid" };
+}
+
+function holeAgainstExterior(hole: readonly Position[], exterior: readonly Position[]): GeometryInvalidReason | null {
+  if (ringsCrossProperly(exterior, hole)) return "hole-crosses-exterior";
+  const samples = boundarySamples(hole, exterior);
+  const outside = samples.some((position) => !pointOnRing(position, exterior) && !pointStrictlyInRing(position, exterior));
+  if (outside || !samples.some((position) => pointStrictlyInRing(position, exterior))) return "hole-outside";
+  if (sharesBoundarySegment(hole, exterior) || touchPointCount(hole, exterior) > 1) return "hole-touches-exterior";
+  return null;
 }
 
 function ringProblem(ring: readonly Position[]): GeometryInvalidReason | null {
@@ -94,32 +105,31 @@ function doublesBack(before: Position, shared: Position, after: Position): boole
 }
 
 function anyRingsOverlap(rings: Rings): boolean {
-  for (let left = 0; left < rings.length; left += 1) {
-    for (let right = left + 1; right < rings.length; right += 1) {
-      const first = rings[left];
-      const second = rings[right];
-      if (!first || !second) continue;
-      if (ringsCrossProperly(first, second)) return true;
-      if (first.some((position) => pointStrictlyInRing(position, second))) return true;
-      if (second.some((position) => pointStrictlyInRing(position, first))) return true;
-      if (sameVertices(first, second)) return true;
-    }
-  }
-  return false;
+  return anyPair(rings, (first, second) => ringsCrossProperly(first, second)
+    || boundarySamples(first, second).some((position) => pointStrictlyInRing(position, second))
+    || boundarySamples(second, first).some((position) => pointStrictlyInRing(position, first))
+    || sharesBoundarySegment(first, second));
 }
 
+/** OGC MultiPolygon parts may touch only at points: overlapping interiors and shared edges are invalid. */
 function anyPartsOverlap(parts: readonly Rings[]): boolean {
-  for (let left = 0; left < parts.length; left += 1) {
-    for (let right = left + 1; right < parts.length; right += 1) {
-      const first = parts[left];
-      const second = parts[right];
-      const firstExterior = first?.[0];
-      const secondExterior = second?.[0];
-      if (!first || !second || !firstExterior || !secondExterior) continue;
-      if (ringsCrossProperly(firstExterior, secondExterior)) return true;
-      if (secondExterior.some((position) => pointStrictlyInPolygon(position, first))) return true;
-      if (firstExterior.some((position) => pointStrictlyInPolygon(position, second))) return true;
-      if (sameVertices(firstExterior, secondExterior)) return true;
+  return anyPair(parts, (first, second) => {
+    const firstExterior = first[0];
+    const secondExterior = second[0];
+    if (!firstExterior || !secondExterior) return false;
+    return ringsCrossProperly(firstExterior, secondExterior)
+      || boundarySamples(secondExterior, firstExterior).some((position) => pointStrictlyInPolygon(position, first))
+      || boundarySamples(firstExterior, secondExterior).some((position) => pointStrictlyInPolygon(position, second))
+      || sharesBoundarySegment(firstExterior, secondExterior);
+  });
+}
+
+function anyPair<T>(items: readonly T[], test: (first: T, second: T) => boolean): boolean {
+  for (let left = 0; left < items.length; left += 1) {
+    for (let right = left + 1; right < items.length; right += 1) {
+      const first = items[left];
+      const second = items[right];
+      if (first !== undefined && second !== undefined && test(first, second)) return true;
     }
   }
   return false;
@@ -129,9 +139,4 @@ function pointStrictlyInPolygon(point: Position, rings: Rings): boolean {
   const [exterior, ...holes] = rings;
   if (!exterior || !pointStrictlyInRing(point, exterior)) return false;
   return holes.every((hole) => !pointOnRing(point, hole) && !pointStrictlyInRing(point, hole));
-}
-
-function sameVertices(left: readonly Position[], right: readonly Position[]): boolean {
-  const key = (ring: readonly Position[]) => [...new Set(ring.map((position) => `${position[0]},${position[1]}`))].sort().join(";");
-  return key(left) === key(right);
 }
