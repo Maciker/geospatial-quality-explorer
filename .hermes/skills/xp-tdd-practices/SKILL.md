@@ -1,6 +1,6 @@
 ---
 name: xp-tdd-practices
-description: Use when working on any development task, doing TDD, applying TPP, or when the user asks about pair programming, XP, extreme programming, TDD, inside-out, navigator driver, transformation priority premise, or development workflow.
+description: Use when implementing or changing behavior with tests first, doing TDD, applying TPP, or when the user asks about pair programming, XP, extreme programming, TDD, inside-out, navigator driver, or transformation priority premise.
 ---
 
 # XP & TDD Practices
@@ -144,4 +144,4 @@ For workflow and consultation format, see `references/workflow-detail.md`.
 - Never optimize prematurely.
 - Always suggest the simplest code.
 - Always identify code smells during refactor.
-- Always commit on green when following TDD commit discipline.
+- Always commit on green and commit refactors separately (see `git-strategy`).

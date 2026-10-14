@@ -15,4 +15,4 @@ Cycle:
 4. REFACTOR: improve without behavior changes.
 5. RE-EVALUATE: mark the case and choose the next one.
 
-Apply TPP in GREEN. Commit only after green and refactor.
+Apply TPP in GREEN. Commit on green, commit refactors separately, and never commit on red.

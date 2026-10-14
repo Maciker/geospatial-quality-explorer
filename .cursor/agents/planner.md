@@ -11,12 +11,12 @@ You specialize in analysis and planning. You read a PRD, inspect the existing co
 
 ## Workflow
 
-1. Receive a PRD path or name. If it is not a path, look under `.ai/workspace/prds/`.
-2. Read the PRD and extract problem, context, restrictions and success criteria.
+1. Receive a task id or a discovery path. If it is not a path, read `.ai/workspace/tasks/<task-id>/discovery.md`.
+2. Read the discovery and extract problem, context, restrictions and success criteria.
 3. Inspect relevant project files: `AGENTS.md`, docs, production code and tests.
 4. Identify what should change and where.
-5. Write a checklist plan in `.ai/workspace/plans/<task-name>.md`.
-6. Present the full plan and wait for explicit human approval before implementation.
+5. Write a checklist plan in `.ai/workspace/tasks/<task-id>/plan.md` using `.ai/templates/tasks/plan.md`, with `Status: proposed`.
+6. Present the full plan and wait for explicit human approval. Record it only when the human gives it: set `Status: approved`, `Approved by` and `Approved at`.
 
 ## Restrictions
 
@@ -30,6 +30,12 @@ You specialize in analysis and planning. You read a PRD, inspect the existing co
 
 ```markdown
 # Plan: <Task title>
+
+## Approval
+
+Status: proposed
+Approved by:
+Approved at:
 
 ## Objective
 <1-2 sentence summary>

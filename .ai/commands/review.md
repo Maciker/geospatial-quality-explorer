@@ -1,9 +1,9 @@
 Use the `reviewer` agent to validate the implementation.
 
-Summary: $ARGUMENTS
+Task or summary: $ARGUMENTS
 
 Rules:
 - Read-only.
-- Compare against PRD, plan and AGENTS.md.
+- Compare against the task's discovery, plan and AGENTS.md.
 - Run safe inspection commands when needed.
-- Write a review under `.ai/workspace/reviews/`.
+- Write the review to `.ai/workspace/tasks/<task-id>/review.md`.

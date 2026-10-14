@@ -37,6 +37,7 @@ Exclude test files unless the user asks to review tests.
 
 1. Read `design-principles` if available.
 2. Determine the scoped file list.
+   Search the repository for applicable coding standards and contribution guidance, including `CODING_STANDARDS.md` and `CONTRIBUTING.md` when present. Resolve the nearest project/profile rules before reviewing; do not assume the two example filenames are the only sources.
 3. Review each file.
 4. Run focused tests or typecheck only when useful and safe.
 5. Report findings; do not fix directly.

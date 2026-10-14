@@ -5,7 +5,7 @@ const input = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 const toolInput = input.tool_input || {};
 const command = String(toolInput.command || toolInput.cmd || '');
 const dangerous = [
-  /(^|\s)rm\s+-rf\s+(\/|\.|\*)($|\s)/,
+  /(^|[\s;&|])rm\s+-[a-zA-Z]*(r[a-zA-Z]*f|f[a-zA-Z]*r)[a-zA-Z]*\s+(--\s+)?(\/|~|\$HOME|\.{1,2}\/?|\*)($|\s)/,
   /git\s+reset\s+--hard/,
   /git\s+clean\s+-f/,
   /find\s+.+\s+-delete/,
@@ -22,7 +22,7 @@ if (dangerous.some((pattern) => pattern.test(command))) {
   }));
   process.exit(0);
 }
-const generatedTargets = ['.cursor/', '.github/prompts/', '.github/instructions/', '.codex/AGENTS.md', '.codex/config.toml', '.codex/agents/'];
+const generatedTargets = ['.cursor/', '.github/prompts/', '.github/instructions/', '.github/copilot-instructions.md', '.codex/AGENTS.md', '.codex/config.toml', '.codex/agents/', '.codex/hooks', '.agents/', '.hermes/'];
 const touchesGenerated = generatedTargets.some((target) => command.includes(target));
 const touchesBaseline = command.includes('quality/baselines/') || command.includes('.quality/baseline');
 const messages = [];

@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import { absolutePath, qaRuntimeArgs, readJsonFile, resolveRefSha, sha256, workingTreeSnapshot } from "./qa-context.mjs";
+import {
+  absolutePath,
+  IDENTITY_EVIDENCE,
+  normalizeIdentity,
+  qaRuntimeArgs,
+  readJsonFile,
+  resolveRefSha,
+  sha256,
+  workingTreeSnapshot,
+} from "./qa-context.mjs";
 
 const { root, contextPath, outputPath, manifestPath } = qaRuntimeArgs();
+const requireHarness = process.argv.includes("--require-harness") || process.env.QA_REQUIRE_HARNESS === "1";
 
 function fail(message) {
   throw new Error(message);
@@ -43,8 +53,24 @@ const manifest = readJsonFile(root, manifestPath);
 if (manifest.schemaVersion !== 1) fail("Unsupported QA run manifest schema");
 if (manifest.headSha !== context.headSha) fail("QA invalidated: run manifest targets another head SHA");
 if (manifest.inputSha256 !== context.inputSha256) fail("QA invalidated: run manifest targets another QA input");
-if (manifest.modelVerification !== "verified" || manifest.modelDistinct !== true) {
-  fail("Independent model verification is missing; do not open the PR");
+
+const reviewerIdentity = normalizeIdentity(manifest.reviewerProvider, manifest.reviewerModel);
+const implementerIdentity = normalizeIdentity(manifest.implementerProvider, manifest.implementerModel);
+if (!reviewerIdentity || !implementerIdentity) {
+  fail("Reviewer and implementer provider/model identities are required; do not open the PR");
+}
+if (reviewerIdentity === implementerIdentity || manifest.modelDistinct !== true) {
+  fail("Reviewer and implementer are the same model; do not open the PR");
+}
+if (String(manifest.reviewerProvider).trim().toLowerCase() === "mock") {
+  fail("The offline mock provider is not an independent reviewer; do not open the PR");
+}
+const evidence = manifest.modelVerification;
+if (!IDENTITY_EVIDENCE.includes(evidence) || evidence === "failed") {
+  fail("Independent model evidence is missing; do not open the PR");
+}
+if (requireHarness && evidence !== "harness") {
+  fail("Harness evidence is required (--require-harness): run the review with pnpm qa:run");
 }
 
 const reviewAbsolute = absolutePath(root, outputPath);
@@ -59,7 +85,10 @@ runNode("tools/qa/qa-gate.mjs", [outputPath]);
 console.log(JSON.stringify({
   passed: true,
   headSha: context.headSha,
-  reviewerIdentity: manifest.reviewerIdentity,
-  implementerIdentity: manifest.implementerIdentity,
-  message: "Pre-PR QA gate passed for the exact reviewed worktree",
+  reviewerIdentity,
+  implementerIdentity,
+  identityEvidence: evidence,
+  message: evidence === "harness"
+    ? "Pre-PR QA gate passed for the exact reviewed worktree; reviewer identity recorded by pnpm qa:run"
+    : "Pre-PR QA gate passed for the exact reviewed worktree; model identities are declared, not machine-verified",
 }, null, 2));

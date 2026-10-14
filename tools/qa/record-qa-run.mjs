@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { absolutePath, qaRuntimeArgs, readJsonFile, sha256 } from "./qa-context.mjs";
+import { absolutePath, normalizeIdentity, qaRuntimeArgs, readJsonFile, sha256 } from "./qa-context.mjs";
 
 const { root, argValue, contextPath, outputPath, manifestPath } = qaRuntimeArgs();
 
@@ -15,11 +15,11 @@ const reviewerModel = argValue("--reviewer-model", null);
 const implementerProvider = argValue("--implementer-provider", context.implementerProvider ?? null);
 const implementerModel = argValue("--implementer-model", context.implementerModel ?? null);
 
-if (!reviewerModel) fail("A verified reviewer model is required");
-if (!implementerModel) fail("A verified implementer model is required");
+const reviewerIdentity = normalizeIdentity(reviewerProvider, reviewerModel);
+const implementerIdentity = normalizeIdentity(implementerProvider, implementerModel);
+if (!reviewerIdentity) fail("Reviewer provider and model are required (--reviewer-provider, --reviewer-model)");
+if (!implementerIdentity) fail("Implementer provider and model are required (--implementer-provider, --implementer-model)");
 
-const reviewerIdentity = reviewerProvider ? reviewerProvider + ":" + reviewerModel : reviewerModel;
-const implementerIdentity = implementerProvider ? implementerProvider + ":" + implementerModel : implementerModel;
 const modelDistinct = reviewerIdentity !== implementerIdentity;
 const reviewAbsolute = absolutePath(root, outputPath);
 if (!fs.existsSync(reviewAbsolute)) fail("Missing QA review at " + outputPath);
@@ -40,7 +40,8 @@ const manifest = {
   reviewerIdentity,
   implementerIdentity,
   modelDistinct,
-  modelVerification: modelDistinct ? "verified" : "failed",
+  // Both identities were typed by a person or agent; nothing here proves which model ran.
+  modelVerification: modelDistinct ? "declared" : "failed",
 };
 
 const manifestAbsolute = absolutePath(root, manifestPath);
