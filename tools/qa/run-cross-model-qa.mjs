@@ -5,7 +5,7 @@ import path from "node:path";
 import { createLLMClient, resolveConfig } from "../ai/llm-client.mjs";
 import { ensureDirFor, resolveAiDir } from "../lib/workspace.mjs";
 import { argHelpers } from "../lib/args.mjs";
-import { sha256 } from "./qa-context.mjs";
+import { normalizeIdentity, sha256 } from "./qa-context.mjs";
 
 const root = process.cwd();
 const { value: argValue, flag: hasFlag } = argHelpers();
@@ -52,10 +52,12 @@ async function main() {
 
   const contextAbsolute = path.isAbsolute(contextPath) ? contextPath : path.join(root, contextPath);
   let context = fs.existsSync(contextAbsolute) ? JSON.parse(fs.readFileSync(contextAbsolute, "utf8")) : null;
-  const implementerProvider = argValue("--implementer-provider", process.env.AI_PROVIDER ?? context?.implementerProvider ?? undefined);
-  const implementerModel = argValue("--implementer-model", process.env.AI_MODEL ?? context?.implementerModel ?? undefined);
-  const implementerIdentity = implementerProvider && implementerModel ? `${implementerProvider}:${implementerModel}` : implementerModel;
-  const reviewerIdentity = qaConfig.provider && qaConfig.model ? `${qaConfig.provider}:${qaConfig.model}` : qaConfig.model;
+  // The implementer is the agent that wrote the code (often an IDE agent), not the AI_* harness
+  // client, so it must be declared explicitly instead of being inferred from AI_PROVIDER/AI_MODEL.
+  const implementerProvider = argValue("--implementer-provider", context?.implementerProvider ?? undefined);
+  const implementerModel = argValue("--implementer-model", context?.implementerModel ?? undefined);
+  const implementerIdentity = normalizeIdentity(implementerProvider, implementerModel);
+  const reviewerIdentity = normalizeIdentity(qaConfig.provider, qaConfig.model);
   if (implementerIdentity && reviewerIdentity && implementerIdentity === reviewerIdentity) {
     throw new Error(
       `Cross-model QA must use a different provider/model identity than the implementer (${implementerIdentity}). ` +
@@ -105,6 +107,7 @@ async function main() {
   const outputAbsolute = path.isAbsolute(outputPath) ? outputPath : path.join(root, outputPath);
   const runManifestAbsolute = path.isAbsolute(runManifestPath) ? runManifestPath : path.join(root, runManifestPath);
   const modelDistinct = Boolean(implementerIdentity && reviewerIdentity && implementerIdentity !== reviewerIdentity);
+  const independentReviewer = modelDistinct && String(qaConfig.provider).toLowerCase() !== "mock";
   const runManifest = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -121,12 +124,13 @@ async function main() {
     reviewerIdentity: reviewerIdentity ?? null,
     implementerIdentity: implementerIdentity ?? null,
     modelDistinct,
-    modelVerification: modelDistinct ? "verified" : "unverified",
+    // The reviewer identity comes from the provider call above; the implementer identity is declared.
+    modelVerification: independentReviewer ? "harness" : "failed",
   };
   fs.mkdirSync(path.dirname(runManifestAbsolute), { recursive: true });
   fs.writeFileSync(runManifestAbsolute, JSON.stringify(runManifest, null, 2) + "\n");
-  if (hasFlag("--gate") && !modelDistinct) {
-    throw new Error("Cross-model QA requires verifiable, distinct implementer and reviewer models");
+  if (hasFlag("--gate") && !independentReviewer) {
+    throw new Error("Cross-model QA requires a declared implementer and a distinct, non-mock reviewer identity");
   }
 
   const validate = spawnSync(process.execPath, ["tools/qa/validate-qa-review.mjs", outputPath], { cwd: root, stdio: "inherit" });

@@ -30,8 +30,10 @@ Every blocking finding must include file, line when known, severity, reason and 
 
 ## Decision policy
 
-- `pass`: score >= 80 and no P0/P1 blocking findings.
+- `pass`: score >= 80 and `blocking_findings` is empty.
 - `iterate`: score 60-79 or fixable P1/P2 issues.
+
+Put a finding in `blocking_findings` only if the change must not merge until it is fixed; the gate rejects any entry there, whatever its severity. Optional improvements belong in `non_blocking_findings`.
 - `stop`: score < 60, P0 issue, unclear intent, or high risk change that needs human decision.
 
 ## Output

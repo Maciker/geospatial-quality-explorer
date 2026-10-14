@@ -1,0 +1,60 @@
+{
+  "pr": {
+    "number": 42,
+    "url": "https://github.com/OWNER/REPO/pull/42",
+    "baseSha": "1111111111111111111111111111111111111111",
+    "headSha": "2222222222222222222222222222222222222222"
+  },
+  "current": {
+    "baseSha": "1111111111111111111111111111111111111111",
+    "headSha": "2222222222222222222222222222222222222222"
+  },
+  "diff": {
+    "complete": true,
+    "baseSha": "1111111111111111111111111111111111111111",
+    "headSha": "2222222222222222222222222222222222222222",
+    "files": ["src/index.ts", "test/index.test.ts"],
+    "digest": "sha256:replace-with-the-digest-of-the-reviewed-diff"
+  },
+  "checks": {
+    "status": "complete",
+    "requiredCount": 1,
+    "items": [
+      {
+        "name": "Quality (Node 22)",
+        "required": true,
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/OWNER/REPO/actions/runs/1"
+      }
+    ]
+  },
+  "comments": [],
+  "reviews": [],
+  "review": {
+    "decision": "pass",
+    "summary": "Reviewed the complete diff at the head SHA; no actionable findings.",
+    "reviewer": {
+      "identity": "qwen:qwen2.5-coder-32b-instruct",
+      "provider": "qwen",
+      "model": "qwen2.5-coder-32b-instruct",
+      "verified": true,
+      "independent": true
+    },
+    "implementer": {
+      "identity": "openai:gpt-4.1",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "verified": true
+    },
+    "findings": [],
+    "blocking_findings": [],
+    "non_blocking_findings": [],
+    "missing_tests": []
+  },
+  "publication": {
+    "status": "pending",
+    "url": "",
+    "tool": "pr-comment"
+  }
+}

@@ -11,8 +11,8 @@ You specialize in code review. You only read. You validate that the implementati
 
 ## Workflow
 
-1. Read the summary from `.ai/workspace/summaries/`.
-2. Read the corresponding plan from `.ai/workspace/plans/` when available.
+1. Read the summary from `.ai/workspace/tasks/<task-id>/summary.md`.
+2. Read the plan and discovery from the same task directory when available.
 3. Run `git diff main...HEAD` or the configured base ref.
 4. Evaluate:
    - Correctness against the plan and PRD.
@@ -21,7 +21,7 @@ You specialize in code review. You only read. You validate that the implementati
    - Security and input validation risks.
    - Report specification coverage and standards compliance separately. A pass on one axis does not cancel a failure on the other. If no spec exists, mark that axis unavailable instead of inferring requirements from the diff.
 5. Run relevant read-only checks when allowed.
-6. Write `.ai/workspace/reviews/<task-name>.md`.
+6. Write `.ai/workspace/tasks/<task-id>/review.md`.
 
 ## Restrictions
 

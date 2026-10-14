@@ -25,12 +25,12 @@ Run this command immediately after the agent creates a pull request and before a
 Prepare a portable JSON input using the repository contract:
 
 ```bash
-pnpm run pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>
+pnpm pr:review -- --input <post-pr-review-input.json> --report <post-pr-review-report.json>
 ```
 
 Use `--require-approved` only for a caller that must fail unless the result is `APPROVED`.
 
-The input contract is documented in `quality/schemas/post-pr-review-input.schema.json`. The adapter must collect:
+The input contract is documented in `quality/schemas/post-pr-review-input.schema.json`; start from `examples/post-pr-review/input.example.json`. No provider adapter ships with this repository: collect the evidence with the available PR tools (see the GitHub CLI procedure in `docs/post-pr-review.md`). Collect:
 
 1. PR URL and number.
 2. Exact base and head SHA.
@@ -53,8 +53,9 @@ The input contract is documented in `quality/schemas/post-pr-review-input.schema
 1. Read `AGENTS.md`, the relevant plan and PRD, `.ai/commands/post-pr-review.md`, `.ai/skills/qa-review/SKILL.md` and any architecture, security, testing, UX or domain skills relevant to the repository.
 2. Review the complete PR diff in a clean read-only context.
 3. Inspect checks, comments and existing reviews; do not ignore unresolved actionable review requests.
-4. Invoke an independent reviewer and record the verified identity.
-5. Run `pnpm run pr:review` with the collected input.
-6. Publish the result through the available PR review/comment tool. Request changes only for actionable findings. Approve only when the reviewer is independent, the identity has permission to approve, all checks are complete and the state is `APPROVED`.
-7. If the tool cannot publish, keep the durable report reference and leave the PR pending.
-8. Do not mark the PR ready to merge while the state is `PENDING` or `BLOCKED`.
+4. Invoke an independent reviewer and record its exact identity; never invent one.
+5. Run `pnpm pr:review` with `publication.status: "pending"`. Expect `PENDING` (`review_evidence_not_published`) unless another blocker appears first.
+6. Publish the review through the available PR review/comment tool. Request changes only for actionable findings.
+7. Set `publication.status: "published"` and `publication.url`, refresh `current` SHAs and check states, and run `pnpm pr:review` again. Approve only when the reviewer is independent, the identity has permission to approve, all checks are complete and this second run returns `APPROVED`.
+8. If the tool cannot publish, keep the local report reference and leave the PR pending.
+9. Do not mark the PR ready to merge while the state is `PENDING`, `BLOCKED` or `CHANGES_REQUESTED`.

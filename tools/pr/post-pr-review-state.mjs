@@ -31,7 +31,8 @@ function normalizeFinding(finding, fallbackSeverity = "P2") {
     problem: stringValue(finding?.problem ?? finding?.message) || "Unspecified finding",
     whyItMatters: stringValue(finding?.whyItMatters ?? finding?.why_it_matters),
     suggestedFix: stringValue(finding?.suggestedFix ?? finding?.suggested_fix),
-    actionable: finding?.actionable !== false && severity !== "P3",
+    // Blocking findings are always actionable; otherwise P3 is informational unless marked actionable.
+    actionable: finding?.actionable === true || (finding?.actionable !== false && severity !== "P3"),
     source: stringValue(finding?.source) || "post-pr-review",
   };
 }
@@ -162,10 +163,21 @@ export function evaluatePostPrReview(input) {
 
   const checkItems = observedChecks(checks);
   const checksStatus = stringValue(checks.status).toLowerCase();
-  if (!["complete", "none"].includes(checksStatus)) {
+  const requiredChecks = checkItems.filter((check) => check.required);
+  if (checksStatus === "failed") {
+    return statusResult("BLOCKED", ["required_check_failed"], evidence, findings);
+  }
+  if (checksStatus === "pending") {
     return statusResult("PENDING", ["required_checks_pending"], evidence, findings);
   }
-  const requiredChecks = checkItems.filter((check) => check.required);
+  if (!["complete", "none"].includes(checksStatus)) {
+    return statusResult("BLOCKED", ["checks_status_invalid"], evidence, findings);
+  }
+  // "complete" must be backed by at least one observed required check; use "none" for a
+  // repository that genuinely has no required checks.
+  if (checksStatus === "complete" && requiredChecks.length === 0) {
+    return statusResult("BLOCKED", ["required_check_evidence_missing"], evidence, findings);
+  }
   if (checksStatus === "complete" && requiredChecks.some((check) => !successfulConclusions.has(check.conclusion))) {
     const pending = requiredChecks.some((check) => pendingValues.has(check.status) || pendingValues.has(check.conclusion));
     return statusResult(pending ? "PENDING" : "BLOCKED", [pending ? "required_checks_pending" : "required_check_failed"], evidence, findings);

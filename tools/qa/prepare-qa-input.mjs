@@ -16,8 +16,10 @@ const plan = argValue("--plan", undefined);
 const summary = argValue("--summary", undefined);
 const review = argValue("--review", undefined);
 const contextPath = argValue("--context", ".ai/workspace/qa/inputs/qa-context.json");
-const implementerProvider = argValue("--implementer-provider", process.env.AI_PROVIDER ?? null);
-const implementerModel = argValue("--implementer-model", process.env.AI_MODEL ?? null);
+// Declare the model that wrote the change. AI_PROVIDER/AI_MODEL configure the harness client,
+// which is usually not the implementing agent, so they are not used as a fallback.
+const implementerProvider = argValue("--implementer-provider", null);
+const implementerModel = argValue("--implementer-model", null);
 
 function readOptional(filePath) {
   if (!filePath) return "";
@@ -93,5 +95,8 @@ fs.writeFileSync(contextAbsolute, `${JSON.stringify({
 
 if (!hasFlag("--quiet")) {
   console.log(`QA input written to ${path.relative(root, absoluteOut)}`);
+  if (!implementerProvider || !implementerModel) {
+    console.log("Implementer identity not declared; pass --implementer-provider and --implementer-model here or to pnpm qa:record.");
+  }
   console.log("Send this file to a different model than the implementer, then save the JSON response to .ai/workspace/qa/outputs/qa-review.json");
 }

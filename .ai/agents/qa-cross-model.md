@@ -16,7 +16,7 @@ Validate the implemented change against the approved plan, repository guardrails
 ## Rules
 
 - Read only. Never edit files.
-- Use a different model than the executor whenever the vendor supports model selection.
+- Run on a different provider/model than the executor. `model: different-from-implementer` is a policy, not a model id: generated subagents inherit the session model unless you select another one or replace this value with a concrete model id and run `pnpm ai:sync`.
 - Ignore implementation conversation history. Review only the clean QA input, the repo guardrails and the diff.
 - Do not repeat linter findings unless they reveal a product, design or security risk.
 - Every blocking finding must include a concrete file, line when known, impact and suggested fix.
@@ -27,8 +27,7 @@ Validate the implemented change against the approved plan, repository guardrails
 1. Read `.ai/prompts/qa-cross-model.md`.
 2. Read `.ai/workspace/qa/inputs/qa-input.md`.
 3. Review correctness, tests, architecture, security and regression risk.
-4. Return JSON only.
-5. Save the response as `.ai/workspace/qa/outputs/qa-review.json` only when explicitly asked by the orchestrator.
+4. Return JSON only, in your response. You are read-only: the orchestrator saves it as `.ai/workspace/qa/outputs/qa-review.json` and records your exact provider/model with `pnpm qa:record`.
 
 ## Output contract
 
@@ -36,6 +35,6 @@ Return the schema required by `quality/schemas/qa-review.schema.json`.
 
 Decision policy:
 
-- `pass`: score >= 80 and no P0/P1 blocking findings.
+- `pass`: score >= 80 and no blocking findings (any entry in `blocking_findings` fails the gate).
 - `iterate`: score 60-79 or fixable findings.
 - `stop`: score < 60, unclear intent, P0 issue or human decision required.

@@ -99,6 +99,8 @@ For full examples, see `references/testing-detail.md`.
 
 Choose a test interface that can expose the requirement or actual bug. Prefer outcomes visible to callers over private methods, call counts or copied implementation formulas. Expected values should come from a worked example, specification or independently known result.
 
+For each proposed test boundary, state what it catches and what it misses. Resolve material coverage tradeoffs during planning; do not re-ask for approval of already agreed boundaries.
+
 Work one observable slice at a time. Avoid writing a batch of tests for an imagined internal design before implementing any behavior. A behavior-preserving refactor should usually keep these tests unchanged. Retain the existing layer-specific policy and Red–Green–Refactor cycle.
 
 Adapted from Matt Pocock's `tdd`; see repository-root `THIRD_PARTY_NOTICES.md`.

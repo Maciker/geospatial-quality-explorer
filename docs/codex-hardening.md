@@ -20,7 +20,7 @@ pnpm quality:codex
 
 ## Project config
 
-`.codex/config.toml` contains only project-safe settings:
+`.codex/config.toml` contains project settings, the custom agent registry and the MCP servers projected from `.ai/mcp.json`:
 
 ```text
 project_doc_max_bytes = 32768
@@ -28,9 +28,11 @@ project_doc_max_bytes = 32768
 max_threads = 6
 max_depth = 1
 job_max_runtime_seconds = 1800
+[mcp_servers.context7]      # npx -y, pinned version, external service
+[mcp_servers.playwright]    # npx -y, pinned version
 ```
 
-Do not put auth, model provider, telemetry, or personal approval policy in the repo. Those belong in user-level Codex config.
+The MCP entries start external npm packages; see [MCP](mcp.md) to disable or restrict them. Do not put auth, model provider, telemetry, or personal approval policy in the repo. Those belong in user-level Codex config.
 
 ## Custom agents
 

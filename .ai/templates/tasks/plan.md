@@ -1,5 +1,13 @@
 # Plan: <task>
 
+## Approval
+
+Status: proposed
+Approved by:
+Approved at:
+
+The planner writes `Status: proposed` and leaves the approver empty. Only a human sets `Status: approved` with their name and date. The executor does not start while the status is not `approved`. Reference this plan from the PR description so the approval survives the local workspace.
+
 ## Objective
 
 ## Inputs
