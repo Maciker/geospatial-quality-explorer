@@ -11,7 +11,7 @@ export type HttpLikeRequest = {
   readonly headers: Record<string, string | string[] | undefined>;
   readonly body?: string;
   readonly pathname?: string;
-  /** Socket address when the transport knows it; otherwise the first x-forwarded-for hop is used. */
+  /** Socket address when the transport knows it; otherwise x-real-ip, then the first x-forwarded-for hop. */
   readonly clientAddress?: string;
 };
 
@@ -120,6 +120,9 @@ function currentLlmMode(): "mock" | "live" {
 
 function clientKey(request: HttpLikeRequest): string {
   if (request.clientAddress) return request.clientAddress;
+  // Vercel sets x-real-ip from the connection; a client-supplied x-forwarded-for hop is only a fallback.
+  const platformIp = headerValue(request.headers, "x-real-ip");
+  if (platformIp) return platformIp;
   const forwarded = headerValue(request.headers, "x-forwarded-for");
   return forwarded?.split(",")[0]?.trim() || "anonymous";
 }

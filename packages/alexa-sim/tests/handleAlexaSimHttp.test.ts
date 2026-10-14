@@ -126,4 +126,20 @@ describe("The Alexa simulation HTTP handler", () => {
     expect(otherClient.status).toBe(200);
     expect(nextWindow.status).toBe(200);
   });
+
+  it("keys the rate limit on the platform client IP header before x-forwarded-for", async () => {
+    const rateLimiter = new FixedWindowRateLimiter({ limit: 1, windowMs: 60_000 });
+    const viaPlatform = (forwarded: string): HttpLikeRequest => ({
+      method: "POST",
+      headers: { "x-real-ip": "203.0.113.50", "x-forwarded-for": forwarded },
+      body: JSON.stringify({ messages: [{ role: "user", content: "hello" }] }),
+      pathname: "/api/v1/alexa-sim/chat",
+    });
+
+    const first = await send(viaPlatform("198.51.100.1"), rateLimiter);
+    const spoofed = await send(viaPlatform("198.51.100.2"), rateLimiter);
+
+    expect(first.status).toBe(200);
+    expect(spoofed.status).toBe(429);
+  });
 });
