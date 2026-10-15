@@ -85,6 +85,7 @@ export async function handleAlexaSimHttp(
   const loop = new ConversationalLoop({
     tools: createBoundedQualityToolsAdapter(),
     llm: createLlmClient(),
+    timeoutMs: readNanLlmConfig().timeoutMs,
   });
   let result;
   try {

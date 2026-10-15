@@ -49,16 +49,16 @@ export class NanOpenAiLlmClient implements LlmPort {
       body: JSON.stringify(body),
     };
     if (request.signal) init.signal = request.signal;
+    const startedAt = Date.now();
     const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, init).catch((error: unknown) => {
-      if (error instanceof Error && error.name === "AbortError") throw error;
-      throw new LlmUnavailableError(null);
+      throw isAbort(error) ? error : new LlmUnavailableError(null);
     });
     if (!response.ok) {
       await response.body?.cancel();
       throw new LlmUnavailableError(response.status);
     }
-    const payload = await response.json().catch(() => {
-      throw new LlmUnavailableError(null);
+    const payload = await response.json().catch((error: unknown) => {
+      throw isAbort(error) ? error : new LlmUnavailableError(null);
     }) as {
       choices?: Array<{
         finish_reason?: string;
@@ -69,6 +69,7 @@ export class NanOpenAiLlmClient implements LlmPort {
         };
       }>;
     };
+    console.info(`alexa-sim: LLM round ${Date.now() - startedAt} ms (HTTP ${response.status})`);
     const choice = payload.choices?.[0];
     const message = choice?.message;
     if (!message) {
@@ -114,4 +115,8 @@ function toOpenAiMessages(messages: readonly ChatMessage[]): OpenAiMessage[] {
     }
     return { role: message.role, content: message.content };
   });
+}
+
+function isAbort(error: unknown): boolean {
+  return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 }
