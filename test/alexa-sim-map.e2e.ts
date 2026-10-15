@@ -47,7 +47,8 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
 
   const map = page.getByLabel("Findings map");
   await expect(map.locator("canvas")).toBeVisible();
-  await expect(page.getByLabel("Layer provenance")).toContainText("ne-admin0");
+  await expect(page.getByLabel("Layer provenance")).toContainText("NaturalEarth-public-domain");
+  await expect(page.getByLabel("Layer provenance")).toContainText("EPSG:4326");
   await map.screenshot({
     path: "apps/web/test-results/mac-402-ne-demo-errors-map.png",
   });
