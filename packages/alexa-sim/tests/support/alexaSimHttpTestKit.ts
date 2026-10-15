@@ -5,9 +5,9 @@ import {
   type HttpLikeResponse,
 } from "../../src/infrastructure/handleAlexaSimHttp.js";
 
-export type CapturedHttp = { status: number; body: string; headers: Record<string, string> };
+type CapturedHttp = { status: number; body: string; headers: Record<string, string> };
 
-export function fakeAlexaSimResponse(): { response: HttpLikeResponse; captured: CapturedHttp } {
+function fakeAlexaSimResponse(): { response: HttpLikeResponse; captured: CapturedHttp } {
   const captured: CapturedHttp = { status: 0, body: "", headers: {} };
   const response: HttpLikeResponse = {
     status(code: number) {
