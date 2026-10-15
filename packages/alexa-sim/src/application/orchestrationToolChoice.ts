@@ -1,7 +1,7 @@
 import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmToolChoice } from "./LlmPort.js";
 
-type ForcedToolName = "list_fixtures" | "run_validation" | "list_findings";
+type ForcedToolName = "list_fixtures" | "run_validation" | "list_findings" | "explain_finding" | "export_qgis";
 
 /** Force the first model call on a turn to invoke tools when user intent is unambiguous. */
 export function toolChoiceForTurn(
@@ -22,9 +22,12 @@ export function forcedToolForTurn(transcript: readonly ChatMessage[], sessionId:
   if (text.includes("valid") && (text.includes("portfolio") || text.includes("fixture"))) {
     return sessionId.length > 0 ? "run_validation" : "list_fixtures";
   }
-  if (text.includes("list") && text.includes("finding") && sessionId.length > 0) {
-    return "list_findings";
+  if (sessionId.length === 0) return null;
+  if (text.includes("export") || (text.includes("qgis") && (text.includes("download") || text.includes("bundle")))) {
+    return "export_qgis";
   }
+  if (text.includes("explain")) return "explain_finding";
+  if (text.includes("list") && text.includes("finding")) return "list_findings";
   return null;
 }
 
