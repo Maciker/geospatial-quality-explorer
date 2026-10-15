@@ -95,6 +95,9 @@ export class DeterministicMockLlm implements LlmPort {
     }
     const explicitFinding = user.match(EXPLAIN_FINDING_COMMAND);
     if (explicitFinding?.[1]) {
+      if (/\b(?:don't|dont|do not|not|never|no need|stop|without|instead of|yet)\b/.test(user)) {
+        return textReply(HELP_TEXT);
+      }
       return toolCall("tc_explain_selected", "explain_finding", {
         sessionId: sessionId ?? "",
         findingId: explicitFinding[1],
