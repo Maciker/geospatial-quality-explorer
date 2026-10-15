@@ -101,6 +101,7 @@ export class ConversationalLoop {
       runId = snapshot.runId;
       progress.runId = runId;
       datasetName = snapshot.datasetName;
+      sourceHash = snapshot.sourceHash;
       knownIds = collectCitationIdsFromFindings(snapshot.prioritizedFindings);
     }
     const reply = (assistantMessage: string, refused: boolean): AlexaSimChatResponse => ({

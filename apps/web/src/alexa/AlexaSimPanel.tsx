@@ -158,11 +158,14 @@ export default function AlexaSimPanel() {
     }
     if (response.datasetName) {
       setDatasetName(response.datasetName);
-      if (response.datasetName !== datasetName || response.sourceHash !== sourceHash) {
+      const nextHash = response.sourceHash ?? sourceHash;
+      if (response.datasetName !== datasetName || (response.sourceHash != null && response.sourceHash !== sourceHash)) {
         void loadSourceForDataset(response.datasetName);
       }
+      if (nextHash) setSourceHash(nextHash);
+    } else if (response.sourceHash) {
+      setSourceHash(response.sourceHash);
     }
-    if (response.sourceHash) setSourceHash(response.sourceHash);
     if (response.qgisExport && response.runId !== null) {
       setLastQgisResponse(response);
       setConfirmedRunId(response.runId);
