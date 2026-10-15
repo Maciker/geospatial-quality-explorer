@@ -11,6 +11,8 @@ describe("sessionRecovery helpers", () => {
     expect(catalogFixtureFromValidateCommand("Please check the clean fixture")).toBe("clean");
     expect(catalogFixtureFromValidateCommand("List the findings.")).toBeNull();
     expect(catalogFixtureFromValidateCommand("Validate my private upload")).toBeNull();
+    expect(catalogFixtureFromValidateCommand("Don't validate the portfolio.")).toBeNull();
+    expect(catalogFixtureFromValidateCommand("Don't check the clean fixture.")).toBeNull();
   });
 
   it("detects run-scoped intents that need a validated run", () => {

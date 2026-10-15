@@ -9,13 +9,17 @@ const POLITE_PREFIX = /^(?:(?:ok(?:ay)?|now|then|and|so|alright|great|thanks|hi|
 
 /** Fixture id named in a validate/check command, if it matches the known catalog. */
 export function catalogFixtureFromValidateCommand(userText: string): string | null {
-  const normalized = userText.toLowerCase();
-  if (!/\b(?:validate|run (?:the )?validation|check)\b/.test(normalized)) return null;
-  if (!/\b(?:fixture|portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/.test(normalized)) {
-    return null;
+  for (const clause of userText.toLowerCase().split(/[.!?;]+/)) {
+    const command = commandText(clause);
+    if (command === null) continue;
+    if (!/^(?:validate|run (?:the )?validation|check)\b/.test(command)) continue;
+    if (!/\b(?:fixture|portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/.test(command)) {
+      continue;
+    }
+    const match = command.match(CATALOG_FIXTURE_TOKEN);
+    if (match?.[1]) return match[1];
   }
-  const match = normalized.match(CATALOG_FIXTURE_TOKEN);
-  return match?.[1] ?? null;
+  return null;
 }
 
 /** List / explain / export intents that need a server-side validated run. */

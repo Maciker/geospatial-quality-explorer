@@ -68,7 +68,9 @@ export class DeterministicMockLlm implements LlmPort {
     }
     const toolResult = lastToolResult(request.messages);
     const sessionId = request.toolSessionId ?? readSessionId(toolResult);
-    const wantsValidation = user.includes("portfolio") && user.includes("valid");
+    const wantsValidation = user.includes("portfolio")
+      && user.includes("valid")
+      && !/\b(?:don't|dont|do not|not|never|stop|without)\b/.test(user);
 
     if (request.messages.at(-1)?.role === "tool") {
       const envelope = toolResult as { ok?: boolean; error?: string; message?: string } | null;

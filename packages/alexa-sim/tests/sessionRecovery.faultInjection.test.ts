@@ -215,6 +215,25 @@ describe("session recovery fault injection", () => {
     expect(orphaned.assistantMessage.toLowerCase()).not.toMatch(/session expired.*session expired/);
   });
 
+  it("does not revalidate when the user negates validate on a dead session", async () => {
+    const instanceA = createAdapter();
+    const instanceB = createAdapter();
+    const validated = await createLoop(instanceA).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+
+    const negated = await createLoop(instanceB).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "Don't validate the portfolio." },
+      ],
+    });
+    expect(negated.runId).toBeNull();
+    expect(negated.assistantMessage.toLowerCase()).not.toContain("validation finished");
+  });
+
   it("does not treat export questions or negations as run-scoped recovery on a dead session", async () => {
     const instanceA = createAdapter();
     const instanceB = createAdapter();
