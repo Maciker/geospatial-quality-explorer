@@ -5,6 +5,7 @@ import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrast
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionResponse, LlmPort } from "../src/application/LlmPort.js";
 import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm.js";
+import { blankValidationToolChainLlm, portfolioValidateListMessages } from "./support/conversationalLoopFixtures.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 
@@ -16,11 +17,7 @@ describe("Empty assistant content after tools", () => {
     });
     const listed = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
       sessionId: setup.sessionId,
-      messages: [
-        { role: "user", content: "Validate the portfolio fixture." },
-        { role: "assistant", content: setup.assistantMessage },
-        { role: "user", content: "List the findings." },
-      ],
+      messages: portfolioValidateListMessages(setup.assistantMessage),
     });
     const emptyAfterToolLlm: LlmPort = {
       async complete(request): Promise<LlmCompletionResponse> {
@@ -48,10 +45,7 @@ describe("Empty assistant content after tools", () => {
     const explained = await new ConversationalLoop({ tools, llm: emptyAfterToolLlm }).run({
       sessionId: listed.sessionId,
       messages: [
-        { role: "user", content: "Validate the portfolio fixture." },
-        { role: "assistant", content: setup.assistantMessage },
-        { role: "user", content: "List the findings." },
-        { role: "assistant", content: listed.assistantMessage },
+        ...portfolioValidateListMessages(setup.assistantMessage, listed.assistantMessage),
         { role: "user", content: "Explain the next finding." },
       ],
     });
@@ -63,7 +57,21 @@ describe("Empty assistant content after tools", () => {
 
   it("uses voiceAnswer for validation when the model stays blank through tool rounds", async () => {
     const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
-    const blankLlm: LlmPort = {
+    const validated = await new ConversationalLoop({ tools, llm: blankValidationToolChainLlm(), maxToolRounds: 4 }).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+
+    expect(validated.refused).toBe(false);
+    expect(validated.assistantMessage).toContain("runId");
+    expect(validated.assistantMessage).not.toContain("I do not have a response");
+  });
+
+  it("returns voiceAnswer when the final model call times out after list_findings", async () => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+    const slowFinalLlm: LlmPort = {
       async complete(request): Promise<LlmCompletionResponse> {
         if (!request.messages.some((message) => message.role === "tool")) {
           return {
@@ -71,35 +79,33 @@ describe("Empty assistant content after tools", () => {
             message: {
               role: "assistant",
               content: "",
-              toolCalls: [{ id: "open", name: "list_fixtures", argumentsJson: "{}" }],
-            },
-          };
-        }
-        if (!request.messages.some((message) => message.content.includes("findingCount"))) {
-          const sessionId = request.toolSessionId ?? JSON.parse(String(request.messages.find((message) => message.role === "tool")?.content)).sessionId;
-          return {
-            finishReason: "tool_calls",
-            message: {
-              role: "assistant",
-              content: "",
               toolCalls: [{
-                id: "run",
-                name: "run_validation",
-                argumentsJson: JSON.stringify({ sessionId, fixtureId: "portfolio" }),
+                id: "list",
+                name: "list_findings",
+                argumentsJson: JSON.stringify({ sessionId: setup.sessionId, runId: setup.runId }),
               }],
             },
           };
         }
-        return { finishReason: "stop", message: { role: "assistant", content: "" } };
+        return new Promise((_resolve, reject) => {
+          request.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+        });
       },
     };
 
-    const validated = await new ConversationalLoop({ tools, llm: blankLlm, maxToolRounds: 4 }).run({
-      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    const listed = await new ConversationalLoop({
+      tools,
+      llm: slowFinalLlm,
+      timeoutMs: 5_000,
+      roundTimeoutMs: 50,
+      maxToolRounds: 2,
+    }).run({
+      sessionId: setup.sessionId,
+      messages: portfolioValidateListMessages(setup.assistantMessage),
     });
 
-    expect(validated.refused).toBe(false);
-    expect(validated.assistantMessage).toContain("runId");
-    expect(validated.assistantMessage).not.toContain("I do not have a response");
+    expect(listed.refused).toBe(false);
+    expect(listed.assistantMessage).toContain("findingId");
+    expect(listed.findings.length).toBeGreaterThan(0);
   });
 });

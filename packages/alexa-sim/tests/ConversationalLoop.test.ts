@@ -6,6 +6,7 @@ import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionResponse, LlmPort } from "../src/application/LlmPort.js";
 import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
 import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
+import { exportAfterValidationLlm, portfolioValidateListMessages } from "./support/conversationalLoopFixtures.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 const sharedTools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
@@ -127,32 +128,7 @@ describe("ConversationalLoop", () => {
     const validated = await createLoop(new DeterministicMockLlm()).run({
       messages: [{ role: "user", content: "Validate the portfolio fixture." }],
     });
-    const exportLlm: LlmPort = {
-      async complete(request): Promise<LlmCompletionResponse> {
-        if (!request.messages.some((message) => message.role === "tool")) {
-          return {
-            finishReason: "tool_calls",
-            message: {
-              role: "assistant",
-              content: "",
-              toolCalls: [{
-                id: "e1",
-                name: "export_qgis",
-                argumentsJson: JSON.stringify({ sessionId: request.toolSessionId ?? validated.sessionId }),
-              }],
-            },
-          };
-        }
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: "The QGIS bundle is ready. Download it from the simulation panel.",
-          },
-        };
-      },
-    };
-    const exported = await createLoop(exportLlm).run({
+    const exported = await createLoop(exportAfterValidationLlm(validated.sessionId)).run({
       sessionId: validated.sessionId,
       messages: [
         { role: "user", content: "Validate the portfolio fixture." },
@@ -178,20 +154,13 @@ describe("ConversationalLoop", () => {
     const validated = await loop.run({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] });
     const listed = await loop.run({
       sessionId: validated.sessionId,
-      messages: [
-        { role: "user", content: "Validate the portfolio fixture." },
-        { role: "assistant", content: validated.assistantMessage },
-        { role: "user", content: "List the findings." },
-      ],
+      messages: portfolioValidateListMessages(validated.assistantMessage),
     });
     rounds = 0;
     const explained = await loop.run({
       sessionId: listed.sessionId,
       messages: [
-        { role: "user", content: "Validate the portfolio fixture." },
-        { role: "assistant", content: validated.assistantMessage },
-        { role: "user", content: "List the findings." },
-        { role: "assistant", content: listed.assistantMessage },
+        ...portfolioValidateListMessages(validated.assistantMessage, listed.assistantMessage),
         { role: "user", content: "Explain the next finding." },
       ],
     });

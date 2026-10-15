@@ -8,6 +8,8 @@ export type NanLlmConfig = {
   readonly roundTimeoutMs: number;
   readonly maxToolRounds: number;
   readonly maxTokens: number;
+  /** When false, request chat_template_kwargs.enable_thinking=false for lower latency. */
+  readonly enableThinking: boolean;
 };
 
 const DEFAULT_TIMEOUT_MS = 45_000;
@@ -47,5 +49,7 @@ export function readNanLlmConfig(): NanLlmConfig {
   const maxTokens = Number.isFinite(configuredMaxTokens) && configuredMaxTokens > 0
     ? configuredMaxTokens
     : DEFAULT_MAX_TOKENS;
-  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens };
+  const thinkingFlag = readEnv("ALEXA_SIM_ENABLE_THINKING") ?? readEnv("NAN_ENABLE_THINKING");
+  const enableThinking = thinkingFlag === "1" || thinkingFlag === "true";
+  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens, enableThinking };
 }

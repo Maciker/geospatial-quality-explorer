@@ -72,20 +72,13 @@ export async function executeAlexaTool(
           fixtureId: String(parsed.fixtureId ?? ""),
         }),
       };
-    case "list_findings": {
-      const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
-      const runId = await resolveRunId(tools, sessionId, parsed.runId);
-      return {
-        sessionId: fallbackSessionId ?? "",
-        toolName: name,
-        result: await tools.listFindings({
-          sessionId,
-          runId,
-          ...(typeof parsed.limit === "number" ? { limit: parsed.limit } : {}),
-          ...(typeof parsed.cursor === "string" ? { cursor: parsed.cursor } : {}),
-        }),
-      };
-    }
+    case "list_findings":
+      return executeRunScopedTool(name, tools, fallbackSessionId, parsed, (sessionId, runId) => tools.listFindings({
+        sessionId,
+        runId,
+        ...(typeof parsed.limit === "number" ? { limit: parsed.limit } : {}),
+        ...(typeof parsed.cursor === "string" ? { cursor: parsed.cursor } : {}),
+      }));
     case "explain_finding":
       return {
         sessionId: fallbackSessionId ?? "",
@@ -95,16 +88,25 @@ export async function executeAlexaTool(
           findingId: String(parsed.findingId ?? ""),
         }),
       };
-    case "export_qgis": {
-      const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
-      const runId = await resolveRunId(tools, sessionId, parsed.runId);
-      return {
-        sessionId: fallbackSessionId ?? "",
-        toolName: name,
-        result: await tools.exportQgis({ sessionId, runId }),
-      };
-    }
+    case "export_qgis":
+      return executeRunScopedTool(name, tools, fallbackSessionId, parsed, (sessionId, runId) => tools.exportQgis({ sessionId, runId }));
   }
+}
+
+async function executeRunScopedTool<T>(
+  toolName: AlexaToolName,
+  tools: QualityToolsPort,
+  fallbackSessionId: string | undefined,
+  parsed: Record<string, unknown>,
+  invoke: (sessionId: string, runId: string) => Promise<ToolResult<T>>,
+): Promise<ToolExecutionOutcome> {
+  const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
+  const runId = await resolveRunId(tools, sessionId, parsed.runId);
+  return {
+    sessionId: fallbackSessionId ?? "",
+    toolName,
+    result: await invoke(sessionId, runId),
+  };
 }
 
 async function resolveRunId(tools: QualityToolsPort, sessionId: string, rawRunId: unknown): Promise<string> {

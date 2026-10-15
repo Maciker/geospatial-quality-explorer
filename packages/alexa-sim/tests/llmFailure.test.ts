@@ -28,6 +28,16 @@ beforeAll(async () => {
       response.end(`${SECRET} is not json`);
       return;
     }
+    if (request.url?.startsWith("/reasoning")) {
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(JSON.stringify({
+        choices: [{
+          finish_reason: "stop",
+          message: { role: "assistant", content: "", reasoning_content: `The user wants ${SECRET}` },
+        }],
+      }));
+      return;
+    }
     response.statusCode = 401;
     response.end(JSON.stringify({ error: `Incorrect API key provided: ${SECRET}` }));
   });
@@ -71,7 +81,8 @@ async function chat(): Promise<{ status: number; body: string }> {
 
 describe("LLM provider failures", () => {
   it("reports only the provider status, never the provider body", async () => {
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
+      enableThinking: false });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] }).catch((error: unknown) => error);
 
@@ -105,7 +116,8 @@ describe("LLM provider failures", () => {
   });
 
   it("keeps an abort while reading the reply as an abort, so the loop reports a timeout", async () => {
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/stall"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/stall"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
+      enableThinking: false });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], signal: AbortSignal.timeout(200) }).catch((error: unknown) => error);
 
@@ -114,7 +126,8 @@ describe("LLM provider failures", () => {
 
   it("logs each model round's duration and status without content", async () => {
     const logged = vi.spyOn(console, "info").mockImplementation(() => {});
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/ok"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/ok"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
+      enableThinking: false });
 
     await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], stepLabel: "turn 1 after user" });
 
@@ -122,6 +135,25 @@ describe("LLM provider failures", () => {
     expect(lines).toMatch(/LLM round \d+ ms \(HTTP 200\) turn 1 after user/);
     expect(lines).not.toContain("fine");
     logged.mockRestore();
+  });
+
+  it("never surfaces provider reasoning fields as assistant content", async () => {
+    const client = new NanOpenAiLlmClient({
+      baseUrl: providerUrl.replace("/v1", "/reasoning"),
+      model: "test",
+      apiKey: SECRET,
+      useMockLlm: false,
+      timeoutMs: 45_000,
+      roundTimeoutMs: 24_000,
+      maxToolRounds: 4,
+      maxTokens: 1024,
+      enableThinking: false,
+    });
+
+    const response = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] });
+
+    expect(response.message.content).toBe("");
+    expect(response.message.content).not.toContain(SECRET.slice(0, 8));
   });
 
   it("reads a bounded loop timeout from ALEXA_SIM_TIMEOUT_MS", () => {

@@ -12,6 +12,7 @@ import type {
   CitedFindingCard,
   QgisExportArtifact,
 } from "../domain/chatTypes.js";
+import { NEUTRAL_EMPTY_REPLY_FALLBACK } from "./assistantFallbacks.js";
 import {
   assistantCitesKnownIds,
   assistantReplyExemptFromCitationGuard,
@@ -22,7 +23,8 @@ import {
 } from "./citationPolicy.js";
 import { executeAlexaTool } from "./executeAlexaTool.js";
 import { findingSummariesToCards, mergeFindingCards } from "./extractFindingCards.js";
-import type { LlmCompletionResponse, LlmPort } from "./LlmPort.js";
+import type { LlmCompletionResponse, LlmPort, LlmToolChoice } from "./LlmPort.js";
+import { computeRoundBudgetMs } from "./llmTurnBudget.js";
 import { ALEXA_QUALITY_TOOL_DEFINITIONS } from "./openAiToolDefinitions.js";
 import { describeLlmStep } from "./llmStepLabel.js";
 import {
@@ -31,6 +33,7 @@ import {
   sessionContextMessage,
   trimTranscriptForModel,
 } from "./modelPayload.js";
+import { toolChoiceForTurn } from "./orchestrationToolChoice.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -69,14 +72,7 @@ export class ConversationalLoop {
       return await this.runUntilDeadline(input, deadlineMs, progress);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        return {
-          sessionId: progress.sessionId,
-          assistantMessage: "The request timed out before I could finish checking the dataset. Your session is kept; ask again or shorten the request.",
-          findings: [],
-          runId: progress.runId,
-          refused: true,
-          qgisExport: null,
-        };
+        return this.timeoutResponse(sessionIdFromProgress(progress, input), [], progress.runId, null, progress, null);
       }
       throw error;
     }
@@ -108,18 +104,24 @@ export class ConversationalLoop {
     ];
 
     for (let round = 0; round < this.maxToolRounds; round += 1) {
+      const llmCallsRemaining = this.maxToolRounds - round + (synthesisAttempted ? 0 : 1);
       const completion = await this.completeRound({
         transcript,
         sessionId,
         deadlineMs,
         roundIndex: round,
-        toolChoice: "auto",
+        toolChoice: toolChoiceForTurn(transcript, sessionId, round),
         tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
+        llmCallsRemaining,
       });
       if (completion.kind === "timeout") {
-        return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress);
+        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+        if (recovered) return recovered;
+        return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress, lastVoiceAnswer);
       }
       if (completion.response.finishReason === "timeout") {
+        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+        if (recovered) return recovered;
         return {
           sessionId,
           assistantMessage: "The language model timed out.",
@@ -171,50 +173,53 @@ export class ConversationalLoop {
         roundIndex: round,
         lastVoiceAnswer,
         synthesisAttempted,
+        llmCallsRemaining: llmCallsRemaining - 1,
       });
       synthesisAttempted = resolved.synthesisAttempted;
       if (resolved.text !== null) {
-        const guarded = applyCitationGuard(resolved.text, findingCards, knownIds, runId);
-        if (guarded.refused) {
-          return {
-            sessionId,
-            assistantMessage: guarded.message,
-            findings: findingCards,
-            runId,
-            refused: true,
-            qgisExport,
-          };
-        }
-        return {
-          sessionId,
-          assistantMessage: guarded.message,
-          findings: findingCards,
-          runId,
-          refused: false,
-          qgisExport,
-        };
+        return this.finishTurn(sessionId, resolved.text, findingCards, knownIds, runId, qgisExport);
       }
       break;
     }
-    if (lastVoiceAnswer) {
-      const guarded = applyCitationGuard(lastVoiceAnswer, findingCards, knownIds, runId);
-      if (!guarded.refused) {
-        return {
-          sessionId,
-          assistantMessage: guarded.message,
-          findings: findingCards,
-          runId,
-          refused: false,
-          qgisExport,
-        };
-      }
-    }
+    const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+    if (recovered) return recovered;
     return {
       sessionId,
       assistantMessage: "I hit the tool call limit before finishing. Please ask a shorter follow-up.",
       findings: findingCards,
       runId,
       refused: true,
+      qgisExport,
+    };
+  }
+
+  private recoverFromVoiceAnswer(
+    sessionId: string,
+    findingCards: readonly CitedFindingCard[],
+    runId: string | null,
+    qgisExport: QgisExportArtifact | null,
+    knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
+    lastVoiceAnswer: string | null,
+  ): AlexaSimChatResponse | null {
+    if (!lastVoiceAnswer) return null;
+    return this.finishTurn(sessionId, lastVoiceAnswer, findingCards, knownIds, runId, qgisExport);
+  }
+
+  private finishTurn(
+    sessionId: string,
+    text: string,
+    findingCards: readonly CitedFindingCard[],
+    knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
+    runId: string | null,
+    qgisExport: QgisExportArtifact | null,
+  ): AlexaSimChatResponse {
+    const guarded = applyCitationGuard(text, findingCards, knownIds, runId);
+    return {
+      sessionId,
+      assistantMessage: guarded.message,
+      findings: findingCards,
+      runId,
+      refused: guarded.refused,
       qgisExport,
     };
   }
@@ -227,6 +232,7 @@ export class ConversationalLoop {
     readonly roundIndex: number;
     readonly lastVoiceAnswer: string | null;
     readonly synthesisAttempted: boolean;
+    readonly llmCallsRemaining: number;
   }): Promise<{ readonly text: string | null; readonly synthesisAttempted: boolean }> {
     const trimmed = input.assistantText.trim();
     if (trimmed.length > 0) {
@@ -236,7 +242,7 @@ export class ConversationalLoop {
       return { text: input.lastVoiceAnswer, synthesisAttempted: input.synthesisAttempted };
     }
     if (input.synthesisAttempted || input.transcript.at(-1)?.role !== "tool") {
-      return { text: null, synthesisAttempted: input.synthesisAttempted };
+      return { text: NEUTRAL_EMPTY_REPLY_FALLBACK, synthesisAttempted: input.synthesisAttempted };
     }
     const synthesis = await this.completeRound({
       transcript: input.transcript,
@@ -246,13 +252,14 @@ export class ConversationalLoop {
       toolChoice: "none",
       tools: [],
       stepSuffix: " synthesis",
+      llmCallsRemaining: 1,
     });
     if (synthesis.kind === "timeout") {
-      return { text: null, synthesisAttempted: true };
+      return { text: NEUTRAL_EMPTY_REPLY_FALLBACK, synthesisAttempted: true };
     }
     const synthesisText = synthesis.response.message.content.trim();
     return {
-      text: synthesisText.length > 0 ? synthesisText : null,
+      text: synthesisText.length > 0 ? synthesisText : NEUTRAL_EMPTY_REPLY_FALLBACK,
       synthesisAttempted: true,
     };
   }
@@ -262,13 +269,17 @@ export class ConversationalLoop {
     readonly sessionId: string;
     readonly deadlineMs: number;
     readonly roundIndex: number;
-    readonly toolChoice: "auto" | "none";
+    readonly toolChoice: LlmToolChoice;
     readonly tools: typeof ALEXA_QUALITY_TOOL_DEFINITIONS | [];
     readonly stepSuffix?: string;
+    readonly llmCallsRemaining: number;
   }): Promise<{ kind: "timeout" } | { kind: "ok"; response: LlmCompletionResponse }> {
-    const remainingMs = input.deadlineMs - Date.now();
-    if (remainingMs <= 0) return { kind: "timeout" };
-    const roundBudgetMs = Math.min(remainingMs, this.roundTimeoutMs);
+    const roundBudgetMs = computeRoundBudgetMs({
+      deadlineMs: input.deadlineMs,
+      roundTimeoutCapMs: this.roundTimeoutMs,
+      llmCallsRemaining: input.llmCallsRemaining,
+    });
+    if (roundBudgetMs <= 0) return { kind: "timeout" };
     const roundSignal = AbortSignal.timeout(roundBudgetMs);
     const stepLabel = `${describeLlmStep(input.transcript, input.roundIndex)}${input.stepSuffix ?? ""}`;
     try {
@@ -295,9 +306,20 @@ export class ConversationalLoop {
     runId: string | null,
     qgisExport: QgisExportArtifact | null,
     progress: LoopProgress,
+    lastVoiceAnswer: string | null,
   ): AlexaSimChatResponse {
     progress.sessionId = sessionId;
     progress.runId = runId;
+    if (lastVoiceAnswer) {
+      return {
+        sessionId,
+        assistantMessage: lastVoiceAnswer,
+        findings: findingCards,
+        runId,
+        refused: false,
+        qgisExport,
+      };
+    }
     return {
       sessionId,
       assistantMessage: "The request timed out before I could finish checking the dataset. Your session is kept; ask again or shorten the request.",
@@ -307,6 +329,10 @@ export class ConversationalLoop {
       qgisExport,
     };
   }
+}
+
+function sessionIdFromProgress(progress: LoopProgress, input: AlexaSimChatRequest): string {
+  return progress.sessionId.length > 0 ? progress.sessionId : (input.sessionId ?? "");
 }
 
 function applyCitationGuard(
