@@ -5,7 +5,7 @@
   "origin": "Derived from ne-admin0-westeurope.geojson (Natural Earth 110m Admin 0 selection)",
   "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
   "transformation": "From ne-admin0-westeurope: replaced Portugal geometry with a self-intersecting bowtie in Iberia; duplicated Spain Feature.id; added DEMO-EMPTY with null geometry. Injected defects are intentional for the demo — not present in Natural Earth.",
-  "scaleNote": "Cartographic 1:110m national boundaries — not parcels or survey-grade precision",
+  "scaleNote": "Cartographic 1:110m national boundaries — not parcels or survey-grade precision. Coordinates rounded to 6dp; Admin 0 polygons may include overseas territories (e.g. FRA).",
   "didacticNote": "Real data; errors introduced for the demo. Do not attribute injected defects to Natural Earth.",
   "parameters": {
     "source": "Natural Earth Admin 0 Countries 1:110m (derived didactic copy)",

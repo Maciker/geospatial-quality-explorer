@@ -24,6 +24,16 @@ afterEach(() => {
 });
 
 describe("ConversationalLoop", () => {
+  it("validates the Natural Earth Western Europe fixture through the mock path", async () => {
+    const loop = createLoop(new DeterministicMockLlm());
+    const result = await loop.run({
+      messages: [{ role: "user", content: "Validate the ne-admin0-westeurope fixture." }],
+    });
+    expect(result.runId).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.refused).toBe(false);
+    expect(result.assistantMessage).toContain(result.runId!);
+  });
+
   it("cites findingId ruleId and featureId after listing portfolio findings", async () => {
     const loop = createLoop(new DeterministicMockLlm());
     const first = await loop.run({

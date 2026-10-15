@@ -1,5 +1,6 @@
 import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmCompletionRequest, LlmCompletionResponse, LlmPort } from "../application/LlmPort.js";
+import { catalogFixtureFromValidateCommand } from "../application/sessionRecovery.js";
 
 const FINDING_ID = /[a-f0-9]{64}:\d+:[a-z0-9_.]+[a-z0-9_]/g;
 
@@ -68,24 +69,22 @@ export class DeterministicMockLlm implements LlmPort {
     }
     const toolResult = lastToolResult(request.messages);
     const sessionId = request.toolSessionId ?? readSessionId(toolResult);
-    const wantsValidation = user.includes("portfolio")
-      && user.includes("valid")
-      && !/\b(?:don't|dont|do not|not|never|stop|without)\b/.test(user);
+    const validateFixtureId = catalogFixtureFromValidateCommand(user);
 
     if (request.messages.at(-1)?.role === "tool") {
       const envelope = toolResult as { ok?: boolean; error?: string; message?: string } | null;
       if (envelope?.ok === false) {
         return textReply(envelope.message ?? `Tool returned ${envelope.error ?? "an error"}. I cannot invent details.`);
       }
-      if (wantsValidation && sessionId) {
-        return toolCall("tc_run_after_open", "run_validation", { sessionId, fixtureId: "portfolio" });
+      if (validateFixtureId && sessionId) {
+        return toolCall("tc_run_after_open", "run_validation", { sessionId, fixtureId: validateFixtureId });
       }
       return textReply(HELP_TEXT);
     }
 
-    if (wantsValidation) {
+    if (validateFixtureId) {
       return sessionId
-        ? toolCall("tc_run", "run_validation", { sessionId, fixtureId: "portfolio" })
+        ? toolCall("tc_run", "run_validation", { sessionId, fixtureId: validateFixtureId })
         : toolCall("tc_open", "list_fixtures", {});
     }
     if (user.includes("list") && user.includes("finding")) {
