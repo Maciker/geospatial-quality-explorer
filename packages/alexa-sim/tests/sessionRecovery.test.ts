@@ -18,6 +18,7 @@ describe("sessionRecovery helpers", () => {
     expect(isRunScopedIntent("Explain the next finding.")).toBe(true);
     expect(isRunScopedIntent("Export QGIS.")).toBe(true);
     expect(isRunScopedIntent("Validate the portfolio fixture.")).toBe(false);
+    expect(isRunScopedIntent("Explain what a self-intersection is.")).toBe(false);
   });
 
   it("reads the last user message content", () => {

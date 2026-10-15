@@ -19,7 +19,9 @@ export function catalogFixtureFromValidateCommand(userText: string): string | nu
 export function isRunScopedIntent(userText: string): boolean {
   const normalized = userText.toLowerCase();
   if (/\b(?:list|show(?: me)?|give me|read(?: me)?)\s+(?:all\s+)?(?:the\s+)?findings\b/.test(normalized)) return true;
-  if (/\bexplain\b/.test(normalized)) return true;
+  if (/\bexplain\s+(?:(?:the|this|that)\s+)?(?:next|first|top|second|third|last|previous|it|this|that|one|finding)\b/.test(normalized)) {
+    return true;
+  }
   if (/\b(?:export|download)\b/.test(normalized)) return true;
   return false;
 }

@@ -108,10 +108,10 @@ export class ConversationalLoop {
       refused,
       qgisExport,
     });
+    const recoveryUserText = !sessionAlive && clientSessionId ? lastUserContent(input.messages) : "";
+    const recoverableFixture = recoveryUserText ? catalogFixtureFromValidateCommand(recoveryUserText) : null;
     if (!sessionAlive && clientSessionId) {
-      const userText = lastUserContent(input.messages);
-      const recoverableFixture = catalogFixtureFromValidateCommand(userText);
-      if (!recoverableFixture && isRunScopedIntent(userText)) {
+      if (!recoverableFixture && isRunScopedIntent(recoveryUserText)) {
         progress.sessionId = clientSessionId;
         return reply(SESSION_RECOVERY_PROMPT, true);
       }
@@ -121,6 +121,7 @@ export class ConversationalLoop {
       ...(snapshot ? [sessionContextMessage(snapshot)] : []),
       ...input.messages.filter((message) => message.role !== "system"),
     ];
+    let recoveryRevalidated = false;
 
     for (let round = 0; round < this.maxToolRounds; round += 1) {
       const llmCallsRemaining = this.maxToolRounds - round + (synthesisAttempted ? 0 : 1);
@@ -164,6 +165,47 @@ export class ConversationalLoop {
           knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
           if (!executed.result.ok && executed.result.error === "refused") {
             return reply(executed.result.message, true);
+          }
+          if (
+            !sessionAlive
+            && !recoveryRevalidated
+            && recoverableFixture
+            && toolCall.name === "list_fixtures"
+            && executed.result.ok
+          ) {
+            recoveryRevalidated = true;
+            const revalidated = await executeAlexaTool(
+              this.tools,
+              "run_validation",
+              JSON.stringify({ sessionId, fixtureId: recoverableFixture }),
+              sessionId || undefined,
+            );
+            if (revalidated.result.sessionId) sessionId = revalidated.result.sessionId;
+            progress.sessionId = sessionId;
+            const revalidatedCompact = compactToolResultForModel(revalidated.result);
+            voiceAnswer = readVoiceAnswerFromCompactPayload(revalidatedCompact) ?? voiceAnswer;
+            transcript.push({
+              role: "assistant",
+              content: "",
+              toolCalls: [{
+                id: "server-recovery-run_validation",
+                name: "run_validation",
+                argumentsJson: JSON.stringify({ sessionId, fixtureId: recoverableFixture }),
+              }],
+            });
+            transcript.push({
+              role: "tool",
+              content: JSON.stringify(revalidatedCompact),
+              toolCallId: "server-recovery-run_validation",
+            });
+            const revalidatedState = extractStructuredState(revalidated.result, findingCards);
+            findingCards = revalidatedState.findings;
+            runId = revalidatedState.runId ?? runId;
+            progress.runId = runId;
+            knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
+            if (!revalidated.result.ok && revalidated.result.error === "refused") {
+              return reply(revalidated.result.message, true);
+            }
           }
         }
         // The tool's deterministic answer is the reply; the model only chose the tool.

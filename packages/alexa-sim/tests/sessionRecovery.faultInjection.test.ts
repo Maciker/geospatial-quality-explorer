@@ -170,6 +170,29 @@ describe("session recovery fault injection", () => {
     expect(recovered.refused).toBe(false);
   });
 
+  it("revalidates a named catalog fixture once after reopen on instance B", async () => {
+    const instanceA = createAdapter();
+    const instanceB = createAdapter();
+    const validated = await createLoop(instanceA).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+
+    const recovered = await createLoop(instanceB).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "Please check the clean fixture." },
+      ],
+    });
+
+    expect(recovered.sessionId).toBe(validated.sessionId);
+    expect(recovered.runId).toMatch(/^[a-f0-9]{64}$/);
+    expect(recovered.refused).toBe(false);
+    expect(recovered.assistantMessage.toLowerCase()).toContain("clean");
+    expect(recovered.runId).not.toBe(validated.runId);
+  });
+
   it("prompts choose/revalidate when the session is gone and no catalog fixture is named", async () => {
     const instanceA = createAdapter();
     const instanceB = createAdapter();

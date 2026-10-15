@@ -136,6 +136,7 @@ export default function AlexaSimPanel() {
       for (;;) {
         try {
           const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
+          setError(null);
           applySuccessfulResponse(nextMessages, response);
           return;
         } catch (sendError) {
