@@ -19,3 +19,6 @@ tasks/*
 # Durable audit remediation handoff (2026-10-13).
 !tasks/audit-remediation/
 !tasks/audit-remediation/**
+# PR #26 delivery fixes handoff (2026-10-15).
+!tasks/hackathon-delivery-fixes/
+!tasks/hackathon-delivery-fixes/**
