@@ -214,4 +214,34 @@ describe("session recovery fault injection", () => {
     expect(orphaned.assistantMessage.toLowerCase()).toMatch(/revalidate|choose|session|again/);
     expect(orphaned.assistantMessage.toLowerCase()).not.toMatch(/session expired.*session expired/);
   });
+
+  it("does not treat export questions or negations as run-scoped recovery on a dead session", async () => {
+    const instanceA = createAdapter();
+    const instanceB = createAdapter();
+    const validated = await createLoop(instanceA).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+
+    const question = await createLoop(instanceB).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "How does the export work?" },
+      ],
+    });
+    expect(question.refused).toBe(false);
+    expect(question.assistantMessage.toLowerCase()).not.toMatch(/no longer has a validated run/);
+
+    const negated = await createLoop(instanceB).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "Don't export yet." },
+      ],
+    });
+    expect(negated.refused).toBe(false);
+    expect(negated.assistantMessage.toLowerCase()).not.toMatch(/no longer has a validated run/);
+  });
 });
