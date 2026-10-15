@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { computeRoundBudgetMs } from "../src/application/llmTurnBudget.js";
 
 describe("computeRoundBudgetMs", () => {
-  it("splits remaining time across outstanding LLM calls", () => {
+  it("reserves time for at most one more call after this one", () => {
     const budget = computeRoundBudgetMs({
-      deadlineMs: 55_000,
+      deadlineMs: 45_000,
       roundTimeoutCapMs: 24_000,
       llmCallsRemaining: 5,
       nowMs: 0,
     });
-    expect(budget).toBe(11_000);
+    expect(budget).toBe(22_500);
   });
 
   it("never exceeds the configured per-round cap", () => {

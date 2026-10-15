@@ -183,7 +183,9 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       sessionId,
       runId: run.runId,
       datasetName: run.datasetName,
-      prioritizedFindingIds: prioritizeFindings(run.findings).slice(0, SNAPSHOT_FINDING_LIMIT).map((finding) => finding.findingId),
+      prioritizedFindings: prioritizeFindings(run.findings)
+        .slice(0, SNAPSHOT_FINDING_LIMIT)
+        .map(({ findingId, ruleId, featureId }) => ({ findingId, ruleId, featureId })),
     };
   }
 

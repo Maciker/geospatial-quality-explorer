@@ -29,13 +29,14 @@ Aligned with `docs/contracts.md` and `DATASET_LIMITS`:
 
 ## What the model sees
 
-The browser receives full tool results. The model receives a compact copy: finding geometries are removed and `export_qgis` file contents are replaced by the file names. On a request that carries a `sessionId`, the server prepends a system message with the session's current `runId`, dataset and up to 20 prioritized `findingId`s (`QualityToolsPort.describeSession`).
+The browser receives full tool results. The model receives a compact copy: finding geometries are removed and `export_qgis` file contents are replaced by the file names. On a request that carries a `sessionId`, the server prepends a system message with the session's current `runId`, dataset and up to 20 prioritized findings with their `findingId`, `ruleId` and `featureId` (`QualityToolsPort.describeSession`). The model sees the finding ids; the citation check also accepts their feature ids.
 
 ## Grounding rules for model replies
 
-- Turns that ask to validate, list, explain or export force the matching tool call (`tool_choice`). If the model still answers without calling `export_qgis` or `list_findings` (for example "please wait"), the server makes that call with the session id.
-- Each tool returns a deterministic `voiceAnswer` built from its own output.
-- The model's reply is replaced by that `voiceAnswer` when it states quality results without citing tool ids, names any finding, rule or feature id the tools did not return (for example `ID001` or `dup-1`), omits the finding the tool returned on that turn, or only promises work ("please wait") after the tool finished. With no `voiceAnswer` available, the reply is refused instead.
+- A turn whose last user message is an explicit command (validate the portfolio, list the findings, explain the next finding, export QGIS, including "please" or "can you" forms) forces the matching tool call (`tool_choice`). Questions ("what does the export contain?"), negations ("don't export yet") and concept requests ("explain what a self-intersection is") force nothing.
+- If the model answers an explicit export or list command without calling the tool, or its first call times out, the server makes that call with the session id.
+- Each tool returns a deterministic `voiceAnswer` built from its own output (validation: run id and finding count; list: count and top finding; explain: the finding; export: download notice). On a turn where a tool returned one, that text is the reply; the model only chooses the tool and is not called again.
+- On a turn without tools, the model's reply is checked sentence by sentence. A sentence that asserts something about the dataset must name a finding id or feature id from the session or this turn's tools, and may not state counts. Otherwise the whole reply is refused. Greetings, capability text, clarifying questions and definitions pass unchanged.
 
 ## Response envelope
 

@@ -1,15 +1,34 @@
 import { describe, expect, it } from "vitest";
 import {
-  assistantReplyExemptFromCitationGuard,
+  assistantClaimsAreGrounded,
   assistantStatesValidationResults,
   collectCitationIdsFromFindings,
+  refusalTextForMissingCitation,
 } from "../src/application/citationPolicy.js";
 
+const FINDING_ID = `${"a".repeat(64)}:1:geometry.self_intersection`;
+
+function knownWithFeature(featureId: string) {
+  return collectCitationIdsFromFindings([
+    {
+      findingId: FINDING_ID,
+      ruleId: "geometry.self_intersection",
+      featureId,
+    },
+  ]);
+}
+
 describe("citationPolicy", () => {
-  it("does not guard a plain export confirmation, but guards one that adds uncited findings", () => {
-    expect(assistantStatesValidationResults("The QGIS export is ready. Download the bundle from the simulation panel.")).toBe(false);
-    expect(assistantStatesValidationResults("Simulation result: 4 critical geometry errors; the QGIS bundle is ready to download.")).toBe(true);
-    expect(assistantReplyExemptFromCitationGuard("Simulation result: 4 critical geometry errors; the QGIS bundle is ready to download.")).toBe(false);
+  it.each([
+    "Hello! I can validate the portfolio fixture, list findings, explain one, or export QGIS.",
+    "The QGIS export is ready. Download the bundle from the simulation panel.",
+    "Which finding id should I explain next?",
+    "Please give the feature id first.",
+    "A self-intersection is when a polygon boundary crosses itself.",
+    "I cannot repair invalid geometry. That is out of scope for this simulation.",
+    refusalTextForMissingCitation(),
+  ])("does not treat a neutral reply as a dataset claim: %s", (text) => {
+    expect(assistantStatesValidationResults(text)).toBe(false);
   });
 
   it.each([
@@ -19,34 +38,30 @@ describe("citationPolicy", () => {
     "Feature A12 has an empty geometry.",
     "Everything looks clean, no problems at all.",
     "I cannot repair it, but Parcel-7 self-intersects.",
+    "Simulation result: 4 critical geometry errors; the QGIS bundle is ready to download.",
+    "This dataset has a severe geometry error that you must fix immediately.",
+    "Looks good, the data is all fine.",
+    "That is out of scope, but the polygon is invalid.",
+    "Feature empty-1 and cats-9 are broken.",
   ])("treats an invented quality claim as a validation result: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(true);
   });
 
-  it("treats out-of-scope refusals as exempt", () => {
-    expect(assistantReplyExemptFromCitationGuard("I cannot repair invalid geometry. That is out of scope for this simulation.")).toBe(true);
-    expect(assistantStatesValidationResults("I cannot repair invalid geometry. That is out of scope for this simulation.")).toBe(false);
+  it.each(["parcel A", "urn:x:1", "lot 4."])("accepts a claim that cites a known finding on feature %s", (featureId) => {
+    const text = `findingId ${FINDING_ID} (geometry.self_intersection, high) on featureId ${featureId}: The ring crosses itself.`;
+
+    expect(assistantClaimsAreGrounded(text, knownWithFeature(featureId))).toBe(true);
   });
 
-  it("still requires citations for uncited validation claims", () => {
-    expect(assistantStatesValidationResults("This dataset has a severe geometry error that you must fix immediately.")).toBe(true);
-    expect(assistantReplyExemptFromCitationGuard("This dataset has a severe geometry error that you must fix immediately.")).toBe(false);
+  it.each([
+    `Validation finished. runId run-1. 7 self-intersecting polygons and 3 duplicates. See ${FINDING_ID}.`,
+    `findingId ${FINDING_ID} on featureId f. Also feature 12 has a self-intersection.`,
+    `Feature empty-1 and cats-9 are broken. See ${FINDING_ID}.`,
+  ])("rejects an invented claim beside a real id: %s", (text) => {
+    expect(assistantClaimsAreGrounded(text, knownWithFeature("f"))).toBe(false);
   });
 
-  it("detects when a reply already cites a known finding id", () => {
-    const known = collectCitationIdsFromFindings([
-      {
-        findingId: `${"a".repeat(64)}:1:geometry.empty`,
-        ruleId: "geometry.empty",
-        featureId: "feature-1",
-        severity: "high",
-        explanation: "Empty geometry.",
-        suggestedAction: "Review the feature.",
-        geometry: null,
-      },
-    ]);
-    const text = `findingId ${"a".repeat(64)}:1:geometry.empty is the top issue.`;
-    expect(assistantStatesValidationResults(text)).toBe(true);
-    expect([...known.findingIds].some((id) => text.includes(id))).toBe(true);
+  it("does not let a short feature id match inside another word", () => {
+    expect(assistantClaimsAreGrounded("Feature 12 has an empty geometry.", knownWithFeature("1"))).toBe(false);
   });
 });

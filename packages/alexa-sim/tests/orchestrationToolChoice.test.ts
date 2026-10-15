@@ -36,4 +36,24 @@ describe("orchestrationToolChoice", () => {
     expect(forcedToolForTurn(transcript, "sess-123")).toBe(tool);
     expect(forcedToolForTurn(transcript, "")).toBeNull();
   });
+
+  it.each([
+    ["Can you export the QGIS bundle?", "export_qgis"],
+    ["OK, now please list the findings.", "list_findings"],
+    ["Could you validate the portfolio fixture?", "run_validation"],
+  ])("treats a polite request as a command: %s", (content, tool) => {
+    expect(forcedToolForTurn([{ role: "user", content }], "sess-123")).toBe(tool);
+  });
+
+  it.each([
+    "explain how export works",
+    "Don't export yet.",
+    "What does the QGIS export contain?",
+    "Which portfolio features are invalid?",
+    "Don't validate the portfolio.",
+    "explain what a self-intersection is",
+    "Do not list the findings, just tell me the run id.",
+  ])("does not force a tool for a question, negation or concept: %s", (content) => {
+    expect(forcedToolForTurn([{ role: "user", content }], "sess-123")).toBeNull();
+  });
 });

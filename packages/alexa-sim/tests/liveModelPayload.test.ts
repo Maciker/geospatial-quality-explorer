@@ -1,13 +1,13 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrastructure/BoundedSessionQualityToolsAdapter.js";
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionRequest, LlmPort } from "../src/application/LlmPort.js";
 import type { ChatMessage } from "../src/domain/chatTypes.js";
-import { trimTranscriptForModel } from "../src/application/modelPayload.js";
+import { compactToolResultForModel, trimTranscriptForModel } from "../src/application/modelPayload.js";
 import { stallUntilAbort, textReply, toolCallReply, validatePortfolio } from "./support/conversationalLoopFixtures.js";
-import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
+import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 
@@ -40,36 +40,37 @@ async function runScript(loop: ConversationalLoop, steps: readonly string[]) {
   return responses;
 }
 
-function toolMessages(requests: readonly LlmCompletionRequest[]): string[] {
-  return requests.flatMap((request) => request.messages.filter((message) => message.role === "tool").map((message) => message.content));
-}
-
-afterEach(() => {
-  resetDeterministicMockLlmState();
-});
-
 describe("What the live model receives", () => {
   it("omits QGIS file contents from tool results while the response still carries them", async () => {
-    const { llm, requests } = recordingLlm();
-    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await validatePortfolio(tools);
+    const exported = JSON.stringify(compactToolResultForModel(await tools.exportQgis({ sessionId: setup.sessionId, runId: setup.runId! })));
 
-    const responses = await runScript(loop, ["Validate the portfolio fixture.", "List the findings.", "Export QGIS."]);
+    const response = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
+      sessionId: setup.sessionId,
+      messages: [{ role: "user", content: "Export QGIS." }],
+    });
 
-    const exported = toolMessages(requests).find((content) => content.includes("findings.qgs"));
-    expect(exported).toBeDefined();
+    expect(exported).toContain("findings.qgs");
     expect(exported).not.toContain("<qgis");
-    expect(exported!.length).toBeLessThan(1_000);
-    expect(responses.at(-1)?.qgisExport?.files.project).toContain("<qgis");
+    expect(exported.length).toBeLessThan(1_000);
+    expect(exported).toContain("Download the bundle from the simulation panel");
+    expect(response.qgisExport?.files.project).toContain("<qgis");
   });
 
   it("omits finding geometries from tool results while the cards keep them", async () => {
-    const { llm, requests } = recordingLlm();
-    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await validatePortfolio(tools);
+    const listed = JSON.stringify(compactToolResultForModel(await tools.listFindings({ sessionId: setup.sessionId, runId: setup.runId! })));
 
-    const responses = await runScript(loop, ["Validate the portfolio fixture.", "List the findings."]);
+    const response = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
+      sessionId: setup.sessionId,
+      messages: [{ role: "user", content: "List the findings." }],
+    });
 
-    expect(toolMessages(requests).some((content) => content.includes("coordinates"))).toBe(false);
-    expect(responses.at(-1)?.findings.some((card) => card.geometry !== null)).toBe(true);
+    expect(listed).toContain("findingId");
+    expect(listed).not.toContain("coordinates");
+    expect(response.findings.some((card) => card.geometry !== null)).toBe(true);
   });
 
   it("tells the model the current run and finding order at the start of a follow-up request", async () => {
@@ -85,28 +86,16 @@ describe("What the live model receives", () => {
     expect(context).toContain(`${runId}:1:geometry.empty`);
   });
 
-  it("uses user-facing voiceAnswer text on QGIS export tool payloads", async () => {
-    const { llm, requests } = recordingLlm();
-    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
+  it("adds voiceAnswer to explain_finding tool payloads without geometry", async () => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await validatePortfolio(tools);
+    const snapshot = await tools.describeSession(setup.sessionId);
+    const findingId = snapshot!.prioritizedFindings[0]!.findingId;
 
-    await runScript(loop, ["Validate the portfolio fixture.", "Export QGIS."]);
+    const explained = JSON.stringify(compactToolResultForModel(await tools.explainFinding({ sessionId: setup.sessionId, findingId })));
 
-    const exportTool = toolMessages(requests).find((content) => content.includes("voiceAnswer") && content.includes("findings.qgs"));
-    expect(exportTool).toBeDefined();
-    expect(exportTool).toContain("Download the bundle from the simulation panel");
-    expect(exportTool).not.toContain("Tell the user");
-  });
-
-  it("adds voiceAnswer to explain_finding tool payloads for a single follow-up reply", async () => {
-    const { llm, requests } = recordingLlm();
-    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
-
-    await runScript(loop, ["Validate the portfolio fixture.", "List the findings.", "Explain the next finding."]);
-
-    const explainTool = toolMessages(requests).find((content) => content.includes("voiceAnswer") && content.includes("\"finding\""));
-    expect(explainTool).toBeDefined();
-    expect(explainTool).toContain("findingId");
-    expect(explainTool).not.toContain("coordinates");
+    expect(explained).toContain(`"voiceAnswer":"findingId ${findingId}`);
+    expect(explained).not.toContain("coordinates");
   });
 
   it("keeps the session when the model times out after a tool call", async () => {
@@ -209,12 +198,23 @@ describe("What the live model receives", () => {
     expect(trimmed[0]?.role).toBe("system");
   });
 
+  it("keeps the latest user message when the turn's tool chatter is long", () => {
+    const rounds = Array.from({ length: 6 }, (_, index): ChatMessage[] => [
+      { role: "assistant", content: "", toolCalls: [{ id: `t${index}`, name: "list_findings", argumentsJson: "{}" }] },
+      { role: "tool", content: "{}", toolCallId: `t${index}` },
+    ]).flat();
+
+    const trimmed = trimTranscriptForModel([{ role: "system", content: "rules" }, { role: "user", content: "Validate it." }, ...rounds]);
+
+    expect(trimmed.some((message) => message.role === "user" && message.content === "Validate it.")).toBe(true);
+  });
+
   describe("grounding replies in the tool output", () => {
     async function explainWith(reply: (realId: string) => string) {
       const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
       const setup = await validatePortfolio(tools);
       const snapshot = await tools.describeSession(setup.sessionId);
-      const realId = snapshot!.prioritizedFindingIds[1]!;
+      const realId = snapshot!.prioritizedFindings[1]!.findingId;
       let calls = 0;
       const llm: LlmPort = {
         async complete() {
@@ -228,7 +228,7 @@ describe("What the live model receives", () => {
         sessionId: setup.sessionId,
         messages: [{ role: "user", content: "Explain the next finding." }],
       });
-      return { response, realId };
+      return { response, realId, calls: () => calls };
     }
 
     it("replaces invented ids with the tool's own answer", async () => {
@@ -248,24 +248,72 @@ describe("What the live model receives", () => {
       expect(response.assistantMessage).toContain("same-parcel");
     });
 
-    it("keeps a reply whose ids all match the tool output", async () => {
-      const { response } = await explainWith((realId) => `Sure. findingId ${realId} (identifier.duplicate) on featureId same-parcel: two features share that id.`);
+    it("speaks the tool's own answer on a tool turn without a second model call", async () => {
+      const { response, realId, calls } = await explainWith((id) => `Sure. findingId ${id} (identifier.duplicate) on featureId same-parcel: two features share that id.`);
 
-      expect(response.assistantMessage).toMatch(/^Sure\./);
+      expect(response.assistantMessage).toMatch(new RegExp(`^findingId ${realId} \\(identifier\\.duplicate`));
+      expect(calls()).toBe(1);
+    });
+
+    it("lets a neutral greeting through on a turn without tools", async () => {
+      const response = await new ConversationalLoop({
+        tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }),
+        llm: { async complete() { return textReply("Hello! I can validate the portfolio fixture, list findings, explain one, or export QGIS."); } },
+      }).run({ messages: [{ role: "user", content: "hello" }] });
+
+      expect(response.refused).toBe(false);
+      expect(response.assistantMessage).toMatch(/^Hello!/);
+    });
+
+    it("refuses invented counts even when the reply names the real runId", async () => {
+      const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+      const setup = await validatePortfolio(tools);
+      const response = await new ConversationalLoop({
+        tools,
+        llm: { async complete() { return textReply(`Validation finished. runId ${setup.runId}. 7 self-intersecting polygons and 3 duplicates.`); } },
+      }).run({ sessionId: setup.sessionId, messages: [{ role: "user", content: "How did it go?" }] });
+
+      expect(response.refused).toBe(true);
+      expect(response.assistantMessage).not.toContain("7 self-intersecting");
+    });
+
+    it("accepts a follow-up that restates a feature from an earlier turn", async () => {
+      const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+      const setup = await validatePortfolio(tools);
+      const response = await new ConversationalLoop({
+        tools,
+        llm: { async complete() { return textReply("Feature same-parcel has a duplicate id."); } },
+      }).run({ sessionId: setup.sessionId, messages: [{ role: "user", content: "Which feature was that again?" }] });
+
+      expect(response.refused).toBe(false);
     });
   });
 
-  it("runs the export itself when the model only says to wait", async () => {
+  it("states how many findings the list returned", async () => {
     const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
     const setup = await validatePortfolio(tools);
-    const llm: LlmPort = { async complete() { return textReply("Please wait while I prepare the export."); } };
+    const response = await new ConversationalLoop({
+      tools,
+      llm: { async complete() { return toolCallReply("l1", "list_findings", { sessionId: setup.sessionId }); } },
+    }).run({ sessionId: setup.sessionId, messages: [{ role: "user", content: "List the findings." }] });
 
-    const response = await new ConversationalLoop({ tools, llm }).run({
+    expect(response.assistantMessage).toMatch(new RegExp(`^${response.findings.length} findings listed\\. Top finding: findingId `));
+  });
+
+  it.each<[string, LlmPort["complete"]]>([
+    ["only says to wait", async () => textReply("Please wait while I prepare the export.")],
+    ["times out", (request) => stallUntilAbort(request.signal)],
+  ])("runs a requested export itself when the model %s", async (_case, complete) => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await validatePortfolio(tools);
+
+    const response = await new ConversationalLoop({ tools, llm: { complete }, roundTimeoutMs: 50 }).run({
       sessionId: setup.sessionId,
       messages: [{ role: "user", content: "Export QGIS." }],
     });
 
     expect(response.qgisExport?.runId).toBe(setup.runId);
     expect(response.assistantMessage).toBe("The QGIS export is ready. Download the bundle from the simulation panel.");
+    expect(response.refused).toBe(false);
   });
 });

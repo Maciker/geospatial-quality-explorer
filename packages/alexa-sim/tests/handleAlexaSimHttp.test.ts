@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
 import { FixedWindowRateLimiter } from "../src/infrastructure/FixedWindowRateLimiter.js";
 import { ALEXA_SIM_LIMITS, handleAlexaSimHttp, type HttpLikeRequest } from "../src/infrastructure/handleAlexaSimHttp.js";
 import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
@@ -48,7 +47,6 @@ beforeEach(() => {
 afterEach(() => {
   if (savedKey === undefined) delete process.env.NAN_API_KEY;
   else process.env.NAN_API_KEY = savedKey;
-  resetDeterministicMockLlmState();
   resetSharedToolsAdapterForTests();
 });
 

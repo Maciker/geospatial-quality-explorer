@@ -22,9 +22,9 @@ export function compactToolResultForModel(result: object): unknown {
     const summaries = data.findings.map(withoutGeometry);
     data.findings = summaries;
     const first = summaries[0];
-    if (isRecord(first)) {
-      data.voiceAnswer = `Top finding: ${formatFindingVoiceAnswer(first)}`;
-    }
+    data.voiceAnswer = isRecord(first)
+      ? `${summaries.length} findings listed. Top finding: ${formatFindingVoiceAnswer(first)}`
+      : `No findings for runId ${String(data.runId)}.`;
   }
   if (isRecord(data.finding)) {
     const finding = withoutGeometry(data.finding);
@@ -43,16 +43,16 @@ export function readVoiceAnswerFromCompactPayload(compacted: unknown): string | 
 }
 
 export function sessionContextMessage(snapshot: SessionSnapshot): ChatMessage {
-  const findings = snapshot.prioritizedFindingIds.length === 0
+  const findings = snapshot.prioritizedFindings.length === 0
     ? "The run has no findings."
-    : `Findings in priority order: ${snapshot.prioritizedFindingIds.join(", ")}.`;
+    : `Findings in priority order: ${snapshot.prioritizedFindings.map((finding) => finding.findingId).join(", ")}.`;
   return {
     role: "system",
     content: [
       `Session context from the server: sessionId ${snapshot.sessionId}; current runId ${snapshot.runId} (dataset ${snapshot.datasetName}).`,
       findings,
       "Use these ids directly with explain_finding or export_qgis; omit runId on export_qgis to use the current run. \"Next\" means the id after the last one discussed. Call list_findings only when the user asks for the full list.",
-      "After tools return voiceAnswer, speak that text to the user in natural language without calling more tools.",
+      "Tool results carry voiceAnswer, which the server speaks to the user as the reply.",
     ].join(" "),
   };
 }
@@ -61,7 +61,9 @@ export function sessionContextMessage(snapshot: SessionSnapshot): ChatMessage {
 export function trimTranscriptForModel(messages: readonly ChatMessage[], maxNonSystemMessages = 8): ChatMessage[] {
   const system = messages.filter((message) => message.role === "system");
   const conversational = messages.filter((message) => message.role !== "system");
+  const lastUserIndex = conversational.map((message) => message.role).lastIndexOf("user");
   let start = Math.max(0, conversational.length - maxNonSystemMessages);
+  if (lastUserIndex >= 0) start = Math.min(start, lastUserIndex);
   // A tool result must follow the assistant message that called it, or providers reject the request.
   while (start > 0 && conversational[start]?.role === "tool") start -= 1;
   return [...system, ...conversational.slice(start)];

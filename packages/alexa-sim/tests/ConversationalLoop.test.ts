@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrastructure/BoundedSessionQualityToolsAdapter.js";
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionResponse, LlmPort } from "../src/application/LlmPort.js";
-import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
+import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm.js";
 import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
 import { exportAfterValidationLlm, portfolioValidateListMessages } from "./support/conversationalLoopFixtures.js";
 
@@ -20,7 +20,6 @@ function createLoop(llm: LlmPort): ConversationalLoop {
 }
 
 afterEach(() => {
-  resetDeterministicMockLlmState();
   resetSharedToolsAdapterForTests();
 });
 
