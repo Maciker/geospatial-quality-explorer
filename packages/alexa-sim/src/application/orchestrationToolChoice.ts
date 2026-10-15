@@ -1,7 +1,7 @@
 import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmToolChoice } from "./LlmPort.js";
 
-export type ForcedToolName = "list_fixtures" | "run_validation" | "list_findings";
+type ForcedToolName = "list_fixtures" | "run_validation" | "list_findings";
 
 /** Force the first model call on a turn to invoke tools when user intent is unambiguous. */
 export function toolChoiceForTurn(
