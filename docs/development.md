@@ -45,6 +45,8 @@ Open the web app, choose **Alexa+ simulation**, or visit `/?sim=alexa`. The pane
 
 Chat requests are bounded: 64 KiB body, 40 messages, 4,000 characters per message, roles `user` and `assistant` only (tool results and the system prompt are produced on the server), and 20 requests per minute per client (`ALEXA_SIM_RATE_LIMIT_PER_MINUTE`). The panel trims older history to stay inside these limits.
 
+Latency: the whole conversation turn must finish within `ALEXA_SIM_TIMEOUT_MS` (default 45 000 ms, capped at 55 000 ms because the Vercel function `maxDuration` is 60 s); otherwise the assistant answers that the request timed out. The model receives compact tool results (no geometries, no QGIS file contents) and, on follow-ups, the session's current run and prioritized finding ids, so "explain the next finding" needs no extra listing round. Each model call logs `alexa-sim: LLM round <ms> ms (HTTP <status>)` and nothing else.
+
 ### Hosted demo (Vercel)
 
 `vercel.json` builds the web app with `VITE_APP_MODE=alexa-only`, so the hosted page is the simulation alone: the run review screen needs the local PostGIS API, which is not deployed. `/api/v1/alexa-sim/*` is rewritten to the `api/alexa-sim.ts` function, which bundles the CC0 fixtures.

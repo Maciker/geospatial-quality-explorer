@@ -19,7 +19,7 @@
 | 8 | 2:08–2:28 | 2:28 |
 | 9 | 2:28–2:45 | 2:45 |
 
-Record against `<DEMO_URL>` when live, or local `pnpm dev:web` with `?sim=alexa` and the same UI. Prefer **live LLM** badge if keys are set; **deterministic mock** is acceptable if narration mentions both modes.
+Record against `<DEMO_URL>` when live, or local `pnpm dev:web` with `?sim=alexa` and the same UI. Record every shot with the **live LLM** badge. Rehearse the four commands once first and check the server log lines `alexa-sim: LLM round <ms> ms` stay well under the budget (`ALEXA_SIM_TIMEOUT_MS`, default 45 000, max 55 000). Use the **deterministic mock** only for a shot that still times out, and say so on screen and in the narration.
 
 ---
 

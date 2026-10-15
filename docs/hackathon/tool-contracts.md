@@ -27,6 +27,10 @@ Aligned with `docs/contracts.md` and `DATASET_LIMITS`:
 | Chat messages per request | 40, each at most 4,000 characters, roles `user` and `assistant` only |
 | Chat requests per client | 20 per minute per server instance (`ALEXA_SIM_RATE_LIMIT_PER_MINUTE`) |
 
+## What the model sees
+
+The browser receives full tool results. The model receives a compact copy: finding geometries are removed and `export_qgis` file contents are replaced by the file names. On a request that carries a `sessionId`, the server prepends a system message with the session's current `runId`, dataset and up to 20 prioritized `findingId`s (`QualityToolsPort.describeSession`).
+
 ## Response envelope
 
 Success:

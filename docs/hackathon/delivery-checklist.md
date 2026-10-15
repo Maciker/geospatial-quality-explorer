@@ -21,7 +21,7 @@ Agents prepare docs; humans review media, secrets, and public access.
 ## Hosted demo
 
 - [ ] Vercel project live at `<DEMO_URL>` (replace placeholder in [devpost-submission.md](./devpost-submission.md) and README if linked).
-- [ ] Vercel env: `NAN_API_KEY` scoped to **Production** only, optional `NAN_MODEL=qwen3.6`, provider **spend limit** set.
+- [ ] Vercel env: `NAN_API_KEY` scoped to **Production** only, optional `NAN_MODEL=qwen3.6`, `ALEXA_SIM_TIMEOUT_MS=55000` (function `maxDuration` is 60 s), provider **spend limit** set.
 - [ ] Vercel Git fork protection left **on** (public repo); rotate the key if it was ever shared in chat or screenshots. See [development.md](../development.md#hosted-demo-vercel).
 - [ ] Badge reads **Model: live LLM** on production; run validate → list → explain → export once, and open the downloaded `qgis-<run>.zip` in QGIS 3.
 - [ ] Document cold-start/session TTL behavior if a judge reports a missing run id ([tool-contracts.md](./tool-contracts.md)).
@@ -30,7 +30,8 @@ Agents prepare docs; humans review media, secrets, and public access.
 
 ## Demo video (< 3 min)
 
-- [ ] Record using [video-script.md](./video-script.md) (TTS + screen capture).
+- [ ] Record using [video-script.md](./video-script.md) (TTS + screen capture), all shots with the **live LLM** badge after a rehearsal; re-record the earlier draft whose Explain and Export shots used the mock.
+- [ ] Finding cards stay on screen through Explain and Export, and long ids wrap inside the chat (fixed in PR #26).
 - [ ] First ~15 s: visible and spoken **simulation of Alexa+** disclosure.
 - [ ] Shows validate, list, explain, export; optional refusal shot if under time cap.
 - [ ] Upload to **public** YouTube or Vimeo; paste URL into Devpost and Linear.
