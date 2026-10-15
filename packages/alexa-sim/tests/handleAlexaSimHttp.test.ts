@@ -105,6 +105,16 @@ describe("The Alexa simulation HTTP handler", () => {
     expect(result.status).toBe(404);
   });
 
+  it("answers 400 when the fixture id percent-encoding is malformed", async () => {
+    const result = await send({
+      method: "GET",
+      headers: {},
+      pathname: "/api/v1/alexa-sim/fixtures/%/source",
+    });
+    expect(result.status).toBe(400);
+    expect(JSON.parse(result.body)).toMatchObject({ error: "invalid_request" });
+  });
+
   it("limits requests per client and window", async () => {
     let now = 0;
     const rateLimiter = new FixedWindowRateLimiter({ limit: 2, windowMs: 60_000, now: () => now });

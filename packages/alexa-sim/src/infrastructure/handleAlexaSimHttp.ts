@@ -60,7 +60,16 @@ export async function handleAlexaSimHttp(
   const fixtureSourceMatch = /^\/api\/v1\/alexa-sim\/fixtures\/([^/]+)\/source$/.exec(pathname);
   if (request.method === "GET" && fixtureSourceMatch) {
     if (rejectIfRateLimited(request, response, options.rateLimiter ?? sharedRateLimiter)) return;
-    const fixtureId = decodeURIComponent(fixtureSourceMatch[1] ?? "");
+    let fixtureId: string;
+    try {
+      fixtureId = decodeURIComponent(fixtureSourceMatch[1] ?? "");
+    } catch {
+      response.status(400).end(JSON.stringify({
+        error: "invalid_request",
+        message: "Fixture id is not valid percent-encoding.",
+      }));
+      return;
+    }
     const result = readFixtureSource(defaultVectorFixturesDirectory(), fixtureId);
     if ("error" in result) {
       response.status(result.error === "not_found" ? 404 : 400).end(JSON.stringify({
