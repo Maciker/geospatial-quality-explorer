@@ -24,8 +24,8 @@
 
 1. Keep the zip unmodified as the upstream reference.
 2. Select features whose `ADM0_A3` is in: AUT, BEL, CHE, DEU, DNK, ESP, FRA, GBR, IRL, ISL, ITA, LUX, NLD, NOR, PRT, SWE (Western Europe / Iberia). Microstates AND, MCO, LIE, MLT are absent at 1:110m and are omitted.
-3. Set `Feature.id` from `ADM0_A3`. Keep properties `NAME`, `ADM0_A3`, `ISO_A3`, `ADMIN`.
-4. Round coordinates to 6 decimal places for stable JSON. Do **not** repair, snap, or reproject geometries. 1:110m country polygons may include overseas territories (for example French Guiana on FRA); this sample is cartographic Admin 0, not a cadastral Western Europe clip.
+3. Set `Feature.id` from `ADM0_A3` (use this as the business key). Keep properties `NAME`, `ADM0_A3`, `ISO_A3`, `ADMIN`. Natural Earth itself uses `ISO_A3 = -99` for some units (here France and Norway); that value is preserved unchanged — do not treat it as a missing country code or repair it.
+4. Round coordinates to 6 decimal places for stable JSON. Do **not** repair, snap, or reproject geometries. 1:110m country polygons may include overseas territories (for example French Guiana on FRA); this sample is cartographic Admin 0, not a cadastral Western Europe clip. The selection is Western Europe and neighbours (Iberia plus FRA, GBR, IRL, BENELUX, DACH, ITA, Nordics, ISL) — not a strict Western Europe-only political filter.
 5. Write catalog file `ne-admin0-westeurope.geojson`.
 6. Derive `ne-admin0-westeurope-demo-errors.geojson` from that clean file: Portugal → Iberian bowtie (`geometry.invalid`); duplicate Spain id; add `DEMO-EMPTY` with null geometry. Label: *Real data; errors introduced for the demo.*
 

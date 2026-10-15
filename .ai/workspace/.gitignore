@@ -22,3 +22,6 @@ tasks/*
 # PR #26 delivery fixes handoff (2026-10-15).
 !tasks/hackathon-delivery-fixes/
 !tasks/hackathon-delivery-fixes/**
+# MAC-401 Natural Earth sample handoff (2026-10-15).
+!tasks/mac-401-real-gis-sample/
+!tasks/mac-401-real-gis-sample/**

@@ -1,5 +1,5 @@
 {
-  "label": "Natural Earth Admin 0 Western Europe",
+  "label": "Natural Earth Admin 0 Western Europe and neighbours",
   "license": "NaturalEarth-public-domain",
   "defaultSourceCrs": "EPSG:4326",
   "origin": "https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/",
@@ -8,7 +8,7 @@
   "downloadedAt": "2026-10-15",
   "downloadUrl": "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip",
   "transformation": "Selected Western Europe / Iberia ADM0_A3 codes from Natural Earth 110m Admin 0; set Feature.id from ADM0_A3; kept NAME, ADM0_A3, ISO_A3, ADMIN. Microstates absent at 1:110m (AND, MCO, LIE, MLT) were not present in the source and are omitted. Coordinates rounded to 6 decimal places for stable JSON. No geometric repair.",
-  "scaleNote": "Cartographic 1:110m national boundaries — not parcels or survey-grade precision. Coordinates rounded to 6dp; Admin 0 polygons may include overseas territories (e.g. FRA).",
+  "scaleNote": "Cartographic 1:110m national boundaries — not parcels or survey-grade precision. Coordinates rounded to 6dp; Admin 0 polygons may include overseas territories (e.g. FRA). Use ADM0_A3 / Feature.id as the country key; ISO_A3 may be -99 in the upstream source (FRA, NOR).",
   "parameters": {
     "source": "Natural Earth Admin 0 Countries 1:110m",
     "sourceVersion": "5.1.1",
