@@ -129,4 +129,42 @@ describe("BoundedSessionQualityToolsAdapter", () => {
     if (listed.ok) return;
     expect(listed.error).toBe("session_expired");
   });
+
+  describe("describeSession", () => {
+    it("returns null for an unknown session or a session without runs, without creating one", async () => {
+      const adapter = createAdapter();
+      const sessionId = await openAdapterSession(adapter);
+
+      expect(await adapter.describeSession("session-never-opened")).toBeNull();
+      expect(await adapter.describeSession(sessionId)).toBeNull();
+      const listed = await adapter.listFindings({ sessionId: "session-never-opened", runId: "a".repeat(64) });
+      expect(listed.ok).toBe(false);
+    });
+
+    it("reports the most recently validated run with findings in list order", async () => {
+      const adapter = createAdapter();
+      const sessionId = await openAdapterSession(adapter);
+      const portfolio = await runFixtureValidation(adapter, sessionId, "portfolio");
+      await runFixtureValidation(adapter, sessionId, "clean");
+      await runFixtureValidation(adapter, sessionId, "portfolio");
+
+      const snapshot = await adapter.describeSession(sessionId);
+      const listed = await adapter.listFindings({ sessionId, runId: portfolio.runId, limit: 20 });
+
+      expect(snapshot?.runId).toBe(portfolio.runId);
+      expect(listed.ok && snapshot?.prioritizedFindingIds).toEqual(listed.ok ? listed.data.findings.map((finding) => finding.findingId) : null);
+    });
+
+    it("ignores an expired session and does not extend it", async () => {
+      let nowMs = 0;
+      const adapter = new BoundedSessionQualityToolsAdapter({ fixturesDirectory, now: () => nowMs, limits: { sessionTtlMs: 1_000 } });
+      const sessionId = await openAdapterSession(adapter);
+      await runFixtureValidation(adapter, sessionId, "portfolio");
+      nowMs = 900;
+      expect(await adapter.describeSession(sessionId)).not.toBeNull();
+      nowMs = 1_500;
+
+      expect(await adapter.describeSession(sessionId)).toBeNull();
+    });
+  });
 });

@@ -101,6 +101,8 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       startedAt: completedAt,
       completedAt,
     });
+    // Re-insert so Map order tracks the most recent validation (describeSession reads the last entry).
+    session.runs.delete(run.runId);
     session.runs.set(run.runId, run);
     return toolSuccess(sessionId, {
       runId: run.runId,
