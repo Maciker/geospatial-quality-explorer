@@ -27,6 +27,11 @@ describe("citationPolicy", () => {
     "Please give the feature id first.",
     "A self-intersection is when a polygon boundary crosses itself.",
     "I cannot repair invalid geometry. That is out of scope for this simulation.",
+    "No problem! Ask me to validate the portfolio fixture.",
+    "Sure, no problem.",
+    "I can explain one finding at a time.",
+    "I can list some features of the portfolio.",
+    "Do you want me to list one finding or two?",
     refusalTextForMissingCitation(),
   ])("does not treat a neutral reply as a dataset claim: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(false);
@@ -71,6 +76,17 @@ describe("citationPolicy", () => {
 
     expect(assistantClaimsAreGrounded(text, known)).toBe(true);
     expect(assistantClaimsAreGrounded("There are 5 findings on bowtie-1.", known)).toBe(false);
+  });
+
+  it.each([
+    "There are 3 errors yet to fix.",
+    "The portfolio has 5 findings, but I can't tell which are severe.",
+  ])("does not let a hedge excuse an invented count: %s", (text) => {
+    expect(assistantClaimsAreGrounded(text, knownWithFeature("f"))).toBe(false);
+  });
+
+  it("accepts a restated empty geometry on a known feature", () => {
+    expect(assistantClaimsAreGrounded("The previous finding was on featureId empty-1 and says the feature has no geometry.", knownWithFeature("empty-1"))).toBe(true);
   });
 
   it.each([

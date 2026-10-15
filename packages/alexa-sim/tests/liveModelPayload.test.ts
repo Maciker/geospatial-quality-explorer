@@ -289,16 +289,20 @@ describe("What the live model receives", () => {
     });
   });
 
-  it("states how many findings the list returned", async () => {
+  it.each([
+    [{}, /^5 findings listed\. Top finding: findingId /],
+    [{ limit: 1 }, /^First 1 finding listed; ask for more\. Top finding: findingId /],
+  ])("states how many findings the list returned (%o)", async (page, spoken) => {
     const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
     const setup = await validatePortfolio(tools);
     const response = await new ConversationalLoop({
       tools,
-      llm: { async complete() { return toolCallReply("l1", "list_findings", { sessionId: setup.sessionId }); } },
+      llm: { async complete() { return toolCallReply("l1", "list_findings", { sessionId: setup.sessionId, ...page }); } },
     }).run({ sessionId: setup.sessionId, messages: [{ role: "user", content: "List the findings." }] });
 
-    expect(response.assistantMessage).toMatch(new RegExp(`^${response.findings.length} findings listed\\. Top finding: findingId `));
+    expect(response.assistantMessage).toMatch(spoken);
   });
+
 
   it.each<[string, LlmPort["complete"]]>([
     ["only says to wait", async () => textReply("Please wait while I prepare the export.")],

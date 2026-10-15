@@ -30,15 +30,28 @@ export function mergeCitationIds(left: KnownCitationIds, right: KnownCitationIds
   };
 }
 
-const QUANTITY = String.raw`(?:\d+|no|zero|one|two|three|four|five|six|seven|eight|nine|ten|several|many|some)`;
-const DEFECT_NOUN = String.raw`(?:findings?|issues?|errors?|warnings?|problems?|defects?|polygons?|features?|geometr(?:y|ies)|duplicates?|self-intersections?|overlaps?)`;
+const NUMBER_WORD = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|ten|several|many|some)`;
+const PROBLEM_NOUNS = String.raw`findings?|issues?|errors?|warnings?|problems?|defects?|duplicates?|self-intersections?|overlaps?`;
+const PROBLEM_NOUN = `(?:${PROBLEM_NOUNS})`;
+const DEFECT_NOUN = String.raw`(?:${PROBLEM_NOUNS}|polygons?|features?|geometr(?:y|ies))`;
+/** A word count is stated only after a verb: "has three", not "explain one finding at a time". */
+const STATING_VERB = String.raw`\b(?:has|have|had|found|finds|is|are|was|were|contains?|detected|returned|reports?|shows?|with)\s+(?:only\s+|just\s+)?`;
+
+/** "7 errors", "has three invalid polygons": a count only the tools may report. */
+const POSITIVE_COUNT = [
+  new RegExp(String.raw`(?<![\w:.-])\d+\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
+  new RegExp(String.raw`${STATING_VERB}${NUMBER_WORD}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
+];
+/** "found no problems": a clean verdict. "has no geometry" restates a finding and is not a count. */
+const ZERO_COUNT = new RegExp(String.raw`${STATING_VERB}(?:no|zero)\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b`);
 
 /**
  * Assertions about this dataset: counts, a feature or dataset said to have a defect, or a verdict
  * such as "the data is fine". Capability text, questions and definitions are not claims.
  */
 const DATASET_CLAIMS: readonly RegExp[] = [
-  new RegExp(String.raw`(?<![\w:.-])${QUANTITY}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
+  ...POSITIVE_COUNT,
+  ZERO_COUNT,
   /\bself-intersects\b|\bself-intersecting\b|\b(?:is|are) duplicated\b|\boverlaps (?:with )?\w/,
   /\b(?:has|have|had|contains?|shows?|found|detected)\s+(?:an?\s+|one\s+)?(?:[\w-]+\s+){0,2}(?:empty geometr\w*|self-intersection|duplicate|overlap|geometry errors?|errors?|problems?|issues?|defects?)\b/,
   /\bthere (?:is|are|was|were) (?:\w+\s+){0,3}(?:errors?|problems?|issues?|defects?)\b/,
@@ -62,8 +75,11 @@ export function assistantClaimsAreGrounded(text: string, known: KnownCitationIds
   return splitSentences(text).every((sentence) => {
     // Ids are quoted, not asserted: "bowtie-1" must not read as a count of one.
     const claim = withoutKnownIds(sentence, known);
-    if (!assistantStatesValidationResults(claim) || HEDGE.test(claim.toLowerCase())) return true;
-    if (DATASET_CLAIMS[0]!.test(claim.toLowerCase())) return false;
+    const lowered = claim.toLowerCase();
+    if (!assistantStatesValidationResults(claim)) return true;
+    if (POSITIVE_COUNT.some((pattern) => pattern.test(lowered))) return false;
+    if (HEDGE.test(lowered)) return true;
+    if (ZERO_COUNT.test(lowered)) return false;
     return claim !== sentence;
   });
 }

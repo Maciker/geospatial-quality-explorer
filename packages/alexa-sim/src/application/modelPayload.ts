@@ -23,7 +23,7 @@ export function compactToolResultForModel(result: object): unknown {
     data.findings = summaries;
     const first = summaries[0];
     data.voiceAnswer = isRecord(first)
-      ? `${summaries.length} findings listed. Top finding: ${formatFindingVoiceAnswer(first)}`
+      ? `${listedCount(summaries.length, typeof data.nextCursor === "string")} Top finding: ${formatFindingVoiceAnswer(first)}`
       : `No findings for runId ${String(data.runId)}.`;
   }
   if (isRecord(data.finding)) {
@@ -67,6 +67,12 @@ export function trimTranscriptForModel(messages: readonly ChatMessage[], maxNonS
   // A tool result must follow the assistant message that called it, or providers reject the request.
   while (start > 0 && conversational[start]?.role === "tool") start -= 1;
   return [...system, ...conversational.slice(start)];
+}
+
+/** The list is a page: say so when more findings follow. */
+function listedCount(count: number, hasMore: boolean): string {
+  const listed = `${count} finding${count === 1 ? "" : "s"} listed`;
+  return hasMore ? `First ${listed}; ask for more.` : `${listed[0]!.toUpperCase()}${listed.slice(1)}.`;
 }
 
 function formatFindingVoiceAnswer(finding: Record<string, unknown>): string {
