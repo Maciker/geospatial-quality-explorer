@@ -18,3 +18,11 @@ Approved by the repository owner on 2026-10-15 ("arregla todo en esta rama PR") 
 ## Verification
 
 `pnpm quality:full` with PostGIS, `pnpm test:e2e`, `pnpm quality:stabilization`, unzip integrity check, cross-model QA and `pnpm prepr:gate` on the final head, then `pnpm pr:review`.
+
+## Phase 2: submission readiness (approved by the owner on 2026-10-15: "en esta rama PR dejamos todo hecho para poder presentar")
+
+5. Chat bubbles wrap long ids instead of overflowing.
+6. Finding cards persist across turns (merge by findingId; the latest touched card is selected).
+7. Live-model latency: tool results sent to the model omit QGIS file contents and finding geometries (the UI still receives them); each request tells the model the session's current run and prioritized finding ids so "next finding" needs no re-listing; per-round LLM duration is logged without content; the loop timeout is configurable (`ALEXA_SIM_TIMEOUT_MS`).
+8. Open P3s: an abort while reading the provider body keeps the loop's timeout message; confirm Devpost wording against the badge.
+9. Video and delivery docs reflect re-recording with the live model.

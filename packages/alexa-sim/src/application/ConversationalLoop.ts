@@ -23,6 +23,7 @@ import { executeAlexaTool } from "./executeAlexaTool.js";
 import { findingSummariesToCards, mergeFindingCards } from "./extractFindingCards.js";
 import type { LlmPort } from "./LlmPort.js";
 import { ALEXA_QUALITY_TOOL_DEFINITIONS } from "./openAiToolDefinitions.js";
+import { compactToolResultForModel, sessionContextMessage } from "./modelPayload.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -74,8 +75,10 @@ export class ConversationalLoop {
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
 
+    const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
     const transcript: ChatMessage[] = [
       { role: "system", content: ALEXA_SIM_SYSTEM_INSTRUCTIONS },
+      ...(snapshot ? [sessionContextMessage(snapshot)] : []),
       ...input.messages.filter((message) => message.role !== "system"),
     ];
 
@@ -102,7 +105,7 @@ export class ConversationalLoop {
         for (const toolCall of assistant.toolCalls) {
           const executed = await executeAlexaTool(this.tools, toolCall.name, toolCall.argumentsJson, sessionId || undefined);
           if (executed.result.sessionId) sessionId = executed.result.sessionId;
-          const payload = JSON.stringify(executed.result);
+          const payload = JSON.stringify(compactToolResultForModel(executed.result));
           transcript.push({
             role: "tool",
             content: payload,

@@ -86,3 +86,11 @@ export type AlexaToolName =
   | "list_findings"
   | "explain_finding"
   | "export_qgis";
+
+/** Server-side view of a session, given to the model so follow-ups need no extra tool round. */
+export type SessionSnapshot = {
+  readonly sessionId: string;
+  readonly runId: string;
+  readonly datasetName: string;
+  readonly prioritizedFindingIds: readonly string[];
+};

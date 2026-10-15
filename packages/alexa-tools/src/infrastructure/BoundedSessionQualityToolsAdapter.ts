@@ -7,7 +7,7 @@ import {
   validateDataset,
   type ValidationRun,
 } from "../../../quality/src/index.js";
-import { pagePrioritizedFindings } from "../application/prioritizeFindings.js";
+import { pagePrioritizedFindings, prioritizeFindings } from "../application/prioritizeFindings.js";
 import type { QualityToolsPort } from "../application/QualityToolsPort.js";
 import { ALEXA_TOOL_LIMITS } from "../domain/sessionLimits.js";
 import type {
@@ -22,9 +22,12 @@ import type {
   ListFixturesOutput,
   RunValidationInput,
   RunValidationOutput,
+  SessionSnapshot,
 } from "../domain/toolContracts.js";
 import { toolError, toolSuccess, type ToolResult } from "../domain/toolErrors.js";
 import { listFixtureCatalog, resolveFixturePath } from "./listFixtureCatalog.js";
+
+const SNAPSHOT_FINDING_LIMIT = 20;
 
 type SessionRecord = {
   readonly runs: Map<string, ValidationRun>;
@@ -167,6 +170,19 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       },
       limitations: run.limitations,
     });
+  }
+
+  async describeSession(sessionId: string): Promise<SessionSnapshot | null> {
+    const session = this.sessions.get(sessionId);
+    if (!session || this.now() - session.lastAccessAtMs > this.limits.sessionTtlMs) return null;
+    const run = [...session.runs.values()].at(-1);
+    if (!run) return null;
+    return {
+      sessionId,
+      runId: run.runId,
+      datasetName: run.datasetName,
+      prioritizedFindingIds: prioritizeFindings(run.findings).slice(0, SNAPSHOT_FINDING_LIMIT).map((finding) => finding.findingId),
+    };
   }
 
   private openSession(sessionId: string | undefined): ToolResult<{ readonly sessionId: string }> {
