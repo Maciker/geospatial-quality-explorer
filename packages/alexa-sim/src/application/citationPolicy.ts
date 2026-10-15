@@ -28,31 +28,31 @@ export function mergeCitationIds(left: KnownCitationIds, right: KnownCitationIds
   };
 }
 
-/** Operational replies (exports, refusals) must not be replaced by the citation guard. */
+/** Words that make a reply a statement about dataset quality, which must be backed by tool ids. */
+const QUALITY_CLAIM_TERMS =
+  /\b(findings?|issues?|errors?|warnings?|rules?|features?|invalid|valid|geometr(?:y|ies)|polygons?|self-intersect\w*|duplicates?|empty|problems?|defects?|overlap\w*|clean)\b/;
+
+/** A concrete defect or count; its presence cancels any refusal exemption. */
+const SPECIFIC_DEFECT =
+  /self-intersect|duplicate|overlap|empty geometry|\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(\w+\s+)?(errors?|issues?|findings?|problems?|polygons?|features?)\b/;
+
+/** Plain refusals may mention geometry in general terms without citing ids. */
 export function assistantReplyExemptFromCitationGuard(text: string): boolean {
   const lowered = text.toLowerCase();
+  if (SPECIFIC_DEFECT.test(lowered)) return false;
   if (lowered.includes("out of scope")) return true;
   if (lowered.includes("cannot do that")) return true;
   if (/cannot (repair|edit|mutate|change)/.test(lowered)) return true;
-  if (/qgis|export_qgis/.test(lowered) && /download|bundle|ready|panel|simulation/.test(lowered)) return true;
   if (/run validation before/.test(lowered)) return true;
   if (/unknown finding|cannot invent|do not guess|cannot answer/.test(lowered)) return true;
   return false;
 }
 
-/** True when the assistant asserts validation outcomes that require tool-backed ids. */
+/** True when the reply says anything about dataset quality, so it must cite tool-backed ids. */
 export function assistantStatesValidationResults(text: string): boolean {
-  if (assistantReplyExemptFromCitationGuard(text)) return false;
   if (FINDING_ID_PATTERN.test(text)) return true;
-  const lowered = text.toLowerCase();
-  if (lowered.includes("findingid") || lowered.includes("finding id")) return true;
-  if (/\d+\s+findings?\b/.test(lowered)) return true;
-  if (/validation\s+(found|detected|reported|failed|finished)/.test(lowered)) return true;
-  if (/(critical|high|medium|low)\s+(severity|finding|issue)/.test(lowered)) return true;
-  if (/finding(s)?\s+(is|are|shows|show|indicates|indicate|reports|report)\b/.test(lowered)) return true;
-  if (/(severe|critical)\s+(geometry|dataset|data)\s+(error|issue|problem)/.test(lowered)) return true;
-  if (/geometry\s+(error|issue|invalid|empty|self-intersect)/.test(lowered)) return true;
-  return false;
+  if (assistantReplyExemptFromCitationGuard(text)) return false;
+  return QUALITY_CLAIM_TERMS.test(text.toLowerCase());
 }
 
 export function assistantCitesKnownIds(text: string, known: KnownCitationIds): boolean {

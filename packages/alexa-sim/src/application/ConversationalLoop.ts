@@ -177,7 +177,7 @@ export class ConversationalLoop {
       });
       synthesisAttempted = resolved.synthesisAttempted;
       if (resolved.text !== null) {
-        return this.finishTurn(sessionId, resolved.text, findingCards, knownIds, runId, qgisExport);
+        return this.finishTurn(sessionId, resolved.text, findingCards, knownIds, runId, qgisExport, lastVoiceAnswer);
       }
       break;
     }
@@ -202,7 +202,7 @@ export class ConversationalLoop {
     lastVoiceAnswer: string | null,
   ): AlexaSimChatResponse | null {
     if (!lastVoiceAnswer) return null;
-    return this.finishTurn(sessionId, lastVoiceAnswer, findingCards, knownIds, runId, qgisExport);
+    return this.finishTurn(sessionId, lastVoiceAnswer, findingCards, knownIds, runId, qgisExport, null);
   }
 
   private finishTurn(
@@ -212,8 +212,13 @@ export class ConversationalLoop {
     knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
     runId: string | null,
     qgisExport: QgisExportArtifact | null,
+    groundedFallback: string | null,
   ): AlexaSimChatResponse {
     const guarded = applyCitationGuard(text, findingCards, knownIds, runId);
+    if (guarded.refused && groundedFallback && groundedFallback !== text) {
+      // The tool already produced cited text; prefer it to the model's uncited paraphrase.
+      return this.finishTurn(sessionId, groundedFallback, findingCards, knownIds, runId, qgisExport, null);
+    }
     return {
       sessionId,
       assistantMessage: guarded.message,

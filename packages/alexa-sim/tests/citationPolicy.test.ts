@@ -6,9 +6,21 @@ import {
 } from "../src/application/citationPolicy.js";
 
 describe("citationPolicy", () => {
-  it("treats export-ready replies as exempt from the citation guard", () => {
-    expect(assistantReplyExemptFromCitationGuard("The QGIS export is ready. Download the bundle from the simulation panel.")).toBe(true);
-    expect(assistantStatesValidationResults("Your validation findings are in the QGIS bundle. Download from the panel.")).toBe(false);
+  it("does not guard a plain export confirmation, but guards one that adds uncited findings", () => {
+    expect(assistantStatesValidationResults("The QGIS export is ready. Download the bundle from the simulation panel.")).toBe(false);
+    expect(assistantStatesValidationResults("Simulation result: 4 critical geometry errors; the QGIS bundle is ready to download.")).toBe(true);
+    expect(assistantReplyExemptFromCitationGuard("Simulation result: 4 critical geometry errors; the QGIS bundle is ready to download.")).toBe(false);
+  });
+
+  it.each([
+    "Parcel-7 self-intersects and must be fixed.",
+    "There is one duplicate id problem in the dataset.",
+    "The dataset has three invalid polygons.",
+    "Feature A12 has an empty geometry.",
+    "Everything looks clean, no problems at all.",
+    "I cannot repair it, but Parcel-7 self-intersects.",
+  ])("treats an invented quality claim as a validation result: %s", (text) => {
+    expect(assistantStatesValidationResults(text)).toBe(true);
   });
 
   it("treats out-of-scope refusals as exempt", () => {

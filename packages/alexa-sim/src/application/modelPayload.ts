@@ -61,7 +61,10 @@ export function sessionContextMessage(snapshot: SessionSnapshot): ChatMessage {
 export function trimTranscriptForModel(messages: readonly ChatMessage[], maxNonSystemMessages = 8): ChatMessage[] {
   const system = messages.filter((message) => message.role === "system");
   const conversational = messages.filter((message) => message.role !== "system");
-  return [...system, ...conversational.slice(-maxNonSystemMessages)];
+  let start = Math.max(0, conversational.length - maxNonSystemMessages);
+  // A tool result must follow the assistant message that called it, or providers reject the request.
+  while (start > 0 && conversational[start]?.role === "tool") start -= 1;
+  return [...system, ...conversational.slice(start)];
 }
 
 function formatFindingVoiceAnswer(finding: Record<string, unknown>): string {

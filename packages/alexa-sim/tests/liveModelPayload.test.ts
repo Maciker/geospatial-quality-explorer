@@ -5,6 +5,8 @@ import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrast
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionRequest, LlmPort } from "../src/application/LlmPort.js";
 import type { ChatMessage } from "../src/domain/chatTypes.js";
+import { trimTranscriptForModel } from "../src/application/modelPayload.js";
+import { stallUntilAbort } from "./support/conversationalLoopFixtures.js";
 import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
@@ -113,9 +115,7 @@ describe("What the live model receives", () => {
         if (!request.messages.some((message) => message.role === "tool")) {
           return { finishReason: "tool_calls", message: { role: "assistant", content: "", toolCalls: [{ id: "t1", name: "list_fixtures", argumentsJson: "{}" }] } };
         }
-        return new Promise((_resolve, reject) => {
-          request.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
-        });
+        return stallUntilAbort(request.signal);
       },
     };
     const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm, timeoutMs: 100 });
@@ -144,5 +144,68 @@ describe("What the live model receives", () => {
 
     expect(response.refused).toBe(false);
     expect(response.assistantMessage).toContain(`${setup[0]!.runId}:1:geometry.empty`);
+  });
+
+  it("replaces an uncited quality claim with the tool's grounded voiceAnswer", async () => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await runScript(new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }), ["Validate the portfolio fixture."]);
+    let calls = 0;
+    const inventive: LlmPort = {
+      async complete() {
+        calls += 1;
+        if (calls === 1) {
+          return { finishReason: "tool_calls", message: { role: "assistant", content: "", toolCalls: [{ id: "x1", name: "export_qgis", argumentsJson: JSON.stringify({ sessionId: setup[0]!.sessionId }) }] } };
+        }
+        return { finishReason: "stop", message: { role: "assistant", content: "Done. The dataset has three invalid polygons; the QGIS bundle is ready to download." } };
+      },
+    };
+
+    const response = await new ConversationalLoop({ tools, llm: inventive }).run({
+      sessionId: setup[0]!.sessionId,
+      messages: [{ role: "user", content: "Export QGIS." }],
+    });
+
+    expect(response.refused).toBe(false);
+    expect(response.assistantMessage).toBe("The QGIS export is ready. Download the bundle from the simulation panel.");
+    expect(response.qgisExport).not.toBeNull();
+  });
+
+  it("refuses an uncited quality claim when no tool produced grounded text", async () => {
+    const inventive: LlmPort = {
+      async complete() {
+        return { finishReason: "stop", message: { role: "assistant", content: "Parcel-7 self-intersects and must be fixed." } };
+      },
+    };
+
+    const response = await new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm: inventive }).run({
+      messages: [{ role: "user", content: "Is parcel 7 valid?" }],
+    });
+
+    expect(response.refused).toBe(true);
+    expect(response.assistantMessage).not.toContain("Parcel-7");
+  });
+
+  it("never sends the model a tool result without the call that produced it", () => {
+    const call = (id: string, count = 1): ChatMessage => ({
+      role: "assistant",
+      content: "",
+      toolCalls: Array.from({ length: count }, (_, index) => ({ id: `${id}${index}`, name: "list_findings", argumentsJson: "{}" })),
+    });
+    const result = (id: string): ChatMessage => ({ role: "tool", content: "{}", toolCallId: id });
+    const transcript: ChatMessage[] = [
+      { role: "system", content: "rules" },
+      { role: "user", content: "go" },
+      call("a"), result("a0"),
+      call("b", 2), result("b0"), result("b1"),
+      call("c"), result("c0"),
+      call("d"), result("d0"),
+    ];
+
+    const trimmed = trimTranscriptForModel(transcript);
+
+    const calledIds = new Set(trimmed.flatMap((message) => message.toolCalls?.map((toolCall) => toolCall.id) ?? []));
+    const orphans = trimmed.filter((message) => message.role === "tool" && !calledIds.has(message.toolCallId ?? ""));
+    expect(orphans).toEqual([]);
+    expect(trimmed[0]?.role).toBe("system");
   });
 });
