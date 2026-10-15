@@ -81,6 +81,19 @@ function parseRetryAfterSeconds(header: string | null): number | null {
   return Math.max(0, Math.ceil((asDateMs - Date.now()) / 1_000));
 }
 
+async function throwIfNotOk(response: Response, fallbackMessage: (status: number) => string): Promise<void> {
+  if (response.ok) return;
+  const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+  throw new AlexaSimHttpError(
+    payload?.message ?? fallbackMessage(response.status),
+    {
+      status: response.status,
+      code: typeof payload?.error === "string" ? payload.error : `http_${response.status}`,
+      retryAfterSeconds: parseRetryAfterSeconds(response.headers.get("Retry-After")),
+    },
+  );
+}
+
 export async function postAlexaSimChat(body: {
   sessionId?: string;
   messages: AlexaChatMessage[];
@@ -90,17 +103,7 @@ export async function postAlexaSimChat(body: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-    throw new AlexaSimHttpError(
-      payload?.message ?? `Alexa simulation request failed (${response.status}).`,
-      {
-        status: response.status,
-        code: typeof payload?.error === "string" ? payload.error : `http_${response.status}`,
-        retryAfterSeconds: parseRetryAfterSeconds(response.headers.get("Retry-After")),
-      },
-    );
-  }
+  await throwIfNotOk(response, (status) => `Alexa simulation request failed (${status}).`);
   return response.json() as Promise<AlexaChatResponse>;
 }
 
@@ -117,16 +120,6 @@ export async function getAlexaSimLlmMode(): Promise<"mock" | "live" | null> {
 
 export async function getAlexaFixtureSource(fixtureId: string): Promise<AlexaFixtureSource> {
   const response = await fetch(`${API_BASE_URL}/api/v1/alexa-sim/fixtures/${encodeURIComponent(fixtureId)}/source`);
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-    throw new AlexaSimHttpError(
-      payload?.message ?? `Fixture source request failed (${response.status}).`,
-      {
-        status: response.status,
-        code: typeof payload?.error === "string" ? payload.error : `http_${response.status}`,
-        retryAfterSeconds: parseRetryAfterSeconds(response.headers.get("Retry-After")),
-      },
-    );
-  }
+  await throwIfNotOk(response, (status) => `Fixture source request failed (${status}).`);
   return response.json() as Promise<AlexaFixtureSource>;
 }

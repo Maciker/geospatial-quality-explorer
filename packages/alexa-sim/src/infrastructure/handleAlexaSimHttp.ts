@@ -59,12 +59,7 @@ export async function handleAlexaSimHttp(
   }
   const fixtureSourceMatch = /^\/api\/v1\/alexa-sim\/fixtures\/([^/]+)\/source$/.exec(pathname);
   if (request.method === "GET" && fixtureSourceMatch) {
-    const decision = (options.rateLimiter ?? sharedRateLimiter).take(clientKey(request));
-    if (!decision.allowed) {
-      response.setHeader("Retry-After", String(decision.retryAfterSeconds));
-      response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
-      return;
-    }
+    if (rejectIfRateLimited(request, response, options.rateLimiter ?? sharedRateLimiter)) return;
     const fixtureId = decodeURIComponent(fixtureSourceMatch[1] ?? "");
     const result = readFixtureSource(defaultVectorFixturesDirectory(), fixtureId);
     if ("error" in result) {
@@ -81,12 +76,7 @@ export async function handleAlexaSimHttp(
     response.status(405).end(JSON.stringify({ error: "method_not_allowed" }));
     return;
   }
-  const decision = (options.rateLimiter ?? sharedRateLimiter).take(clientKey(request));
-  if (!decision.allowed) {
-    response.setHeader("Retry-After", String(decision.retryAfterSeconds));
-    response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
-    return;
-  }
+  if (rejectIfRateLimited(request, response, options.rateLimiter ?? sharedRateLimiter)) return;
   const body = request.body ?? "{}";
   if (Buffer.byteLength(body, "utf8") > ALEXA_SIM_LIMITS.maxBodyBytes) {
     response.status(413).end(JSON.stringify({ error: "too_large", message: `Requests are limited to ${ALEXA_SIM_LIMITS.maxBodyBytes} bytes.` }));
@@ -158,6 +148,19 @@ function parseChatRequest(raw: unknown): AlexaSimChatRequest | string {
 /** Disclosed to the UI so a demo never passes the deterministic mock off as a live model. */
 function currentLlmMode(): "mock" | "live" {
   return readNanLlmConfig().useMockLlm ? "mock" : "live";
+}
+
+/** Returns true when the response was already written for a 429. */
+function rejectIfRateLimited(
+  request: HttpLikeRequest,
+  response: HttpLikeResponse,
+  rateLimiter: FixedWindowRateLimiter,
+): boolean {
+  const decision = rateLimiter.take(clientKey(request));
+  if (decision.allowed) return false;
+  response.setHeader("Retry-After", String(decision.retryAfterSeconds));
+  response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
+  return true;
 }
 
 function clientKey(request: HttpLikeRequest): string {

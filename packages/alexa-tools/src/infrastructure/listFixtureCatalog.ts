@@ -71,6 +71,23 @@ function readManifest(fixturesDirectory: string, fixtureId: string): FixtureMani
   };
 }
 
+/** Provenance fields that callers may omit when the sidecar left them blank. */
+export function optionalProvenanceFields(
+  manifest: Pick<FixtureManifest, "origin" | "transformation" | "scaleNote" | "didacticNote">,
+): {
+  readonly origin?: string;
+  readonly transformation?: string;
+  readonly scaleNote?: string;
+  readonly didacticNote?: string;
+} {
+  return {
+    ...(manifest.origin !== undefined ? { origin: manifest.origin } : {}),
+    ...(manifest.transformation !== undefined ? { transformation: manifest.transformation } : {}),
+    ...(manifest.scaleNote !== undefined ? { scaleNote: manifest.scaleNote } : {}),
+    ...(manifest.didacticNote !== undefined ? { didacticNote: manifest.didacticNote } : {}),
+  };
+}
+
 function toSummary(fixtureId: string, manifest: FixtureManifest): FixtureCatalogEntry {
   return {
     fixtureId,
@@ -78,10 +95,7 @@ function toSummary(fixtureId: string, manifest: FixtureManifest): FixtureCatalog
     license: manifest.license,
     defaultSourceCrs: manifest.defaultSourceCrs,
     parameters: manifest.parameters ?? {},
-    ...(manifest.origin !== undefined ? { origin: manifest.origin } : {}),
-    ...(manifest.transformation !== undefined ? { transformation: manifest.transformation } : {}),
-    ...(manifest.scaleNote !== undefined ? { scaleNote: manifest.scaleNote } : {}),
-    ...(manifest.didacticNote !== undefined ? { didacticNote: manifest.didacticNote } : {}),
+    ...optionalProvenanceFields(manifest),
   };
 }
 

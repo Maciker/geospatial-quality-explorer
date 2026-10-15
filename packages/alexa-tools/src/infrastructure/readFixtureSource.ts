@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { ALEXA_TOOL_LIMITS } from "../domain/sessionLimits.js";
-import { listFixtureCatalog, loadFixtureManifest, resolveFixturePath } from "./listFixtureCatalog.js";
+import {
+  listFixtureCatalog,
+  loadFixtureManifest,
+  optionalProvenanceFields,
+  resolveFixturePath,
+} from "./listFixtureCatalog.js";
 
 export type FixtureSourceResponse = {
   readonly fixtureId: string;
@@ -57,10 +62,7 @@ export function readFixtureSource(
     license: manifest.license,
     sourceCrs: manifest.defaultSourceCrs,
     sourceHash,
-    ...(manifest.origin !== undefined ? { origin: manifest.origin } : {}),
-    ...(manifest.transformation !== undefined ? { transformation: manifest.transformation } : {}),
-    ...(manifest.scaleNote !== undefined ? { scaleNote: manifest.scaleNote } : {}),
-    ...(manifest.didacticNote !== undefined ? { didacticNote: manifest.didacticNote } : {}),
+    ...optionalProvenanceFields(manifest),
     collection: {
       type: "FeatureCollection",
       features: (parsed as { features: unknown[] }).features,

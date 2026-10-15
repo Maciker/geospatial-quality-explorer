@@ -1,27 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { toFindingMapFeatures, toSourceMapFeatures } from "./mapFeatures";
 
+const samplePolygon = {
+  type: "Polygon" as const,
+  coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+};
+
 describe("mapFeatures", () => {
   it("uses findingId as the MapLibre feature id so duplicate business ids do not collide", () => {
+    const duplicateFinding = {
+      ruleId: "identifier.duplicate",
+      featureId: "ESP",
+      severity: "error",
+      explanation: "a",
+      suggestedAction: "b",
+      geometry: samplePolygon,
+    };
     const features = toFindingMapFeatures([
-      {
-        findingId: "run:0:identifier.duplicate",
-        ruleId: "identifier.duplicate",
-        featureId: "ESP",
-        severity: "error",
-        explanation: "a",
-        suggestedAction: "b",
-        geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] },
-      },
-      {
-        findingId: "run:1:identifier.duplicate",
-        ruleId: "identifier.duplicate",
-        featureId: "ESP",
-        severity: "error",
-        explanation: "a",
-        suggestedAction: "b",
-        geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] },
-      },
+      { ...duplicateFinding, findingId: "run:0:identifier.duplicate" },
+      { ...duplicateFinding, findingId: "run:1:identifier.duplicate" },
     ]);
     expect(features.map((feature) => feature.id)).toEqual([
       "run:0:identifier.duplicate",
