@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import FindingsMap from "../findings/FindingsMap";
-import type { FindingFeature, GeoJsonGeometry } from "../lib/api";
+import { toFindingMapFeatures, toSourceMapFeatures } from "../findings/mapFeatures";
 import {
   AlexaSimHttpError,
+  getAlexaFixtureSource,
   getAlexaSimLlmMode,
   postAlexaSimChat,
   type AlexaChatMessage,
   type AlexaChatResponse,
   type AlexaFindingCard,
+  type AlexaFixtureSource,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
 import { nextFindingCards, type FindingCardsState } from "./findingCards";
@@ -22,7 +24,7 @@ import { isAlexaSessionContextValid } from "./sessionContext";
 import styles from "./AlexaSimPanel.module.css";
 
 const WELCOME_MESSAGE =
-  "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope (Natural Earth), then list findings.";
+  "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope-demo-errors (Natural Earth), then list findings.";
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -43,18 +45,34 @@ export default function AlexaSimPanel() {
   const [cardsState, setCardsState] = useState<FindingCardsState>({ cards: [], selectedId: null });
   const findings = cardsState.cards;
   const selectedFindingId = cardsState.selectedId;
-  const selectFinding = (findingId: string) => setCardsState((previous) => ({ ...previous, selectedId: findingId }));
+  const selectFinding = (findingId: string) => {
+    setCardsState((previous) => ({ ...previous, selectedId: findingId }));
+    setFitNonce((value) => value + 1);
+  };
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQgisResponse, setLastQgisResponse] = useState<AlexaChatResponse | null>(null);
   const [confirmedRunId, setConfirmedRunId] = useState<string | null>(null);
+  const [datasetName, setDatasetName] = useState<string | null>(null);
+  const [sourceHash, setSourceHash] = useState<string | null>(null);
+  const [sourceLayer, setSourceLayer] = useState<AlexaFixtureSource | null>(null);
+  const [fitNonce, setFitNonce] = useState(0);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const mapFeatures = useMemo(() => toFindingFeatures(findings), [findings]);
+  const findingFeatures = useMemo(() => toFindingMapFeatures(findings), [findings]);
+  const sourceFeatures = useMemo(
+    () => (sourceLayer ? toSourceMapFeatures(sourceLayer.collection) : []),
+    [sourceLayer],
+  );
   const selected = findings.find((finding) => finding.findingId === selectedFindingId) ?? null;
+  const provenanceLabel = sourceLayer
+    ? `${sourceLayer.label} · ${sourceLayer.license} · ${sourceLayer.sourceCrs}`
+      + (sourceHash ? ` · hash ${sourceHash.slice(0, 12)}…` : "")
+      + (sourceLayer.scaleNote ? ` · ${sourceLayer.scaleNote}` : "")
+    : null;
 
   useEffect(() => {
     let active = true;
@@ -91,14 +109,35 @@ export default function AlexaSimPanel() {
     };
   }, [voiceEnabled]);
 
+  function clearLayerState(): void {
+    setSourceLayer(null);
+    setDatasetName(null);
+    setSourceHash(null);
+    setFitNonce((value) => value + 1);
+  }
+
   function startCleanSession(): void {
     setSessionId(undefined);
     setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
     setCardsState({ cards: [], selectedId: null });
     setLastQgisResponse(null);
     setConfirmedRunId(null);
+    clearLayerState();
     setError(null);
     setDraft("");
+  }
+
+  async function loadSourceForDataset(name: string): Promise<void> {
+    try {
+      const source = await getAlexaFixtureSource(name);
+      setSourceLayer(source);
+      setFitNonce((value) => value + 1);
+    } catch (loadError) {
+      setSourceLayer(null);
+      if (loadError instanceof AlexaSimHttpError) {
+        setError(formatAlexaSimErrorMessage(loadError));
+      }
+    }
   }
 
   function applySuccessfulResponse(nextMessages: AlexaChatMessage[], response: AlexaChatResponse): void {
@@ -110,12 +149,20 @@ export default function AlexaSimPanel() {
     if (!contextValid) {
       setLastQgisResponse(null);
       setConfirmedRunId(null);
+      clearLayerState();
       return;
     }
     if (response.runId !== null && response.runId !== confirmedRunId) {
       setLastQgisResponse(null);
       setConfirmedRunId(response.runId);
     }
+    if (response.datasetName) {
+      setDatasetName(response.datasetName);
+      if (response.datasetName !== datasetName || response.sourceHash !== sourceHash) {
+        void loadSourceForDataset(response.datasetName);
+      }
+    }
+    if (response.sourceHash) setSourceHash(response.sourceHash);
     if (response.qgisExport && response.runId !== null) {
       setLastQgisResponse(response);
       setConfirmedRunId(response.runId);
@@ -200,7 +247,7 @@ export default function AlexaSimPanel() {
               aria-label="Message Alexa simulation"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Try: Validate the ne-admin0-westeurope fixture"
+              placeholder="Try: Validate the ne-admin0-westeurope-demo-errors fixture"
               disabled={busy}
             />
             <button type="button" onClick={() => setVoiceEnabled((value) => !value)}>
@@ -229,6 +276,16 @@ export default function AlexaSimPanel() {
             </button>
             <button
               type="button"
+              onClick={() => {
+                if (!selectedFindingId) return;
+                void sendMessage(`Explain finding ${selectedFindingId}.`);
+              }}
+              disabled={busy || selectedFindingId === null}
+            >
+              Explain selected finding
+            </button>
+            <button
+              type="button"
               onClick={() => void sendMessage("Export QGIS bundle.")}
               disabled={busy || confirmedRunId === null}
             >
@@ -251,6 +308,13 @@ export default function AlexaSimPanel() {
               Download last QGIS bundle
             </button>
           </div>
+          {(datasetName || sourceHash) && (
+            <p aria-label="Active dataset summary">
+              Dataset {datasetName ?? "unknown"}
+              {sourceHash ? ` · sourceHash ${sourceHash.slice(0, 12)}…` : ""}
+              {confirmedRunId ? ` · runId ${confirmedRunId.slice(0, 12)}…` : ""}
+            </p>
+          )}
           <div className={styles.cards}>
             {findings.map((finding) => (
               <button
@@ -262,6 +326,7 @@ export default function AlexaSimPanel() {
                 <strong>{finding.ruleId}</strong>
                 <div className={styles.cardMeta}>
                   {finding.severity} · featureId {finding.featureId}
+                  {isMissingGeometry(finding) ? " · sin geometría" : ""}
                 </div>
                 <div className={styles.cardMeta}>findingId {finding.findingId}</div>
                 <p>{finding.explanation}</p>
@@ -272,11 +337,16 @@ export default function AlexaSimPanel() {
           {selected && (
             <p aria-label="Finding detail">
               Suggested action: {selected.suggestedAction}
+              {isMissingGeometry(selected) ? " (feature has no geometry on the map)" : ""}
             </p>
           )}
           <div className={styles.mapWrap}>
             <FindingsMap
-              features={mapFeatures}
+              sourceFeatures={sourceFeatures}
+              findingFeatures={findingFeatures}
+              selectedFindingId={selectedFindingId}
+              fitNonce={fitNonce}
+              provenanceLabel={provenanceLabel}
               onSelect={selectFinding}
             />
           </div>
@@ -295,27 +365,6 @@ function speak(text: string): void {
   window.speechSynthesis.speak(utterance);
 }
 
-function toFindingFeatures(findings: readonly AlexaFindingCard[]): FindingFeature[] {
-  return findings.flatMap((finding) => {
-    if (!isGeometry(finding.geometry)) return [];
-    return [{
-      type: "Feature",
-      id: finding.featureId,
-      geometry: finding.geometry,
-      properties: {
-        findingId: finding.findingId,
-        ruleId: finding.ruleId,
-        severity: finding.severity as FindingFeature["properties"]["severity"],
-        featureId: finding.featureId,
-        explanation: finding.explanation,
-        suggestedAction: finding.suggestedAction,
-      },
-    }];
-  });
-}
-
-function isGeometry(value: unknown): value is GeoJsonGeometry {
-  if (typeof value !== "object" || value === null) return false;
-  const type = (value as { type?: string }).type;
-  return type === "Polygon" || type === "MultiPolygon";
+function isMissingGeometry(finding: AlexaFindingCard): boolean {
+  return finding.geometry === null || finding.geometry === undefined;
 }

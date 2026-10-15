@@ -37,3 +37,7 @@ export {
   type FixtureCatalogEntry,
   type FixtureManifest,
 } from "./infrastructure/listFixtureCatalog.js";
+export {
+  readFixtureSource,
+  type FixtureSourceResponse,
+} from "./infrastructure/readFixtureSource.js";

@@ -2,64 +2,193 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import type { FindingFeature, GeoJsonGeometry } from "../lib/api";
+import type { GeoJsonGeometry } from "../lib/api";
+import type { FindingMapFeature, SourceMapFeature } from "./mapFeatures";
 import styles from "./FindingsMap.module.css";
 
-export default function FindingsMap(props: {
-  features: FindingFeature[];
+type Props = {
+  sourceFeatures: SourceMapFeature[];
+  findingFeatures: FindingMapFeature[];
+  selectedFindingId: string | null;
+  fitNonce: number;
+  provenanceLabel: string | null;
   onSelect: (findingId: string) => void;
-}) {
+};
+
+export default function FindingsMap(props: Props) {
   const container = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelect = useRef(props.onSelect);
   onSelect.current = props.onSelect;
-  const serialized = JSON.stringify(props.features);
+  const lastFitNonce = useRef<number | null>(null);
 
   useEffect(() => {
     const element = container.current;
-    if (!element) return undefined;
-    const features = (JSON.parse(serialized) as FindingFeature[]).flatMap((feature) => (
-      feature.geometry ? [{ ...feature, geometry: feature.geometry }] : []
-    ));
+    if (!element || mapRef.current) return undefined;
     const map = new maplibregl.Map({
       container: element,
       style: {
         version: 8,
         sources: {},
-        layers: [{ id: "background", type: "background", paint: { "background-color": "#d7e0d8" } }],
+        layers: [{ id: "background", type: "background", paint: { "background-color": "#c5d4e0" } }],
       },
-      center: [0, 0],
-      zoom: 1,
-      attributionControl: false,
+      center: [2, 46],
+      zoom: 3,
+      attributionControl: { compact: true },
     });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.on("load", () => {
-      map.addSource("findings", { type: "geojson", data: { type: "FeatureCollection", features } });
+      map.addSource("source-layer", { type: "geojson", data: emptyCollection() });
+      map.addSource("findings", { type: "geojson", data: emptyCollection() });
+      map.addLayer({
+        id: "source-fill",
+        type: "fill",
+        source: "source-layer",
+        paint: { "fill-color": "#f4f0e6", "fill-opacity": 0.85 },
+      });
+      map.addLayer({
+        id: "source-line",
+        type: "line",
+        source: "source-layer",
+        paint: { "line-color": "#5a6a5c", "line-width": 1 },
+      });
       map.addLayer({
         id: "findings-fill",
         type: "fill",
         source: "findings",
         paint: {
           "fill-color": ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
-          "fill-opacity": 0.55,
+          "fill-opacity": [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            0.75,
+            0.45,
+          ],
         },
       });
       map.addLayer({
         id: "findings-line",
         type: "line",
         source: "findings",
-        paint: { "line-color": "#10221a", "line-width": 2 },
+        paint: {
+          "line-color": [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            "#111111",
+            "#10221a",
+          ],
+          "line-width": [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            3.5,
+            2,
+          ],
+        },
       });
-      const bounds = new maplibregl.LngLatBounds();
-      for (const feature of features) extendBounds(bounds, feature.geometry);
-      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 32, maxZoom: 14 });
+      map.on("click", "findings-fill", (event) => {
+        const findingId = event.features?.[0]?.properties?.findingId;
+        if (typeof findingId === "string") onSelect.current(findingId);
+      });
+      map.on("click", "findings-line", (event) => {
+        const findingId = event.features?.[0]?.properties?.findingId;
+        if (typeof findingId === "string") onSelect.current(findingId);
+      });
     });
-    map.on("click", "findings-fill", (event) => {
-      const findingId = event.features?.[0]?.properties.findingId;
-      if (typeof findingId === "string") onSelect.current(findingId);
-    });
-    return () => map.remove();
-  }, [serialized]);
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
 
-  return <div ref={container} className={styles.map} role="application" aria-label="Findings map" />;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      const source = map.getSource("source-layer") as maplibregl.GeoJSONSource | undefined;
+      const findings = map.getSource("findings") as maplibregl.GeoJSONSource | undefined;
+      source?.setData({
+        type: "FeatureCollection",
+        features: props.sourceFeatures as GeoJSON.Feature[],
+      });
+      findings?.setData({
+        type: "FeatureCollection",
+        features: props.findingFeatures as GeoJSON.Feature[],
+      });
+      if (map.getLayer("findings-fill")) {
+        map.setPaintProperty("findings-fill", "fill-opacity", [
+          "case",
+          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+          0.75,
+          0.45,
+        ]);
+      }
+      if (map.getLayer("findings-line")) {
+        map.setPaintProperty("findings-line", "line-color", [
+          "case",
+          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+          "#111111",
+          "#10221a",
+        ]);
+        map.setPaintProperty("findings-line", "line-width", [
+          "case",
+          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+          3.5,
+          2,
+        ]);
+      }
+      if (lastFitNonce.current !== props.fitNonce) {
+        lastFitNonce.current = props.fitNonce;
+        fitToLayers(map, props.sourceFeatures, props.findingFeatures, props.selectedFindingId);
+      }
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [props.sourceFeatures, props.findingFeatures, props.selectedFindingId, props.fitNonce]);
+
+  return (
+    <div className={styles.mapShell}>
+      <div className={styles.toolbar}>
+        <button
+          type="button"
+          onClick={() => {
+            const map = mapRef.current;
+            if (!map) return;
+            lastFitNonce.current = null;
+            fitToLayers(map, props.sourceFeatures, props.findingFeatures, props.selectedFindingId);
+          }}
+        >
+          Fit layer
+        </button>
+        <div className={styles.legend} aria-label="Map legend">
+          <span><i className={styles.legendSource} /> Source</span>
+          <span><i className={styles.legendError} /> Error</span>
+          <span><i className={styles.legendWarning} /> Warning</span>
+        </div>
+      </div>
+      {props.provenanceLabel && (
+        <p className={styles.provenance} aria-label="Layer provenance">{props.provenanceLabel}</p>
+      )}
+      <div ref={container} className={styles.map} role="application" aria-label="Findings map" />
+    </div>
+  );
+}
+
+function emptyCollection(): GeoJSON.FeatureCollection {
+  return { type: "FeatureCollection", features: [] };
+}
+
+function fitToLayers(
+  map: maplibregl.Map,
+  sourceFeatures: readonly SourceMapFeature[],
+  findingFeatures: readonly FindingMapFeature[],
+  selectedFindingId: string | null,
+): void {
+  const selected = findingFeatures.find((feature) => feature.properties.findingId === selectedFindingId);
+  const bounds = new maplibregl.LngLatBounds();
+  const focus = selected ? [selected] : [...sourceFeatures, ...findingFeatures];
+  for (const feature of focus) extendBounds(bounds, feature.geometry);
+  if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 36, maxZoom: selected ? 8 : 5 });
 }
 
 function extendBounds(bounds: maplibregl.LngLatBounds, geometry: GeoJsonGeometry | null): void {

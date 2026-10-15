@@ -9,7 +9,7 @@
     }
   },
   "rewrites": [
-    { "source": "/api/v1/alexa-sim/:path*", "destination": "/api/alexa-sim" },
+    { "source": "/api/v1/alexa-sim/:path*", "destination": "/api/alexa-sim?alexaPath=:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -50,6 +50,9 @@ function forcedToolForCommand(command: string | null, sessionId: string): Forced
   }
   if (sessionId.length === 0) return null;
   if (/^(?:export|download)\b/.test(command)) return "export_qgis";
+  if (/^explain\s+finding\s+[a-f0-9]{64}:\d+:[a-z0-9_.]+/.test(command)) {
+    return "explain_finding";
+  }
   if (/^explain\s+(?:(?:the|this|that)\s+)?(?:next|first|top|second|third|last|previous|it|this|that|one|finding)\b/.test(command)) {
     return "explain_finding";
   }

@@ -78,6 +78,33 @@ describe("The Alexa simulation HTTP handler", () => {
     expect(JSON.parse(live.body)).toMatchObject({ llmMode: "live" });
   });
 
+  it("serves an allowlisted fixture source FeatureCollection without chat", async () => {
+    const result = await send({
+      method: "GET",
+      headers: {},
+      pathname: "/api/v1/alexa-sim/fixtures/ne-admin0-westeurope/source",
+    });
+    expect(result.status).toBe(200);
+    const body = JSON.parse(result.body) as {
+      fixtureId: string;
+      license: string;
+      collection: { type: string; features: unknown[] };
+    };
+    expect(body.fixtureId).toBe("ne-admin0-westeurope");
+    expect(body.license).toBe("NaturalEarth-public-domain");
+    expect(body.collection.type).toBe("FeatureCollection");
+    expect(body.collection.features.length).toBeGreaterThan(0);
+  });
+
+  it("rejects unknown fixture source ids", async () => {
+    const result = await send({
+      method: "GET",
+      headers: {},
+      pathname: "/api/v1/alexa-sim/fixtures/not-a-real-fixture/source",
+    });
+    expect(result.status).toBe(404);
+  });
+
   it("limits requests per client and window", async () => {
     let now = 0;
     const rateLimiter = new FixedWindowRateLimiter({ limit: 2, windowMs: 60_000, now: () => now });

@@ -1,7 +1,9 @@
+import { readFixtureSource } from "../../../alexa-tools/src/infrastructure/readFixtureSource.js";
 import { ConversationalLoop } from "../application/ConversationalLoop.js";
 import type { AlexaSimChatRequest, ChatMessage } from "../domain/chatTypes.js";
 import { createBoundedQualityToolsAdapter } from "./createToolsAdapter.js";
 import { createLlmClient } from "./createLlmClient.js";
+import { defaultVectorFixturesDirectory } from "./fixturesDirectory.js";
 import { FixedWindowRateLimiter } from "./FixedWindowRateLimiter.js";
 import { LlmUnavailableError } from "./NanOpenAiLlmClient.js";
 import { corsHeadersForRequest, readAlexaSimCorsOrigins } from "./parseCorsOrigins.js";
@@ -53,6 +55,26 @@ export async function handleAlexaSimHttp(
   const pathname = request.pathname ?? "/api/v1/alexa-sim/chat";
   if (request.method === "GET" && pathname.endsWith("/health")) {
     response.status(200).end(JSON.stringify({ status: "ok", service: "alexa-sim", llmMode: currentLlmMode() }));
+    return;
+  }
+  const fixtureSourceMatch = /^\/api\/v1\/alexa-sim\/fixtures\/([^/]+)\/source$/.exec(pathname);
+  if (request.method === "GET" && fixtureSourceMatch) {
+    const decision = (options.rateLimiter ?? sharedRateLimiter).take(clientKey(request));
+    if (!decision.allowed) {
+      response.setHeader("Retry-After", String(decision.retryAfterSeconds));
+      response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
+      return;
+    }
+    const fixtureId = decodeURIComponent(fixtureSourceMatch[1] ?? "");
+    const result = readFixtureSource(defaultVectorFixturesDirectory(), fixtureId);
+    if ("error" in result) {
+      response.status(result.error === "not_found" ? 404 : 400).end(JSON.stringify({
+        error: result.error,
+        message: result.message,
+      }));
+      return;
+    }
+    response.status(200).end(JSON.stringify(result));
     return;
   }
   if (request.method !== "POST" || !pathname.endsWith("/chat")) {

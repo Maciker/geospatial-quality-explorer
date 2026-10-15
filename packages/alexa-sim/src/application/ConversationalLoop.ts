@@ -87,6 +87,8 @@ export class ConversationalLoop {
     let sessionId = clientSessionId;
     let findingCards: readonly CitedFindingCard[] = [];
     let runId: string | null = null;
+    let datasetName: string | null = null;
+    let sourceHash: string | null = null;
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
     let synthesisAttempted = false;
@@ -98,6 +100,7 @@ export class ConversationalLoop {
     if (snapshot) {
       runId = snapshot.runId;
       progress.runId = runId;
+      datasetName = snapshot.datasetName;
       knownIds = collectCitationIdsFromFindings(snapshot.prioritizedFindings);
     }
     const reply = (assistantMessage: string, refused: boolean): AlexaSimChatResponse => ({
@@ -105,6 +108,8 @@ export class ConversationalLoop {
       assistantMessage,
       findings: findingCards,
       runId,
+      datasetName,
+      sourceHash,
       refused,
       qgisExport,
     });
@@ -161,6 +166,8 @@ export class ConversationalLoop {
           findingCards = extracted.findings;
           runId = extracted.runId ?? runId;
           progress.runId = runId;
+          datasetName = extracted.datasetName ?? datasetName;
+          sourceHash = extracted.sourceHash ?? sourceHash;
           qgisExport = extracted.qgisExport ?? qgisExport;
           knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
           if (!executed.result.ok && executed.result.error === "refused") {
@@ -202,6 +209,8 @@ export class ConversationalLoop {
             findingCards = revalidatedState.findings;
             runId = revalidatedState.runId ?? runId;
             progress.runId = runId;
+            datasetName = revalidatedState.datasetName ?? datasetName;
+            sourceHash = revalidatedState.sourceHash ?? sourceHash;
             knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
             if (!revalidated.result.ok && revalidated.result.error === "refused") {
               return reply(revalidated.result.message, true);
@@ -312,6 +321,8 @@ export class ConversationalLoop {
       assistantMessage: "The request timed out before I could finish checking the dataset. Your session is kept; ask again or shorten the request.",
       findings: findingCards,
       runId,
+      datasetName: null,
+      sourceHash: null,
       refused: true,
       qgisExport,
     };
@@ -351,25 +362,41 @@ function withServerSideToolCall(assistant: ChatMessage, forced: string | null, s
 function extractStructuredState(
   result: { ok: boolean; data?: unknown },
   existing: readonly CitedFindingCard[],
-): { findings: readonly CitedFindingCard[]; runId: string | null; qgisExport: QgisExportArtifact | null } {
+): {
+  findings: readonly CitedFindingCard[];
+  runId: string | null;
+  datasetName: string | null;
+  sourceHash: string | null;
+  qgisExport: QgisExportArtifact | null;
+} {
   if (!result.ok || result.data === undefined) {
-    return { findings: existing, runId: null, qgisExport: null };
+    return { findings: existing, runId: null, datasetName: null, sourceHash: null, qgisExport: null };
   }
   const data = result.data;
   if (isListFindingsOutput(data)) {
     return {
       findings: mergeFindingCards(existing, findingSummariesToCards(data.findings)),
       runId: data.runId,
+      datasetName: null,
+      sourceHash: null,
       qgisExport: null,
     };
   }
   if (isRunValidationOutput(data)) {
-    return { findings: existing, runId: data.runId, qgisExport: null };
+    return {
+      findings: existing,
+      runId: data.runId,
+      datasetName: data.datasetName,
+      sourceHash: data.sourceHash,
+      qgisExport: null,
+    };
   }
   if (isExplainOutput(data)) {
     return {
       findings: mergeFindingCards(existing, findingSummariesToCards([data.finding])),
       runId: data.runId,
+      datasetName: null,
+      sourceHash: null,
       qgisExport: null,
     };
   }
@@ -377,10 +404,12 @@ function extractStructuredState(
     return {
       findings: existing,
       runId: data.runId,
+      datasetName: null,
+      sourceHash: null,
       qgisExport: { runId: data.runId, files: data.files },
     };
   }
-  return { findings: existing, runId: null, qgisExport: null };
+  return { findings: existing, runId: null, datasetName: null, sourceHash: null, qgisExport: null };
 }
 
 function isListFindingsOutput(value: unknown): value is ListFindingsOutput {

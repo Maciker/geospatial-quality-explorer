@@ -90,6 +90,13 @@ export class DeterministicMockLlm implements LlmPort {
     if (user.includes("list") && user.includes("finding")) {
       return toolCall("tc_list", "list_findings", { sessionId: sessionId ?? "", limit: 5 });
     }
+    const explicitFinding = user.match(/explain\s+finding\s+([a-f0-9]{64}:\d+:[a-z0-9_.]+[a-z0-9_]*)/);
+    if (explicitFinding?.[1]) {
+      return toolCall("tc_explain_selected", "explain_finding", {
+        sessionId: sessionId ?? "",
+        findingId: explicitFinding[1],
+      });
+    }
     if (user.includes("next one") || user.includes("next finding") || (user.includes("explain") && user.includes("next"))) {
       const next = nextFindingId(request.messages);
       return next

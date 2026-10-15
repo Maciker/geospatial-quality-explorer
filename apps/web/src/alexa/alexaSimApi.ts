@@ -18,6 +18,8 @@ export type AlexaChatResponse = {
   assistantMessage: string;
   findings: AlexaFindingCard[];
   runId: string | null;
+  datasetName?: string | null;
+  sourceHash?: string | null;
   refused: boolean;
   /** "mock" is the deterministic scripted model used without an API key. */
   llmMode?: "mock" | "live";
@@ -30,6 +32,22 @@ export type AlexaChatResponse = {
       style: string;
     };
   } | null;
+};
+
+export type AlexaFixtureSource = {
+  fixtureId: string;
+  label: string;
+  license: string;
+  sourceCrs: string;
+  sourceHash: string;
+  origin?: string;
+  transformation?: string;
+  scaleNote?: string;
+  didacticNote?: string;
+  collection: {
+    type: "FeatureCollection";
+    features: unknown[];
+  };
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
@@ -95,4 +113,20 @@ export async function getAlexaSimLlmMode(): Promise<"mock" | "live" | null> {
   } catch {
     return null;
   }
+}
+
+export async function getAlexaFixtureSource(fixtureId: string): Promise<AlexaFixtureSource> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/alexa-sim/fixtures/${encodeURIComponent(fixtureId)}/source`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+    throw new AlexaSimHttpError(
+      payload?.message ?? `Fixture source request failed (${response.status}).`,
+      {
+        status: response.status,
+        code: typeof payload?.error === "string" ? payload.error : `http_${response.status}`,
+        retryAfterSeconds: parseRetryAfterSeconds(response.headers.get("Retry-After")),
+      },
+    );
+  }
+  return response.json() as Promise<AlexaFixtureSource>;
 }
