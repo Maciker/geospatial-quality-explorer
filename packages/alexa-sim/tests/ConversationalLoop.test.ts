@@ -150,6 +150,37 @@ describe("ConversationalLoop", () => {
     expect(exported.assistantMessage.toLowerCase()).toContain("download");
   });
 
+  it("explains a selected finding by id when the panel message ends with a period", async () => {
+    const loop = createLoop(new DeterministicMockLlm());
+    const validated = await loop.run({
+      messages: [{ role: "user", content: "Validate the ne-admin0-westeurope-demo-errors fixture." }],
+    });
+    const listed = await loop.run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the ne-admin0-westeurope-demo-errors fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "List the findings." },
+      ],
+    });
+    const selected = listed.findings.find((finding) => finding.ruleId === "geometry.invalid");
+    expect(selected).toBeDefined();
+    const explained = await loop.run({
+      sessionId: listed.sessionId,
+      messages: [
+        { role: "user", content: "Validate the ne-admin0-westeurope-demo-errors fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "List the findings." },
+        { role: "assistant", content: listed.assistantMessage },
+        { role: "user", content: `Explain finding ${selected!.findingId}.` },
+      ],
+    });
+    expect(explained.refused).toBe(false);
+    expect(explained.assistantMessage).toContain(selected!.findingId);
+    expect(explained.assistantMessage).toContain("geometry.invalid");
+    expect(explained.assistantMessage.toLowerCase()).not.toMatch(/unknown finding|not_found/);
+  });
+
   it("finishes explain-the-next within two model rounds using enriched tool output", async () => {
     let rounds = 0;
     const mock = new DeterministicMockLlm();

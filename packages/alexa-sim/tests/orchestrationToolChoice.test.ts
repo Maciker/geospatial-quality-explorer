@@ -35,6 +35,10 @@ describe("orchestrationToolChoice", () => {
   it.each([
     ["Explain the next finding.", "explain_finding"],
     ["Why is that one a problem? Explain it.", "explain_finding"],
+    [
+      `Explain finding ${"a".repeat(64)}:16:geometry.invalid.`,
+      "explain_finding",
+    ],
     ["Export QGIS.", "export_qgis"],
     ["Download the QGIS bundle please", "export_qgis"],
   ])("forces the tool for %s once a session exists", (content, tool) => {

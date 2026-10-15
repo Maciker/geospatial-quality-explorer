@@ -233,6 +233,7 @@ export default function AlexaSimPanel() {
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
+                data-role={message.role}
                 className={message.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
               >
                 {message.content}

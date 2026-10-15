@@ -19,12 +19,18 @@ export function toolChoiceForTurn(
 export function forcedToolForTurn(transcript: readonly ChatMessage[], sessionId: string): ForcedToolName | null {
   const lastUser = lastUserMessage(transcript);
   if (!lastUser || hasToolResultSinceLastUser(transcript)) return null;
-  for (const clause of lastUser.content.toLowerCase().split(/[.!?;]+/)) {
+  const full = lastUser.content.toLowerCase();
+  // Finding ids contain dots (ruleId); never parse them from a clause split on punctuation.
+  if (sessionId.length > 0 && EXPLAIN_FINDING_BY_ID.test(full)) return "explain_finding";
+  for (const clause of full.split(/[.!?;]+/)) {
     const forced = forcedToolForCommand(commandText(clause), sessionId);
     if (forced) return forced;
   }
   return null;
 }
+
+const EXPLAIN_FINDING_BY_ID =
+  /\bexplain\s+finding\s+[a-f0-9]{64}:\d+:[a-z0-9_]+(?:\.[a-z0-9_]+)*/;
 
 /** Leading courtesy words that still make a command: "OK, now please", "can you", "let's". */
 const POLITE_PREFIX = /^(?:(?:ok(?:ay)?|now|then|and|so|alright|great|thanks|hi|hello|hey|yes|yeah|sure)\b[\s,]*)*(?:(?:please|can you|could you|would you|will you|let's|lets|go ahead and|i want you to|i'd like you to)\b[\s,]*)*(?:please\b[\s,]*)?/;
@@ -50,9 +56,6 @@ function forcedToolForCommand(command: string | null, sessionId: string): Forced
   }
   if (sessionId.length === 0) return null;
   if (/^(?:export|download)\b/.test(command)) return "export_qgis";
-  if (/^explain\s+finding\s+[a-f0-9]{64}:\d+:[a-z0-9_.]+/.test(command)) {
-    return "explain_finding";
-  }
   if (/^explain\s+(?:(?:the|this|that)\s+)?(?:next|first|top|second|third|last|previous|it|this|that|one|finding)\b/.test(command)) {
     return "explain_finding";
   }

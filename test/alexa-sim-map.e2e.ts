@@ -30,9 +30,11 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await expect(invalidCard.getByText(/findingId [a-f0-9]{64}:\d+:geometry\.invalid/)).toBeVisible();
 
   await page.getByRole("button", { name: "Explain selected finding" }).click();
-  await expect(page.getByLabel("Alexa simulation chat").getByText(/geometry\.invalid/).last()).toBeVisible({
+  const assistant = page.getByLabel("Alexa simulation chat").locator("[data-role='assistant']");
+  await expect(assistant.filter({ hasText: /geometry\.invalid/ }).last()).toBeVisible({
     timeout: 30_000,
   });
+  await expect(assistant.filter({ hasText: /findingId [a-f0-9]{64}:\d+:geometry\.invalid/ }).last()).toBeVisible();
 
   await page.getByLabel("Message Alexa simulation").fill("Export QGIS.");
   await page.getByRole("button", { name: "Send" }).click();
