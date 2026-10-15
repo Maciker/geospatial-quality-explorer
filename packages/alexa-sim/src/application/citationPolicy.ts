@@ -30,7 +30,7 @@ export function mergeCitationIds(left: KnownCitationIds, right: KnownCitationIds
   };
 }
 
-const NUMBER_WORD = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|ten|several|many|some|multiple|numerous|a few|dozens of|a handful of)`;
+const NUMBER_WORD = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|hundreds? of|a hundred|a single|both|several|many|some|multiple|numerous|a few|a couple of|dozens of|a handful of)`;
 const PROBLEM_NOUNS = String.raw`findings?|issues?|errors?|warnings?|problems?|defects?|duplicates?|self-intersections?|overlaps?`;
 const PROBLEM_NOUN = `(?:${PROBLEM_NOUNS})`;
 const DEFECT_NOUN = String.raw`(?:${PROBLEM_NOUNS}|polygons?|features?|geometr(?:y|ies))`;
@@ -39,9 +39,13 @@ const DEFECT_NOUN = String.raw`(?:${PROBLEM_NOUNS}|polygons?|features?|geometr(?
 const DIGIT_COUNT = new RegExp(String.raw`(?<![\w:.-])(?<!\b(?:top|first|next|up to|at most)\s)\d+\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`);
 const WORD_COUNT = new RegExp(String.raw`(?<![\w-])${NUMBER_WORD}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`);
 /** "No errors were found": a clean verdict. "has no geometry" restates a finding and is not one. */
-const ZERO_COUNT = new RegExp(String.raw`(?<![\w-])(?:no|zero)\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b|\bnothing (?:wrong|to fix)\b`);
+const ZERO_COUNT = new RegExp([
+  String.raw`(?<![\w-])(?:no|zero)\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b`,
+  String.raw`\b(?:did not|didn't|could not|couldn't|do not|don't|cannot|can't)\s+(?:find|see|detect)\s+any\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b`,
+  String.raw`\bnothing (?:is )?(?:wrong|to fix)\b`,
+].join("|"));
 /** Offers and questions ("I can explain one finding at a time") mention quantities without stating results. */
-const CAPABILITY = /\b(?:i can|i could|i will|i'll|can you|could you|do you|would you|want me|ask me|let me|at a time|or two)\b/;
+const CAPABILITY = /\b(?:(?:i can|i could|i will|i'll|let me) (?:explain|list|run|show|help|check|validate|export|walk you through)|can you|could you|do you|would you|want me|ask me|at a time|or two)\b/;
 /** "No problem!" is courtesy, not a verdict. */
 const COURTESY = /\bno (?:problem|worries)\b(?=\s*(?:[!,.]|$))/g;
 
@@ -58,7 +62,7 @@ function zeroCount(lowered: string): boolean {
  * such as "the data is fine". Capability text, questions and definitions are not claims.
  */
 const DATASET_CLAIMS: readonly RegExp[] = [
-  /\bself-intersects\b|\bself-intersecting\b|\b(?:is|are) duplicated\b|\boverlaps (?:with )?\w/,
+  /\bself-intersects\b|\bself-intersecting\b|\b(?:is|are) duplicated\b|[\w-]+ overlaps (?:with )?\w/,
   /\b(?:has|have|had|contains?|shows?|found|detected)\s+(?:an?\s+|one\s+)?(?:[\w-]+\s+){0,2}(?:empty geometr\w*|self-intersection|duplicate|overlap|geometry errors?|errors?|problems?|issues?|defects?)\b/,
   /\bthere (?:is|are|was|were) (?:\w+\s+){0,3}(?:errors?|problems?|issues?|defects?)\b/,
   /\b(?:data|dataset|portfolio|fixture|layer|everything|it|geometr\w*|polygons?|features?|[\w-]+-\d+)\s+(?:is|are|looks?|seems?)\s+(?:all\s+)?(?:fine|clean|good|ok|okay|valid|invalid|broken|correct|corrupt\w*)\b/,

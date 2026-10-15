@@ -34,6 +34,7 @@ describe("citationPolicy", () => {
     "Do you want me to list one finding or two?",
     "Ask me for the top 3 findings.",
     "I can show up to 5 findings.",
+    "Validation checks for duplicates, overlaps and self-intersections.",
     refusalTextForMissingCitation(),
   ])("does not treat a neutral reply as a dataset claim: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(false);
@@ -57,6 +58,16 @@ describe("citationPolicy", () => {
     "Dozens of issues were reported.",
     "Only a handful of problems remain.",
     "I found nothing wrong.",
+    "Twelve errors were found.",
+    "Twenty issues exist.",
+    "A couple of issues were found.",
+    "I can see seven issues in the data.",
+    "Let me be clear: no errors were found.",
+    "I did not find any errors.",
+    "I didn't find any issues.",
+    "I could not find any problems.",
+    "Nothing is wrong with the data.",
+    "Feature bowtie-1 overlaps parcel-2.",
   ])("treats an invented quality claim as a validation result: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(true);
   });
