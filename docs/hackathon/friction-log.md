@@ -1,6 +1,6 @@
 # Alexa+ hackathon friction log
 
-Template for [MAC-371](https://linear.app/maciker/issue/MAC-371) (Devpost Product Feedback). Copy one block per incident while building or demoing the simulation. English preferred for submission; Spanish notes are fine in drafts.
+Template for [MAC-371](https://linear.app/maciker/issue/MAC-371) (Devpost Product Feedback). Copy one block per incident while building or demoing the simulation. English preferred for submission; Spanish notes are fine in drafts. Paste-ready Devpost text from logged entries lives in [product-feedback.md](./product-feedback.md).
 
 **Product area:** Geospatial Quality Explorer — Alexa+ web simulation (not official Alexa).
 
