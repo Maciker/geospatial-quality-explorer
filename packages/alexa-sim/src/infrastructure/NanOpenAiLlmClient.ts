@@ -43,8 +43,9 @@ export class NanOpenAiLlmClient implements LlmPort {
     if (request.signal) init.signal = request.signal;
     const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, init);
     if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(`LLM request failed (${response.status}): ${detail.slice(0, 240)}`);
+      // Provider bodies can echo the API key; keep only the status.
+      await response.body?.cancel();
+      throw new Error(`LLM request failed with HTTP ${response.status}.`);
     }
     const payload = await response.json() as {
       choices?: Array<{

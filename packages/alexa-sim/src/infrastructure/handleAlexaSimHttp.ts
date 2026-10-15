@@ -85,7 +85,17 @@ export async function handleAlexaSimHttp(
     tools: createBoundedQualityToolsAdapter(),
     llm: createLlmClient(),
   });
-  const result = await loop.run(parsed);
+  let result;
+  try {
+    result = await loop.run(parsed);
+  } catch (error) {
+    console.error(`alexa-sim: ${error instanceof Error ? error.message : "LLM request failed."}`);
+    response.status(502).end(JSON.stringify({
+      error: "llm_unavailable",
+      message: "The language model is unavailable right now. Try again shortly.",
+    }));
+    return;
+  }
   response.status(200);
   response.end(JSON.stringify({ ...result, llmMode: currentLlmMode() }));
 }
