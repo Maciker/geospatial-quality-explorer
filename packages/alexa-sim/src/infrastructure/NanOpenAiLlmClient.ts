@@ -9,6 +9,14 @@ type OpenAiMessage = {
   tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
 };
 
+/** Fixed-text failure: provider replies and transport errors can echo the API key, so none of their text is kept. */
+export class LlmUnavailableError extends Error {
+  constructor(readonly httpStatus: number | null) {
+    super(httpStatus === null ? "LLM request failed before a usable reply." : `LLM request failed with HTTP ${httpStatus}.`);
+    this.name = "LlmUnavailableError";
+  }
+}
+
 export class NanOpenAiLlmClient implements LlmPort {
   private readonly config: NanLlmConfig;
 
@@ -41,13 +49,17 @@ export class NanOpenAiLlmClient implements LlmPort {
       body: JSON.stringify(body),
     };
     if (request.signal) init.signal = request.signal;
-    const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, init);
+    const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, init).catch((error: unknown) => {
+      if (error instanceof Error && error.name === "AbortError") throw error;
+      throw new LlmUnavailableError(null);
+    });
     if (!response.ok) {
-      // Provider bodies can echo the API key; keep only the status.
       await response.body?.cancel();
-      throw new Error(`LLM request failed with HTTP ${response.status}.`);
+      throw new LlmUnavailableError(response.status);
     }
-    const payload = await response.json() as {
+    const payload = await response.json().catch(() => {
+      throw new LlmUnavailableError(null);
+    }) as {
       choices?: Array<{
         finish_reason?: string;
         message?: {
