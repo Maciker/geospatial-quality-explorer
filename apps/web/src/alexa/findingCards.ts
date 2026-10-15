@@ -1,6 +1,6 @@
 import type { AlexaFindingCard } from "./alexaSimApi";
 
-export type FindingCardsState = {
+type FindingCardsState = {
   readonly cards: readonly AlexaFindingCard[];
   readonly selectedId: string | null;
 };
