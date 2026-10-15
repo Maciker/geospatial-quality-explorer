@@ -1,23 +1,17 @@
 import type { AlexaChatResponse } from "./alexaSimApi";
+import { qgisBundleZip } from "./qgisZip";
 
+/** One archive instead of four downloads: browsers block repeated downloads and QGIS needs the files side by side. */
 export function downloadQgisArtifacts(response: AlexaChatResponse): void {
   const bundle = response.qgisExport;
   if (!bundle) {
     throw new Error("No QGIS bundle was returned. Ask Alexa to export QGIS first.");
   }
-  const files = [
-    ["findings.geojson", bundle.files.geojson],
-    ["metadata.json", bundle.files.metadata],
-    ["project.qgs", bundle.files.project],
-    ["style.qml", bundle.files.style],
-  ] as const;
-  for (const [name, content] of files) {
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${bundle.runId.slice(0, 8)}-${name}`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
+  const zip = qgisBundleZip(bundle);
+  const url = URL.createObjectURL(new Blob([zip.bytes], { type: "application/zip" }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = zip.fileName;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
