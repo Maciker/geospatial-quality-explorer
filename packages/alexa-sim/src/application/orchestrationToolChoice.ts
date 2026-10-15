@@ -26,7 +26,7 @@ export function forcedToolForTurn(transcript: readonly ChatMessage[], sessionId:
 }
 
 /** Leading courtesy words that still make a command: "OK, now please", "can you", "let's". */
-const POLITE_PREFIX = /^(?:(?:ok(?:ay)?|now|then|and|so|alright|great|thanks)\b[\s,]*)*(?:(?:please|can you|could you|would you|will you|let's|lets|go ahead and|i want you to|i'd like you to)\b[\s,]*)*(?:please\b[\s,]*)?/;
+const POLITE_PREFIX = /^(?:(?:ok(?:ay)?|now|then|and|so|alright|great|thanks|hi|hello|hey|yes|yeah|sure)\b[\s,]*)*(?:(?:please|can you|could you|would you|will you|let's|lets|go ahead and|i want you to|i'd like you to)\b[\s,]*)*(?:please\b[\s,]*)?/;
 
 /** The clause as an imperative, or null for a question or a negated request. */
 function commandText(clause: string): string | null {

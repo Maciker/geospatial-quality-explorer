@@ -38,7 +38,7 @@ const DEFECT_NOUN = String.raw`(?:findings?|issues?|errors?|warnings?|problems?|
  * such as "the data is fine". Capability text, questions and definitions are not claims.
  */
 const DATASET_CLAIMS: readonly RegExp[] = [
-  new RegExp(String.raw`\b${QUANTITY}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
+  new RegExp(String.raw`(?<![\w:.-])${QUANTITY}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
   /\bself-intersects\b|\bself-intersecting\b|\b(?:is|are) duplicated\b|\boverlaps (?:with )?\w/,
   /\b(?:has|have|had|contains?|shows?|found|detected)\s+(?:an?\s+|one\s+)?(?:[\w-]+\s+){0,2}(?:empty geometr\w*|self-intersection|duplicate|overlap|geometry errors?|errors?|problems?|issues?|defects?)\b/,
   /\bthere (?:is|are|was|were) (?:\w+\s+){0,3}(?:errors?|problems?|issues?|defects?)\b/,
@@ -60,11 +60,26 @@ export function assistantStatesValidationResults(text: string): boolean {
  */
 export function assistantClaimsAreGrounded(text: string, known: KnownCitationIds): boolean {
   return splitSentences(text).every((sentence) => {
-    if (!assistantStatesValidationResults(sentence)) return true;
-    if (DATASET_CLAIMS[0]!.test(sentence.toLowerCase())) return false;
-    return [...known.findingIds].some((id) => sentence.includes(id))
-      || [...known.featureIds].some((id) => containsDelimited(sentence, id));
+    // Ids are quoted, not asserted: "bowtie-1" must not read as a count of one.
+    const claim = withoutKnownIds(sentence, known);
+    if (!assistantStatesValidationResults(claim) || HEDGE.test(claim.toLowerCase())) return true;
+    if (DATASET_CLAIMS[0]!.test(claim.toLowerCase())) return false;
+    return claim !== sentence;
   });
+}
+
+/** "Not validated yet", "I can't tell": the model declines to state a result. */
+const HEDGE = /\b(?:yet|haven't|have not|hasn't|has not|not (?:been )?(?:run|validated)|can't tell|cannot tell|don't know|do not know)\b/;
+
+function withoutKnownIds(sentence: string, known: KnownCitationIds): string {
+  let scrubbed = sentence;
+  for (const id of known.findingIds) scrubbed = scrubbed.split(id).join("ID");
+  // An id equal to the placeholder would never stop matching.
+  const featureIds = [...known.featureIds].filter((id) => id.length > 0 && id !== "ID").sort((left, right) => right.length - left.length);
+  for (const id of featureIds) {
+    while (containsDelimited(scrubbed, id)) scrubbed = replaceDelimited(scrubbed, id);
+  }
+  return scrubbed;
 }
 
 export function refusalTextForMissingCitation(): string {
@@ -77,11 +92,20 @@ function splitSentences(text: string): string[] {
 
 /** A feature id counts only as a whole token, so feature "1" does not match "12". */
 function containsDelimited(text: string, id: string): boolean {
-  if (id.length === 0) return false;
+  return delimitedIndex(text, id) >= 0;
+}
+
+function replaceDelimited(text: string, id: string): string {
+  const index = delimitedIndex(text, id);
+  return `${text.slice(0, index)}ID${text.slice(index + id.length)}`;
+}
+
+function delimitedIndex(text: string, id: string): number {
+  if (id.length === 0) return -1;
   for (let index = text.indexOf(id); index >= 0; index = text.indexOf(id, index + 1)) {
     const before = text[index - 1] ?? " ";
     const after = text[index + id.length] ?? " ";
-    if (!/[\w-]/.test(before) && !/[\w-]/.test(after)) return true;
+    if (!/[\w-]/.test(before) && !/[\w-]/.test(after)) return index;
   }
-  return false;
+  return -1;
 }

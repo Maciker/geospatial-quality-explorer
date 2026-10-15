@@ -3,6 +3,7 @@ import {
   assistantClaimsAreGrounded,
   assistantStatesValidationResults,
   collectCitationIdsFromFindings,
+  mergeCitationIds,
   refusalTextForMissingCitation,
 } from "../src/application/citationPolicy.js";
 
@@ -59,6 +60,25 @@ describe("citationPolicy", () => {
     `Feature empty-1 and cats-9 are broken. See ${FINDING_ID}.`,
   ])("rejects an invented claim beside a real id: %s", (text) => {
     expect(assistantClaimsAreGrounded(text, knownWithFeature("f"))).toBe(false);
+  });
+
+  it.each([
+    "Feature bowtie-1 has a self-intersection.",
+    "The finding on bowtie-1 is a geometry.invalid error.",
+    `Feature P-12 has a self-intersection (finding ${FINDING_ID}).`,
+  ])("does not read digits inside a known id as a count: %s", (text) => {
+    const known = mergeCitationIds(knownWithFeature("bowtie-1"), knownWithFeature("P-12"));
+
+    expect(assistantClaimsAreGrounded(text, known)).toBe(true);
+    expect(assistantClaimsAreGrounded("There are 5 findings on bowtie-1.", known)).toBe(false);
+  });
+
+  it.each([
+    "There are no findings yet. Ask me to validate the portfolio.",
+    "I have no errors to report because I haven't run validation.",
+    "Sorry, I can't tell which feature has the error.",
+  ])("lets an empty-state or hedged reply through: %s", (text) => {
+    expect(assistantClaimsAreGrounded(text, knownWithFeature("f"))).toBe(true);
   });
 
   it("does not let a short feature id match inside another word", () => {

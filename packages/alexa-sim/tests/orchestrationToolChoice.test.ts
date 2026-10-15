@@ -41,6 +41,8 @@ describe("orchestrationToolChoice", () => {
     ["Can you export the QGIS bundle?", "export_qgis"],
     ["OK, now please list the findings.", "list_findings"],
     ["Could you validate the portfolio fixture?", "run_validation"],
+    ["Hi, validate the portfolio fixture.", "run_validation"],
+    ["Yes, export QGIS.", "export_qgis"],
   ])("treats a polite request as a command: %s", (content, tool) => {
     expect(forcedToolForTurn([{ role: "user", content }], "sess-123")).toBe(tool);
   });

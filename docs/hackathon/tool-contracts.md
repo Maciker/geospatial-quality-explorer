@@ -36,7 +36,7 @@ The browser receives full tool results. The model receives a compact copy: findi
 - A turn whose last user message is an explicit command (validate the portfolio, list the findings, explain the next finding, export QGIS, including "please" or "can you" forms) forces the matching tool call (`tool_choice`). Questions ("what does the export contain?"), negations ("don't export yet") and concept requests ("explain what a self-intersection is") force nothing.
 - If the model answers an explicit export or list command without calling the tool, or its first call times out, the server makes that call with the session id.
 - Each tool returns a deterministic `voiceAnswer` built from its own output (validation: run id and finding count; list: count and top finding; explain: the finding; export: download notice). On a turn where a tool returned one, that text is the reply; the model only chooses the tool and is not called again.
-- On a turn without tools, the model's reply is checked sentence by sentence. A sentence that asserts something about the dataset must name a finding id or feature id from the session or this turn's tools, and may not state counts. Otherwise the whole reply is refused. Greetings, capability text, clarifying questions and definitions pass unchanged.
+- On a turn without tools, the model's reply is checked sentence by sentence. A sentence that asserts something about the dataset must name a finding id or feature id from the session or this turn's tools, and may not state counts. Otherwise the whole reply is refused. Ids are not read as counts (`bowtie-1` is not "one"). Greetings, capability text, clarifying questions, definitions and replies that say nothing has been validated yet pass unchanged.
 
 ## Response envelope
 
