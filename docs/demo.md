@@ -1,6 +1,6 @@
 # Five-minute local demo
 
-Use Node.js 22 or 24 and pnpm 10.17.1. The portfolio fixture is CC0 synthetic data in `packages/quality/fixtures/vector/portfolio.geojson`.
+Use Node.js 22 or 24 and pnpm 10.17.1. Catalog fixtures live under `packages/quality/fixtures/vector/`. Synthetic samples such as `portfolio` are CC0; `ne-admin0-westeurope` / `ne-admin0-westeurope-demo-errors` are Natural Earth 1:110m Admin 0 selections (`NaturalEarth-public-domain` — see `fixtures/LICENSE.md` and `fixtures/provenance/`).
 
 ## Fastest path: Alexa+ simulation (no database, no API key)
 
@@ -13,7 +13,7 @@ pnpm dev:web
 
 Open the Vite URL with `?sim=alexa`. The badges read *Simulation of Alexa+ — not an Amazon product* and *Model: deterministic mock*. Type or say, in order:
 
-1. `Validate the portfolio fixture.` — the reply cites a 64-character run id.
+1. `Validate the portfolio fixture.` (or `Validate the ne-admin0-westeurope fixture.`) — the reply cites a 64-character run id.
 2. `List the findings.` — finding cards appear with `findingId`, `ruleId` and `featureId`, and the map draws them.
 3. `Explain the next finding.` — the explanation comes from the deterministic core, not the model.
 4. `Export QGIS.` — then click **Download last QGIS bundle**, unzip `qgis-<run>.zip` into one folder and open `findings.qgs` in QGIS 3 (see [qgis-review](qgis-review.md)).

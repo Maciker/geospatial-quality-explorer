@@ -5,7 +5,7 @@ export const ALEXA_QUALITY_TOOL_DEFINITIONS: readonly OpenAiToolDefinition[] = [
     type: "function",
     function: {
       name: "list_fixtures",
-      description: "List CC0 catalog fixtures available for deterministic validation demos.",
+      description: "List catalog fixtures available for deterministic validation demos (synthetic CC0 and Natural Earth samples).",
       parameters: {
         type: "object",
         properties: {

@@ -1,0 +1,20 @@
+{
+  "label": "Natural Earth Admin 0 Western Europe and neighbours (demo errors)",
+  "license": "NaturalEarth-public-domain",
+  "defaultSourceCrs": "EPSG:4326",
+  "origin": "Derived from ne-admin0-westeurope.geojson (Natural Earth 110m Admin 0 selection)",
+  "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "transformation": "From ne-admin0-westeurope: replaced Portugal geometry with a self-intersecting bowtie in Iberia; duplicated Spain Feature.id; added DEMO-EMPTY with null geometry. Injected defects are intentional for the demo — not present in Natural Earth.",
+  "scaleNote": "Cartographic 1:110m national boundaries — not parcels or survey-grade precision. Coordinates rounded to 6dp; Admin 0 polygons may include overseas territories (e.g. FRA). Use ADM0_A3 / Feature.id as the country key; ISO_A3 may be -99 in the upstream source (FRA, NOR).",
+  "didacticNote": "Real data; errors introduced for the demo. Do not attribute injected defects to Natural Earth.",
+  "parameters": {
+    "source": "Natural Earth Admin 0 Countries 1:110m (derived didactic copy)",
+    "sourceVersion": "5.1.1",
+    "baseFixture": "ne-admin0-westeurope",
+    "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "scale": "1:110m",
+    "didacticNote": "Real data; errors introduced for the demo",
+    "injectedErrors": "geometry.invalid(PRT), identifier.duplicate(ESP), geometry.empty(DEMO-EMPTY)",
+    "transformation": "Didactic defects on derived copy; no claim that Natural Earth contains them"
+  }
+}

@@ -17,6 +17,12 @@ describe("orchestrationToolChoice", () => {
     expect(forcedToolForTurn(transcript, "sess-123")).toBe("run_validation");
   });
 
+  it("forces validation for a catalog fixture id even without the word fixture", () => {
+    const transcript: ChatMessage[] = [{ role: "user", content: "Validate ne-admin0-westeurope." }];
+    expect(forcedToolForTurn(transcript, "")).toBe("list_fixtures");
+    expect(forcedToolForTurn(transcript, "sess-123")).toBe("run_validation");
+  });
+
   it("does not force tools after a tool result on the same turn", () => {
     const transcript: ChatMessage[] = [
       { role: "user", content: "Validate the portfolio fixture." },

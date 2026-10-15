@@ -1,5 +1,6 @@
 import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmToolChoice } from "./LlmPort.js";
+import { catalogFixtureFromValidateCommand } from "./sessionRecovery.js";
 
 type ForcedToolName = "list_fixtures" | "run_validation" | "list_findings" | "explain_finding" | "export_qgis";
 
@@ -41,7 +42,10 @@ function commandText(clause: string): string | null {
 
 function forcedToolForCommand(command: string | null, sessionId: string): ForcedToolName | null {
   if (command === null) return null;
-  if (/^(?:validate|run (?:the )?validation|check)\b/.test(command) && /\b(?:portfolio|fixture)\b/.test(command)) {
+  if (
+    /^(?:validate|run (?:the )?validation|check)\b/.test(command)
+    && (/\bfixture\b/.test(command) || catalogFixtureFromValidateCommand(command) !== null)
+  ) {
     return sessionId.length > 0 ? "run_validation" : "list_fixtures";
   }
   if (sessionId.length === 0) return null;

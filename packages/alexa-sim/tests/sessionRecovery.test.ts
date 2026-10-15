@@ -8,6 +8,10 @@ import {
 describe("sessionRecovery helpers", () => {
   it("extracts catalog fixture ids from validate commands", () => {
     expect(catalogFixtureFromValidateCommand("Validate the portfolio fixture.")).toBe("portfolio");
+    expect(catalogFixtureFromValidateCommand("Validate the ne-admin0-westeurope fixture.")).toBe("ne-admin0-westeurope");
+    expect(catalogFixtureFromValidateCommand("Validate ne-admin0-westeurope-demo-errors.")).toBe(
+      "ne-admin0-westeurope-demo-errors",
+    );
     expect(catalogFixtureFromValidateCommand("Please check the clean fixture")).toBe("clean");
     expect(catalogFixtureFromValidateCommand("List the findings.")).toBeNull();
     expect(catalogFixtureFromValidateCommand("Validate my private upload")).toBeNull();

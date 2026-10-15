@@ -9,6 +9,14 @@ export type FixtureSummary = {
   readonly label: string;
   readonly license: string;
   readonly defaultSourceCrs: string;
+  /** Provenance origin when known (e.g. Natural Earth download page). */
+  readonly origin?: string;
+  /** Human-readable transform note for the frozen sample. */
+  readonly transformation?: string;
+  /** Cartographic scale / precision honesty note. */
+  readonly scaleNote?: string;
+  /** Present when the dataset carries intentional didactic defects. */
+  readonly didacticNote?: string;
 };
 
 export type ListFixturesOutput = {

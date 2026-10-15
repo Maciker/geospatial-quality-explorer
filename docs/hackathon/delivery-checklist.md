@@ -13,7 +13,7 @@ Agents prepare docs; humans review media, secrets, and public access.
 - [ ] Repository is **public** on GitHub (MIT already in `LICENSE`).
 - [ ] README judge quick start and [demo.md](../demo.md) Alexa path work from a clean clone (`pnpm install`, `pnpm dev:api`, `pnpm dev:web`, `?sim=alexa`).
 - [ ] No secrets in git history on the public default branch; `NAN_API_KEY` only in Vercel project settings.
-- [ ] `THIRD_PARTY_NOTICES.md` and fixture licenses (CC0) accurate for judges.
+- [ ] `THIRD_PARTY_NOTICES.md` and fixture licenses accurate for judges (synthetic CC0; Natural Earth samples as public domain per Natural Earth terms, not relabeled CC0).
 - [ ] Note initial/final commit SHAs or PR numbers in Linear when submitting (per MAC-232 acceptance).
 
 ---

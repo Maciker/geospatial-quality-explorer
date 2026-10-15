@@ -1,5 +1,13 @@
 # Third-party sources and attribution
 
+## Natural Earth — Admin 0 Countries 1:110m
+
+Source: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/110m-admin-0-countries/
+
+Frozen download: `packages/quality/fixtures/provenance/natural-earth-110m-admin0/ne_110m_admin_0_countries.zip` (version 5.1.1). Derived catalog samples: `ne-admin0-westeurope*.geojson`.
+
+Natural Earth data is public domain under the [Natural Earth terms of use](https://www.naturalearthdata.com/about/terms-of-use/). This repository does **not** relabel those samples as CC0-1.0; runs use license `NaturalEarth-public-domain`. The `*-demo-errors` derivative injects intentional defects for the demo and must not be attributed to Natural Earth. See `packages/quality/fixtures/LICENSE.md` and `packages/quality/fixtures/provenance/natural-earth-110m-admin0/PROVENANCE.md`.
+
 ## Matt Pocock — Skills For Real Engineers
 
 Source: https://github.com/mattpocock/skills

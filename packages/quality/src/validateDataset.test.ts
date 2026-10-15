@@ -17,12 +17,19 @@ function expectedPairs(name: string): Array<{ ruleId: string; featureId: string 
   return JSON.parse(readFileSync(new URL(`../fixtures/expected/${name}.json`, import.meta.url), "utf8")) as Array<{ ruleId: string; featureId: string }>;
 }
 
+function fixtureLicense(name: string): string {
+  const manifest = JSON.parse(
+    readFileSync(new URL(`../fixtures/vector/${name}.fixture.json`, import.meta.url), "utf8"),
+  ) as { license: string };
+  return manifest.license;
+}
+
 function validateNamed(name: string, sourceCrs = "EPSG:4326") {
   const sourceBytes = fixtureBytes(name);
   return validateDataset({
     collection: JSON.parse(sourceBytes.toString("utf8")) as unknown,
     sourceBytes,
-    declaration: { name, sourceCrs, license: "CC0-1.0", parameters: {} },
+    declaration: { name, sourceCrs, license: fixtureLicense(name), parameters: {} },
     digest,
     engine,
     startedAt,
@@ -103,14 +110,27 @@ describe("The vector contract", () => {
 });
 
 describe("The reference fixtures", () => {
-  it.each(["clean", "empty-geometry", "duplicate-ids", "invalid-polygon", "valid-hole", "multipolygon", "portfolio"])(
-    "matches the reviewed findings for %s",
-    (name) => {
-      const run = validateNamed(name);
+  it.each([
+    "clean",
+    "empty-geometry",
+    "duplicate-ids",
+    "invalid-polygon",
+    "valid-hole",
+    "multipolygon",
+    "portfolio",
+    "ne-admin0-westeurope",
+    "ne-admin0-westeurope-demo-errors",
+  ])("matches the reviewed findings for %s", (name) => {
+    const run = validateNamed(name);
 
-      expect(run.findings.map((finding) => ({ ruleId: finding.ruleId, featureId: finding.featureId }))).toEqual(expectedPairs(name));
-    },
-  );
+    expect(run.findings.map((finding) => ({ ruleId: finding.ruleId, featureId: finding.featureId }))).toEqual(expectedPairs(name));
+  });
+
+  it("keeps Natural Earth license distinct from synthetic CC0", () => {
+    expect(fixtureLicense("ne-admin0-westeurope")).toBe("NaturalEarth-public-domain");
+    expect(fixtureLicense("portfolio")).toBe("CC0-1.0");
+    expect(validateNamed("ne-admin0-westeurope").license).toBe("NaturalEarth-public-domain");
+  });
 
   it("keeps duplicate polygons available for review", () => {
     const run = validateNamed("duplicate-ids");

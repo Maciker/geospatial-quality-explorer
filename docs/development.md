@@ -49,7 +49,7 @@ Latency: one chat POST must finish within `ALEXA_SIM_TIMEOUT_MS` (default 45 000
 
 ### Hosted demo (Vercel)
 
-`vercel.json` builds the web app with `VITE_APP_MODE=alexa-only`, so the hosted page is the simulation alone: the run review screen needs the local PostGIS API, which is not deployed. `/api/v1/alexa-sim/*` is rewritten to the `api/alexa-sim.ts` function, which bundles the CC0 fixtures.
+`vercel.json` builds the web app with `VITE_APP_MODE=alexa-only`, so the hosted page is the simulation alone: the run review screen needs the local PostGIS API, which is not deployed. `/api/v1/alexa-sim/*` is rewritten to the `api/alexa-sim.ts` function, which bundles catalog fixtures under `packages/quality/fixtures/vector/**` (synthetic CC0 and Natural Earth samples plus `*.fixture.json` sidecars).
 
 Before sharing the URL:
 
