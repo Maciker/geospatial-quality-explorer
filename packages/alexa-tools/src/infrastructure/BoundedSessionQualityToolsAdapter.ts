@@ -72,9 +72,6 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
     if (!this.limits.fixtureIdPattern.test(input.fixtureId) || !this.fixtureIds.has(input.fixtureId)) {
       return toolError(sessionId, "not_found", `Unknown fixture ${input.fixtureId}.`, { fixtureId: input.fixtureId });
     }
-    if (session.runs.size >= this.limits.maxRunsPerSession) {
-      return toolError(sessionId, "session_full", `Sessions are limited to ${this.limits.maxRunsPerSession} runs.`);
-    }
     const path = resolveFixturePath(this.fixturesDirectory, input.fixtureId);
     const sourceBytes = readFileSync(path);
     if (sourceBytes.byteLength > this.limits.maxBytes) {
@@ -101,6 +98,10 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       startedAt: completedAt,
       completedAt,
     });
+    const replacingExistingRun = session.runs.has(run.runId);
+    if (!replacingExistingRun && session.runs.size >= this.limits.maxRunsPerSession) {
+      return toolError(sessionId, "session_full", `Sessions are limited to ${this.limits.maxRunsPerSession} runs.`);
+    }
     // Re-insert so Map order tracks the most recent validation (describeSession reads the last entry).
     session.runs.delete(run.runId);
     session.runs.set(run.runId, run);
