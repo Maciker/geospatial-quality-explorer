@@ -34,6 +34,35 @@ export type AlexaChatResponse = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export type AlexaSimHttpErrorInit = {
+  readonly status: number;
+  readonly code: string;
+  readonly retryAfterSeconds: number | null;
+};
+
+export class AlexaSimHttpError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly retryAfterSeconds: number | null;
+
+  constructor(message: string, init: AlexaSimHttpErrorInit) {
+    super(message);
+    this.name = "AlexaSimHttpError";
+    this.status = init.status;
+    this.code = init.code;
+    this.retryAfterSeconds = init.retryAfterSeconds;
+  }
+}
+
+export function parseRetryAfterSeconds(header: string | null): number | null {
+  if (header === null || header.trim().length === 0) return null;
+  const asNumber = Number(header);
+  if (Number.isFinite(asNumber) && asNumber >= 0) return asNumber;
+  const asDateMs = Date.parse(header);
+  if (!Number.isFinite(asDateMs)) return null;
+  return Math.max(0, Math.ceil((asDateMs - Date.now()) / 1_000));
+}
+
 export async function postAlexaSimChat(body: {
   sessionId?: string;
   messages: AlexaChatMessage[];
@@ -44,8 +73,15 @@ export async function postAlexaSimChat(body: {
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const payload = await response.json().catch(() => null) as { message?: string } | null;
-    throw new Error(payload?.message ?? `Alexa simulation request failed (${response.status}).`);
+    const payload = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+    throw new AlexaSimHttpError(
+      payload?.message ?? `Alexa simulation request failed (${response.status}).`,
+      {
+        status: response.status,
+        code: typeof payload?.error === "string" ? payload.error : `http_${response.status}`,
+        retryAfterSeconds: parseRetryAfterSeconds(response.headers.get("Retry-After")),
+      },
+    );
   }
   return response.json() as Promise<AlexaChatResponse>;
 }
