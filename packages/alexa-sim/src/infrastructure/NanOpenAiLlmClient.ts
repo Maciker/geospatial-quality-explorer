@@ -34,12 +34,19 @@ export class NanOpenAiLlmClient implements LlmPort {
         },
       };
     }
-    const body = {
+    const useTools = request.toolChoice !== "none" && request.tools.length > 0;
+    const body: Record<string, unknown> = {
       model: this.config.model,
       messages: toOpenAiMessages(request.messages),
-      tools: request.tools,
-      tool_choice: "auto" as const,
+      max_tokens: this.config.maxTokens,
     };
+    if (this.config.disableThinking) {
+      body.chat_template_kwargs = { enable_thinking: false };
+    }
+    if (useTools) {
+      body.tools = request.tools;
+      body.tool_choice = request.toolChoice ?? "auto";
+    }
     const init: RequestInit = {
       method: "POST",
       headers: {
@@ -65,15 +72,18 @@ export class NanOpenAiLlmClient implements LlmPort {
         message?: {
           role?: string;
           content?: string | null;
+          reasoning?: string | null;
+          reasoning_content?: string | null;
           tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
         };
       }>;
     };
-    console.info(`alexa-sim: LLM round ${Date.now() - startedAt} ms (HTTP ${response.status})`);
+    const step = request.stepLabel ? ` ${request.stepLabel}` : "";
+    console.info(`alexa-sim: LLM round ${Date.now() - startedAt} ms (HTTP ${response.status})${step}`);
     const choice = payload.choices?.[0];
     const message = choice?.message;
     if (!message) {
-      return { finishReason: "stop", message: { role: "assistant", content: "No completion returned." } };
+      return { finishReason: "stop", message: { role: "assistant", content: "" } };
     }
     const toolCalls = message.tool_calls?.map((call) => ({
       id: call.id,
@@ -92,7 +102,7 @@ export class NanOpenAiLlmClient implements LlmPort {
     }
     return {
       finishReason: choice.finish_reason === "length" ? "length" : "stop",
-      message: { role: "assistant", content: message.content ?? "" },
+      message: { role: "assistant", content: message.content?.trim() ?? "" },
     };
   }
 }

@@ -5,10 +5,22 @@ export type NanLlmConfig = {
   readonly useMockLlm: boolean;
   /** Whole-conversation budget; capped below Vercel's 60 s maxDuration. */
   readonly timeoutMs: number;
+  readonly roundTimeoutMs: number;
+  readonly maxToolRounds: number;
+  readonly maxTokens: number;
+  /**
+   * Send chat_template_kwargs.enable_thinking=false for lower latency. Only the NaN provider (or an
+   * explicit ALEXA_SIM_DISABLE_THINKING=1) gets it; strict OpenAI-compatible APIs reject unknown fields.
+   */
+  readonly disableThinking: boolean;
 };
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 const MAX_TIMEOUT_MS = 55_000;
+const DEFAULT_ROUND_TIMEOUT_MS = 24_000;
+const DEFAULT_MAX_TOOL_ROUNDS = 4;
+const DEFAULT_MAX_TOKENS = 1024;
+const DEFAULT_BASE_URL = "https://api.nan.builders/v1";
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];
@@ -18,7 +30,7 @@ function readEnv(name: string): string | undefined {
 export function readNanLlmConfig(): NanLlmConfig {
   const baseUrl = readEnv("NAN_BASE_URL")
     ?? readEnv("ALEXA_SIM_LLM_BASE_URL")
-    ?? "https://api.nan.builders/v1";
+    ?? DEFAULT_BASE_URL;
   const model = readEnv("NAN_MODEL")
     ?? readEnv("ALEXA_SIM_LLM_MODEL")
     ?? "qwen3.6";
@@ -29,5 +41,30 @@ export function readNanLlmConfig(): NanLlmConfig {
   const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0
     ? Math.min(configuredTimeout, MAX_TIMEOUT_MS)
     : DEFAULT_TIMEOUT_MS;
-  return { baseUrl, model, apiKey, useMockLlm, timeoutMs };
+  const configuredRoundTimeout = Number.parseInt(readEnv("ALEXA_SIM_ROUND_TIMEOUT_MS") ?? "", 10);
+  const roundTimeoutMs = Number.isFinite(configuredRoundTimeout) && configuredRoundTimeout > 0
+    ? Math.min(configuredRoundTimeout, timeoutMs)
+    : Math.min(DEFAULT_ROUND_TIMEOUT_MS, timeoutMs);
+  const configuredMaxRounds = Number.parseInt(readEnv("ALEXA_SIM_MAX_TOOL_ROUNDS") ?? "", 10);
+  const maxToolRounds = Number.isFinite(configuredMaxRounds) && configuredMaxRounds > 0
+    ? configuredMaxRounds
+    : DEFAULT_MAX_TOOL_ROUNDS;
+  const configuredMaxTokens = Number.parseInt(readEnv("ALEXA_SIM_MAX_TOKENS") ?? "", 10);
+  const maxTokens = Number.isFinite(configuredMaxTokens) && configuredMaxTokens > 0
+    ? configuredMaxTokens
+    : DEFAULT_MAX_TOKENS;
+  const thinkingFlag = readEnv("ALEXA_SIM_ENABLE_THINKING") ?? readEnv("NAN_ENABLE_THINKING");
+  const enableThinking = thinkingFlag === "1" || thinkingFlag === "true";
+  const kwargFlag = readEnv("ALEXA_SIM_DISABLE_THINKING");
+  const disableThinking = !enableThinking && (isNanBaseUrl(baseUrl) || kwargFlag === "1" || kwargFlag === "true");
+  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens, disableThinking };
+}
+
+function isNanBaseUrl(baseUrl: string): boolean {
+  try {
+    const host = new URL(baseUrl).hostname;
+    return host === "nan.builders" || host.endsWith(".nan.builders");
+  } catch {
+    return false;
+  }
 }

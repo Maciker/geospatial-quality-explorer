@@ -30,7 +30,7 @@ test("Alexa+ simulation validates portfolio and cites findings with mock LLM", a
   expect(overflowing).toBe(0);
   await page.getByLabel("Message Alexa simulation").fill("Export QGIS.");
   await page.getByRole("button", { name: "Send" }).click();
-  await expect(chat.getByText(/QGIS bundle is ready/i)).toBeVisible({ timeout: 30_000 });
+  await expect(chat.getByText("The QGIS export is ready. Download the bundle from the simulation panel.")).toBeVisible({ timeout: 30_000 });
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download last QGIS bundle" }).click();
   expect((await download).suggestedFilename()).toMatch(/^qgis-[a-f0-9]{8}\.zip$/);

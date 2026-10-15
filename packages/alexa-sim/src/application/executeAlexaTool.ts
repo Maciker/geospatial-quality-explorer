@@ -35,10 +35,8 @@ export async function executeAlexaTool(
       },
     };
   }
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(argumentsJson) as Record<string, unknown>;
-  } catch {
+  const parsed = parseToolArguments(argumentsJson);
+  if (parsed === null) {
     const sessionId = fallbackSessionId ?? "unknown";
     return {
       sessionId,
@@ -47,7 +45,7 @@ export async function executeAlexaTool(
         ok: false,
         sessionId,
         error: "invalid_request",
-        message: "Tool arguments must be valid JSON.",
+        message: "Tool arguments must be a JSON object.",
       },
     };
   }
@@ -73,16 +71,12 @@ export async function executeAlexaTool(
         }),
       };
     case "list_findings":
-      return {
-        sessionId: fallbackSessionId ?? "",
-        toolName: name,
-        result: await tools.listFindings({
-          sessionId: String(parsed.sessionId ?? fallbackSessionId ?? ""),
-          runId: String(parsed.runId ?? ""),
-          ...(typeof parsed.limit === "number" ? { limit: parsed.limit } : {}),
-          ...(typeof parsed.cursor === "string" ? { cursor: parsed.cursor } : {}),
-        }),
-      };
+      return executeRunScopedTool(name, tools, fallbackSessionId, parsed, (sessionId, runId) => tools.listFindings({
+        sessionId,
+        runId,
+        ...(typeof parsed.limit === "number" ? { limit: parsed.limit } : {}),
+        ...(typeof parsed.cursor === "string" ? { cursor: parsed.cursor } : {}),
+      }));
     case "explain_finding":
       return {
         sessionId: fallbackSessionId ?? "",
@@ -93,13 +87,40 @@ export async function executeAlexaTool(
         }),
       };
     case "export_qgis":
-      return {
-        sessionId: fallbackSessionId ?? "",
-        toolName: name,
-        result: await tools.exportQgis({
-          sessionId: String(parsed.sessionId ?? fallbackSessionId ?? ""),
-          runId: String(parsed.runId ?? ""),
-        }),
-      };
+      return executeRunScopedTool(name, tools, fallbackSessionId, parsed, (sessionId, runId) => tools.exportQgis({ sessionId, runId }));
+  }
+}
+
+async function executeRunScopedTool<T>(
+  toolName: AlexaToolName,
+  tools: QualityToolsPort,
+  fallbackSessionId: string | undefined,
+  parsed: Record<string, unknown>,
+  invoke: (sessionId: string, runId: string) => Promise<ToolResult<T>>,
+): Promise<ToolExecutionOutcome> {
+  const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
+  const runId = await resolveRunId(tools, sessionId, parsed.runId);
+  return {
+    sessionId: fallbackSessionId ?? "",
+    toolName,
+    result: await invoke(sessionId, runId),
+  };
+}
+
+async function resolveRunId(tools: QualityToolsPort, sessionId: string, rawRunId: unknown): Promise<string> {
+  if (typeof rawRunId === "string" && rawRunId.trim().length > 0) return rawRunId.trim();
+  const snapshot = await tools.describeSession(sessionId);
+  return snapshot?.runId ?? "";
+}
+
+/** Blank or null arguments mean "no arguments"; anything else must be a JSON object. */
+function parseToolArguments(argumentsJson: string): Record<string, unknown> | null {
+  if (argumentsJson.trim().length === 0) return {};
+  try {
+    const parsed: unknown = JSON.parse(argumentsJson);
+    if (parsed === null) return {};
+    return typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
   }
 }

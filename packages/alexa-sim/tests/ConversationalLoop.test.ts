@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrastructure/BoundedSessionQualityToolsAdapter.js";
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionResponse, LlmPort } from "../src/application/LlmPort.js";
-import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
+import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm.js";
 import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
+import { exportAfterValidationLlm, portfolioValidateListMessages } from "./support/conversationalLoopFixtures.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 const sharedTools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
@@ -19,7 +20,6 @@ function createLoop(llm: LlmPort): ConversationalLoop {
 }
 
 afterEach(() => {
-  resetDeterministicMockLlmState();
   resetSharedToolsAdapterForTests();
 });
 
@@ -122,6 +122,51 @@ describe("ConversationalLoop", () => {
     expect(result.refused).toBe(true);
     expect(result.assistantMessage.toLowerCase()).toContain("timed out");
   }, 10_000);
+
+  it("allows QGIS export confirmations without citation ids", async () => {
+    const validated = await createLoop(new DeterministicMockLlm()).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+    const exported = await createLoop(exportAfterValidationLlm(validated.sessionId)).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "Export QGIS." },
+      ],
+    });
+    expect(exported.refused).toBe(false);
+    expect(exported.qgisExport).not.toBeNull();
+    expect(exported.assistantMessage.toLowerCase()).toContain("download");
+  });
+
+  it("finishes explain-the-next within two model rounds using enriched tool output", async () => {
+    let rounds = 0;
+    const mock = new DeterministicMockLlm();
+    const llm: LlmPort = {
+      complete(request) {
+        rounds += 1;
+        return mock.complete(request);
+      },
+    };
+    const loop = createLoop(llm);
+    const validated = await loop.run({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] });
+    const listed = await loop.run({
+      sessionId: validated.sessionId,
+      messages: portfolioValidateListMessages(validated.assistantMessage),
+    });
+    rounds = 0;
+    const explained = await loop.run({
+      sessionId: listed.sessionId,
+      messages: [
+        ...portfolioValidateListMessages(validated.assistantMessage, listed.assistantMessage),
+        { role: "user", content: "Explain the next finding." },
+      ],
+    });
+    expect(rounds).toBeLessThanOrEqual(2);
+    expect(explained.refused).toBe(false);
+    expect(explained.assistantMessage).toContain("findingId");
+  });
 
   it("refuses assistant claims that omit citations", async () => {
     const uncitedLlm: LlmPort = {

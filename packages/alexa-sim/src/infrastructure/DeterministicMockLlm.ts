@@ -1,20 +1,7 @@
 import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmCompletionRequest, LlmCompletionResponse, LlmPort } from "../application/LlmPort.js";
 
-type MockState = {
-  runId: string | null;
-  findings: Array<{ findingId: string; ruleId: string; featureId: string; explanation: string }>;
-  findingIndex: number;
-};
-
-const states = new Map<string, MockState>();
-
-function stateKey(messages: readonly ChatMessage[], toolSessionId?: string): string {
-  if (toolSessionId && toolSessionId.length > 0) return toolSessionId;
-  const toolPayload = findLastToolContent(messages);
-  const sessionMatch = /"sessionId"\s*:\s*"([^"]+)"/.exec(toolPayload);
-  return sessionMatch?.[1] ?? "default";
-}
+const FINDING_ID = /[a-f0-9]{64}:\d+:[a-z0-9_.]+[a-z0-9_]/g;
 
 function lastUserText(messages: readonly ChatMessage[]): string {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -25,20 +12,35 @@ function lastUserText(messages: readonly ChatMessage[]): string {
 }
 
 function lastToolResult(messages: readonly ChatMessage[]): unknown {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message?.role === "tool") {
-      try {
-        return JSON.parse(message.content) as unknown;
-      } catch {
-        return null;
-      }
-    }
+  try {
+    return JSON.parse(findLastToolContent(messages)) as unknown;
+  } catch {
+    return null;
   }
-  return null;
 }
 
-function toolCall(id: string, name: string, args: Record<string, unknown>): LlmCompletionResponse {
+/** Finding ids in priority order, read from the server's session context like the live model. */
+function prioritizedFindingIds(messages: readonly ChatMessage[]): string[] {
+  const context = messages.find((message) => message.role === "system" && message.content.includes("priority order"));
+  return context ? [...context.content.matchAll(FINDING_ID)].map((match) => match[0]) : [];
+}
+
+/** The finding after the last one an assistant reply mentioned, or the first one. */
+function nextFindingId(messages: readonly ChatMessage[]): string | null {
+  const order = prioritizedFindingIds(messages);
+  const mentioned = messages
+    .filter((message) => message.role === "assistant")
+    .flatMap((message) => [...message.content.matchAll(FINDING_ID)].map((match) => match[0]));
+  const last = mentioned.at(-1);
+  return order[last === undefined ? 0 : order.indexOf(last) + 1] ?? null;
+}
+
+function textReply(content: string): LlmCompletionResponse {
+  return { finishReason: "stop", message: { role: "assistant", content } };
+}
+
+/** A model reply that calls one tool; shared with the test fixtures. */
+export function toolCall(id: string, name: string, args: Record<string, unknown>): LlmCompletionResponse {
   return {
     finishReason: "tool_calls",
     message: {
@@ -49,6 +51,10 @@ function toolCall(id: string, name: string, args: Record<string, unknown>): LlmC
   };
 }
 
+/**
+ * Scripted stand-in for the live model. It only chooses tools: the loop speaks each tool's own
+ * voiceAnswer, so the mock writes text only for refusals, tool errors and the help prompt.
+ */
 export class DeterministicMockLlm implements LlmPort {
   async complete(request: LlmCompletionRequest): Promise<LlmCompletionResponse> {
     if (request.signal?.aborted) {
@@ -57,177 +63,54 @@ export class DeterministicMockLlm implements LlmPort {
       throw error;
     }
     const user = lastUserText(request.messages);
-    const toolResult = lastToolResult(request.messages);
-    const key = stateKey(request.messages, request.toolSessionId);
-    const state = states.get(key) ?? { runId: null, findings: [], findingIndex: 0 };
-    states.set(key, state);
-
     if (user.includes("repair") || user.includes("upload http")) {
-      return {
-        finishReason: "stop",
-        message: {
-          role: "assistant",
-          content: "I cannot do that. It is out of scope for this simulation.",
-        },
-      };
+      return textReply("I cannot do that. It is out of scope for this simulation.");
     }
-
+    const toolResult = lastToolResult(request.messages);
     const sessionId = request.toolSessionId ?? readSessionId(toolResult);
-    const pendingAssistantTool = request.messages.at(-1)?.role === "user";
-    if (pendingAssistantTool || request.messages.at(-1)?.role === "system") {
-      if (user.includes("portfolio") && user.includes("valid")) {
-        if (!sessionId) {
-          return toolCall("tc_open", "list_fixtures", {});
-        }
-        return toolCall("tc_run", "run_validation", {
-          sessionId,
-          fixtureId: "portfolio",
-        });
-      }
-      if (user.includes("list") && user.includes("finding")) {
-        return toolCall("tc_list", "list_findings", {
-          sessionId: sessionId ?? "",
-          runId: state.runId ?? "",
-          limit: 5,
-        });
-      }
-      if (user.includes("next one") || user.includes("next finding")) {
-        const next = state.findings[state.findingIndex + 1];
-        if (!next) {
-          return {
-            finishReason: "stop",
-            message: { role: "assistant", content: "There is no next finding in the list I have." },
-          };
-        }
-        state.findingIndex += 1;
-        return toolCall("tc_explain", "explain_finding", {
-          sessionId: sessionId ?? "",
-          findingId: next.findingId,
-        });
-      }
-      if (user.includes("explain") && user.includes("bogus")) {
-        if (!sessionId) {
-          return toolCall("tc_open2", "list_fixtures", {});
-        }
-        return toolCall("tc_bad", "explain_finding", {
-          sessionId,
-          findingId: `${"a".repeat(64)}:0:geometry.invalid`,
-        });
-      }
-      if (user.includes("export qgis")) {
-        return toolCall("tc_export", "export_qgis", {
-          sessionId: sessionId ?? "",
-          runId: state.runId ?? "",
-        });
-      }
-      if (user.includes("fixture")) {
-        return toolCall("tc_fixtures", "list_fixtures", {});
-      }
-    }
+    const wantsValidation = user.includes("portfolio") && user.includes("valid");
 
     if (request.messages.at(-1)?.role === "tool") {
-      if (typeof toolResult === "object" && toolResult !== null && "ok" in toolResult) {
-        const envelope = toolResult as { ok: boolean; data?: Record<string, unknown> };
-        if (envelope.ok && envelope.data && "runId" in envelope.data && "findingCount" in envelope.data) {
-          state.runId = String(envelope.data.runId);
-        }
-        if (envelope.ok && envelope.data && Array.isArray(envelope.data.findings)) {
-          state.findings = envelope.data.findings as MockState["findings"];
-          state.findingIndex = 0;
-        }
+      const envelope = toolResult as { ok?: boolean; error?: string; message?: string } | null;
+      if (envelope?.ok === false) {
+        return textReply(envelope.message ?? `Tool returned ${envelope.error ?? "an error"}. I cannot invent details.`);
       }
-      if (user.includes("portfolio") && user.includes("valid") && sessionId && !state.runId) {
+      if (wantsValidation && sessionId) {
         return toolCall("tc_run_after_open", "run_validation", { sessionId, fixtureId: "portfolio" });
       }
-      if ((user.includes("list") && user.includes("finding")) && sessionId && state.runId && state.findings.length === 0) {
-        return toolCall("tc_list_after_open", "list_findings", {
-          sessionId,
-          runId: state.runId,
-          limit: 5,
-        });
-      }
+      return textReply(HELP_TEXT);
     }
 
-    if (typeof toolResult === "object" && toolResult !== null && "ok" in toolResult) {
-      const envelope = toolResult as { ok: boolean; data?: Record<string, unknown>; error?: string; message?: string };
-      if (!envelope.ok) {
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: envelope.message ?? `Tool returned ${envelope.error ?? "an error"}. I cannot invent details.`,
-          },
-        };
-      }
-      if (envelope.data && "runId" in envelope.data && "findingCount" in envelope.data) {
-        state.runId = String(envelope.data.runId);
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: `Validation finished for portfolio. runId ${state.runId}. Ask when you want the prioritized list.`,
-          },
-        };
-      }
-      if (envelope.data && Array.isArray(envelope.data.findings)) {
-        const findings = envelope.data.findings as Array<{
-          findingId: string;
-          ruleId: string;
-          featureId: string;
-          explanation: string;
-        }>;
-        state.findings = findings;
-        state.findingIndex = 0;
-        const first = findings[0];
-        if (!first) {
-          return {
-            finishReason: "stop",
-            message: { role: "assistant", content: "The run has zero findings to cite." },
-          };
-        }
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: `The top issue is findingId ${first.findingId} on featureId ${first.featureId} (${first.ruleId}): ${first.explanation}`,
-          },
-        };
-      }
-      if (envelope.data && envelope.data.finding && typeof envelope.data.finding === "object") {
-        const finding = envelope.data.finding as {
-          findingId: string;
-          ruleId: string;
-          featureId: string;
-          explanation: string;
-        };
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: `findingId ${finding.findingId} (${finding.ruleId}) on featureId ${finding.featureId}: ${finding.explanation}`,
-          },
-        };
-      }
-      if (envelope.data && envelope.data.files) {
-        return {
-          finishReason: "stop",
-          message: {
-            role: "assistant",
-            content: "QGIS bundle is ready from export_qgis. Download it from the simulation panel.",
-          },
-        };
-      }
+    if (wantsValidation) {
+      return sessionId
+        ? toolCall("tc_run", "run_validation", { sessionId, fixtureId: "portfolio" })
+        : toolCall("tc_open", "list_fixtures", {});
     }
-
-    return {
-      finishReason: "stop",
-      message: {
-        role: "assistant",
-        content: "Ask me to validate the portfolio fixture, list findings, explain the next one, or export QGIS.",
-      },
-    };
+    if (user.includes("list") && user.includes("finding")) {
+      return toolCall("tc_list", "list_findings", { sessionId: sessionId ?? "", limit: 5 });
+    }
+    if (user.includes("next one") || user.includes("next finding") || (user.includes("explain") && user.includes("next"))) {
+      const next = nextFindingId(request.messages);
+      return next
+        ? toolCall("tc_explain", "explain_finding", { sessionId: sessionId ?? "", findingId: next })
+        : textReply("Ask me to list the findings first, then I can explain the next one.");
+    }
+    if (user.includes("explain") && user.includes("bogus")) {
+      return sessionId
+        ? toolCall("tc_bad", "explain_finding", { sessionId, findingId: `${"a".repeat(64)}:0:geometry.invalid` })
+        : toolCall("tc_open2", "list_fixtures", {});
+    }
+    if (user.includes("export qgis")) {
+      return toolCall("tc_export", "export_qgis", { sessionId: sessionId ?? "" });
+    }
+    if (user.includes("fixture")) {
+      return toolCall("tc_fixtures", "list_fixtures", {});
+    }
+    return textReply(HELP_TEXT);
   }
 }
+
+const HELP_TEXT = "Ask me to validate the portfolio fixture, list findings, explain the next one, or export QGIS.";
 
 function findLastToolContent(messages: readonly ChatMessage[]): string {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -242,8 +125,4 @@ function readSessionId(toolResult: unknown): string | null {
     return String((toolResult as { sessionId: string }).sessionId);
   }
   return null;
-}
-
-export function resetDeterministicMockLlmState(): void {
-  states.clear();
 }

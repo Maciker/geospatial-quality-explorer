@@ -152,7 +152,9 @@ describe("BoundedSessionQualityToolsAdapter", () => {
       const listed = await adapter.listFindings({ sessionId, runId: portfolio.runId, limit: 20 });
 
       expect(snapshot?.runId).toBe(portfolio.runId);
-      expect(listed.ok && snapshot?.prioritizedFindingIds).toEqual(listed.ok ? listed.data.findings.map((finding) => finding.findingId) : null);
+      expect(listed.ok && snapshot?.prioritizedFindings).toEqual(listed.ok
+        ? listed.data.findings.map(({ findingId, ruleId, featureId }) => ({ findingId, ruleId, featureId }))
+        : null);
     });
 
     it("ignores an expired session and does not extend it", async () => {

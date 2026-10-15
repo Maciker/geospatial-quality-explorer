@@ -69,14 +69,14 @@ export const ALEXA_QUALITY_TOOL_DEFINITIONS: readonly OpenAiToolDefinition[] = [
     type: "function",
     function: {
       name: "export_qgis",
-      description: "Build a QGIS bundle for a stored run without writing to disk.",
+      description: "Build a QGIS bundle for the session's validation run without writing to disk.",
       parameters: {
         type: "object",
         properties: {
           sessionId: { type: "string" },
-          runId: { type: "string" },
+          runId: { type: "string", description: "Optional; defaults to the session's latest run." },
         },
-        required: ["sessionId", "runId"],
+        required: ["sessionId"],
         additionalProperties: false,
       },
     },

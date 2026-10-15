@@ -92,5 +92,12 @@ export type SessionSnapshot = {
   readonly sessionId: string;
   readonly runId: string;
   readonly datasetName: string;
-  readonly prioritizedFindingIds: readonly string[];
+  /** Up to 20 findings in list order, with the ids a reply may cite. */
+  readonly prioritizedFindings: readonly SessionFindingRef[];
+};
+
+export type SessionFindingRef = {
+  readonly findingId: string;
+  readonly ruleId: string;
+  readonly featureId: string;
 };
