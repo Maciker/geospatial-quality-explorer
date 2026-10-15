@@ -21,34 +21,53 @@ export type FixtureCatalogEntry = FixtureSummary & {
   readonly parameters: Readonly<Record<string, string>>;
 };
 
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
 function readManifest(fixturesDirectory: string, fixtureId: string): FixtureManifest {
   const path = join(fixturesDirectory, `${fixtureId}.fixture.json`);
   if (!existsSync(path)) {
     throw new Error(`Missing fixture metadata sidecar ${fixtureId}.fixture.json`);
   }
-  const parsed = JSON.parse(readFileSync(path, "utf8")) as Partial<FixtureManifest>;
-  if (typeof parsed.label !== "string" || parsed.label.trim() === "") {
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  const label = optionalString(parsed.label);
+  const license = optionalString(parsed.license);
+  const defaultSourceCrs = optionalString(parsed.defaultSourceCrs);
+  if (label === undefined) {
     throw new Error(`${fixtureId}.fixture.json must declare a non-empty label`);
   }
-  if (typeof parsed.license !== "string" || parsed.license.trim() === "") {
+  if (license === undefined) {
     throw new Error(`${fixtureId}.fixture.json must declare a license`);
   }
-  if (typeof parsed.defaultSourceCrs !== "string" || !/^EPSG:\d+$/.test(parsed.defaultSourceCrs)) {
+  if (defaultSourceCrs === undefined || !/^EPSG:\d+$/.test(defaultSourceCrs)) {
     throw new Error(`${fixtureId}.fixture.json must declare defaultSourceCrs as EPSG:####`);
   }
+  const origin = optionalString(parsed.origin);
+  const transformation = optionalString(parsed.transformation);
+  const scaleNote = optionalString(parsed.scaleNote);
+  const didacticNote = optionalString(parsed.didacticNote);
+  const termsUrl = optionalString(parsed.termsUrl);
+  const sourceVersion = optionalString(parsed.sourceVersion);
+  const downloadedAt = optionalString(parsed.downloadedAt);
+  const downloadUrl = optionalString(parsed.downloadUrl);
+  const parameters =
+    parsed.parameters && typeof parsed.parameters === "object" && !Array.isArray(parsed.parameters)
+      ? (parsed.parameters as Readonly<Record<string, string>>)
+      : undefined;
   return {
-    label: parsed.label,
-    license: parsed.license,
-    defaultSourceCrs: parsed.defaultSourceCrs,
-    origin: parsed.origin,
-    transformation: parsed.transformation,
-    scaleNote: parsed.scaleNote,
-    didacticNote: parsed.didacticNote,
-    termsUrl: parsed.termsUrl,
-    sourceVersion: parsed.sourceVersion,
-    downloadedAt: parsed.downloadedAt,
-    downloadUrl: parsed.downloadUrl,
-    parameters: parsed.parameters,
+    label,
+    license,
+    defaultSourceCrs,
+    ...(origin !== undefined ? { origin } : {}),
+    ...(transformation !== undefined ? { transformation } : {}),
+    ...(scaleNote !== undefined ? { scaleNote } : {}),
+    ...(didacticNote !== undefined ? { didacticNote } : {}),
+    ...(termsUrl !== undefined ? { termsUrl } : {}),
+    ...(sourceVersion !== undefined ? { sourceVersion } : {}),
+    ...(downloadedAt !== undefined ? { downloadedAt } : {}),
+    ...(downloadUrl !== undefined ? { downloadUrl } : {}),
+    ...(parameters !== undefined ? { parameters } : {}),
   };
 }
 
@@ -58,11 +77,11 @@ function toSummary(fixtureId: string, manifest: FixtureManifest): FixtureCatalog
     label: manifest.label,
     license: manifest.license,
     defaultSourceCrs: manifest.defaultSourceCrs,
-    origin: manifest.origin,
-    transformation: manifest.transformation,
-    scaleNote: manifest.scaleNote,
-    didacticNote: manifest.didacticNote,
     parameters: manifest.parameters ?? {},
+    ...(manifest.origin !== undefined ? { origin: manifest.origin } : {}),
+    ...(manifest.transformation !== undefined ? { transformation: manifest.transformation } : {}),
+    ...(manifest.scaleNote !== undefined ? { scaleNote: manifest.scaleNote } : {}),
+    ...(manifest.didacticNote !== undefined ? { didacticNote: manifest.didacticNote } : {}),
   };
 }
 
