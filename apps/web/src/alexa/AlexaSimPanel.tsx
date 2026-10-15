@@ -3,15 +3,26 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FindingsMap from "../findings/FindingsMap";
 import type { FindingFeature, GeoJsonGeometry } from "../lib/api";
 import {
+  AlexaSimHttpError,
   getAlexaSimLlmMode,
   postAlexaSimChat,
   type AlexaChatMessage,
+  type AlexaChatResponse,
   type AlexaFindingCard,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
 import { nextFindingCards, type FindingCardsState } from "./findingCards";
 import { downloadQgisArtifacts } from "./downloadQgisZip";
+import {
+  formatAlexaSimErrorMessage,
+  retryDelayMs,
+  shouldAutoRetryAlexaSimError,
+} from "./alexaSimRetry";
+import { isAlexaSessionContextValid } from "./sessionContext";
 import styles from "./AlexaSimPanel.module.css";
+
+const WELCOME_MESSAGE =
+  "Hi, I am Alexa in a labeled simulation. Ask me to validate the portfolio CC0 fixture or list findings.";
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -26,10 +37,7 @@ type SpeechRecognitionLike = {
 export default function AlexaSimPanel() {
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<AlexaChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hi, I am Alexa in a labeled simulation. Ask me to validate the portfolio CC0 fixture or list findings.",
-    },
+    { role: "assistant", content: WELCOME_MESSAGE },
   ]);
   // One state so a reply and a click during the request cannot overwrite each other.
   const [cardsState, setCardsState] = useState<FindingCardsState>({ cards: [], selectedId: null });
@@ -39,7 +47,8 @@ export default function AlexaSimPanel() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastQgisResponse, setLastQgisResponse] = useState<Awaited<ReturnType<typeof postAlexaSimChat>> | null>(null);
+  const [lastQgisResponse, setLastQgisResponse] = useState<AlexaChatResponse | null>(null);
+  const [confirmedRunId, setConfirmedRunId] = useState<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -82,6 +91,38 @@ export default function AlexaSimPanel() {
     };
   }, [voiceEnabled]);
 
+  function startCleanSession(): void {
+    setSessionId(undefined);
+    setMessages([{ role: "assistant", content: WELCOME_MESSAGE }]);
+    setCardsState({ cards: [], selectedId: null });
+    setLastQgisResponse(null);
+    setConfirmedRunId(null);
+    setError(null);
+    setDraft("");
+  }
+
+  function applySuccessfulResponse(nextMessages: AlexaChatMessage[], response: AlexaChatResponse): void {
+    const contextValid = isAlexaSessionContextValid(response);
+    setSessionId(response.sessionId);
+    if (response.llmMode) setLlmMode(response.llmMode);
+    setCardsState((previous) => nextFindingCards(previous, response.findings, response.runId, { contextValid }));
+    setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
+    if (!contextValid) {
+      setLastQgisResponse(null);
+      setConfirmedRunId(null);
+      return;
+    }
+    if (response.runId !== null && response.runId !== confirmedRunId) {
+      setLastQgisResponse(null);
+      setConfirmedRunId(response.runId);
+    }
+    if (response.qgisExport && response.runId !== null) {
+      setLastQgisResponse(response);
+      setConfirmedRunId(response.runId);
+    }
+    speak(response.assistantMessage);
+  }
+
   async function sendMessage(text: string): Promise<void> {
     const trimmed = text.trim();
     if (trimmed.length === 0 || busy) return;
@@ -90,16 +131,33 @@ export default function AlexaSimPanel() {
     const nextMessages: AlexaChatMessage[] = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setDraft("");
+    let attempt = 0;
     try {
-      const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
-      setSessionId(response.sessionId);
-      if (response.llmMode) setLlmMode(response.llmMode);
-      setCardsState((previous) => nextFindingCards(previous, response.findings, response.runId));
-      setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
-      if (response.qgisExport) setLastQgisResponse(response);
-      speak(response.assistantMessage);
-    } catch (sendError) {
-      setError(sendError instanceof Error ? sendError.message : "Could not reach the Alexa simulation API.");
+      for (;;) {
+        try {
+          const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
+          setError(null);
+          applySuccessfulResponse(nextMessages, response);
+          return;
+        } catch (sendError) {
+          if (
+            sendError instanceof AlexaSimHttpError
+            && shouldAutoRetryAlexaSimError(sendError, attempt)
+          ) {
+            const waitMs = retryDelayMs(sendError);
+            setError(formatAlexaSimErrorMessage(sendError));
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+            attempt += 1;
+            continue;
+          }
+          if (sendError instanceof AlexaSimHttpError) {
+            setError(formatAlexaSimErrorMessage(sendError));
+          } else {
+            setError(sendError instanceof Error ? sendError.message : "Could not reach the Alexa simulation API. Try again without reloading.");
+          }
+          return;
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -166,10 +224,13 @@ export default function AlexaSimPanel() {
         </section>
         <aside className={styles.sidePanel} aria-label="Finding cards and map">
           <div className={styles.toolbar}>
+            <button type="button" onClick={startCleanSession} disabled={busy}>
+              New clean session
+            </button>
             <button
               type="button"
               onClick={() => void sendMessage("Export QGIS bundle.")}
-              disabled={busy}
+              disabled={busy || confirmedRunId === null}
             >
               Export QGIS via Alexa
             </button>
@@ -177,12 +238,15 @@ export default function AlexaSimPanel() {
               type="button"
               onClick={() => {
                 try {
-                  if (!lastQgisResponse) throw new Error("Run export first so a bundle is available.");
+                  if (!lastQgisResponse || lastQgisResponse.runId !== confirmedRunId) {
+                    throw new Error("Run export for the current validated run first.");
+                  }
                   downloadQgisArtifacts(lastQgisResponse);
                 } catch (downloadError) {
                   setError(downloadError instanceof Error ? downloadError.message : "Download failed.");
                 }
               }}
+              disabled={lastQgisResponse === null || lastQgisResponse.runId !== confirmedRunId}
             >
               Download last QGIS bundle
             </button>

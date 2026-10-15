@@ -130,6 +130,42 @@ describe("BoundedSessionQualityToolsAdapter", () => {
     expect(listed.error).toBe("session_expired");
   });
 
+  describe("runValidation capacity", () => {
+    it("re-validates an already-stored fixture at capacity without session_full", async () => {
+      const adapter = new BoundedSessionQualityToolsAdapter({
+        fixturesDirectory,
+        now: () => 1_700_000_000_000,
+        limits: { maxRunsPerSession: 2 },
+      });
+      const sessionId = await openAdapterSession(adapter);
+      const first = await runFixtureValidation(adapter, sessionId, "clean");
+      await runFixtureValidation(adapter, sessionId, "portfolio");
+
+      const repeated = await adapter.runValidation({ sessionId, fixtureId: "clean" });
+
+      expect(repeated.ok).toBe(true);
+      if (!repeated.ok) return;
+      expect(repeated.data.runId).toBe(first.runId);
+    });
+
+    it("rejects a new fixture when the session is at maxRunsPerSession", async () => {
+      const adapter = new BoundedSessionQualityToolsAdapter({
+        fixturesDirectory,
+        now: () => 1_700_000_000_000,
+        limits: { maxRunsPerSession: 2 },
+      });
+      const sessionId = await openAdapterSession(adapter);
+      await runFixtureValidation(adapter, sessionId, "clean");
+      await runFixtureValidation(adapter, sessionId, "portfolio");
+
+      const overflow = await adapter.runValidation({ sessionId, fixtureId: "invalid-polygon" });
+
+      expect(overflow.ok).toBe(false);
+      if (overflow.ok) return;
+      expect(overflow.error).toBe("session_full");
+    });
+  });
+
   describe("describeSession", () => {
     it("returns null for an unknown session or a session without runs, without creating one", async () => {
       const adapter = createAdapter();

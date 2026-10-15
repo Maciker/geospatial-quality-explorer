@@ -1,41 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FixedWindowRateLimiter } from "../src/infrastructure/FixedWindowRateLimiter.js";
-import { ALEXA_SIM_LIMITS, handleAlexaSimHttp, type HttpLikeRequest } from "../src/infrastructure/handleAlexaSimHttp.js";
+import { ALEXA_SIM_LIMITS, type HttpLikeRequest } from "../src/infrastructure/handleAlexaSimHttp.js";
 import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
-
-type Captured = { status: number; body: string; headers: Record<string, string> };
-
-function fakeResponse() {
-  const captured: Captured = { status: 0, body: "", headers: {} };
-  const response = {
-    status(code: number) {
-      captured.status = code;
-      return response;
-    },
-    setHeader(name: string, value: string) {
-      captured.headers[name] = value;
-    },
-    end(body?: string) {
-      captured.body = body ?? "";
-    },
-  };
-  return { response, captured };
-}
+import { alexaSimChatRequest, sendAlexaSimHttp } from "./support/alexaSimHttpTestKit.js";
 
 function chatRequest(body: unknown, clientAddress = "203.0.113.7"): HttpLikeRequest {
-  return {
-    method: "POST",
-    headers: {},
-    body: typeof body === "string" ? body : JSON.stringify(body),
-    pathname: "/api/v1/alexa-sim/chat",
-    clientAddress,
-  };
+  return alexaSimChatRequest(body, clientAddress);
 }
 
 async function send(request: HttpLikeRequest, rateLimiter = new FixedWindowRateLimiter({ limit: 100, windowMs: 60_000 })) {
-  const { response, captured } = fakeResponse();
-  await handleAlexaSimHttp(request, response, { rateLimiter });
-  return captured;
+  return sendAlexaSimHttp(request, rateLimiter);
 }
 
 const savedKey = process.env.NAN_API_KEY;

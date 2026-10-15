@@ -5,16 +5,25 @@ export type FindingCardsState = {
   readonly selectedId: string | null;
 };
 
+type NextFindingCardsOptions = {
+  /** When false, drop prior cards even if runId is null (lost session / invalid context). */
+  readonly contextValid?: boolean;
+};
+
 /**
  * Replies only carry the cards a tool touched, so the panel accumulates them per run:
  * a reply without cards keeps the list, an explanation updates and selects its card,
- * and a different run id starts over.
+ * and a different run id starts over. Invalid context clears the list.
  */
 export function nextFindingCards(
   previous: FindingCardsState,
   incoming: readonly AlexaFindingCard[],
   runId: string | null,
+  options?: NextFindingCardsOptions,
 ): FindingCardsState {
+  if (options?.contextValid === false) {
+    return { cards: [], selectedId: null };
+  }
   const sameRun = runId === null ? previous.cards : previous.cards.filter((card) => card.findingId.startsWith(`${runId}:`));
   const cards = [...sameRun];
   for (const card of incoming) {

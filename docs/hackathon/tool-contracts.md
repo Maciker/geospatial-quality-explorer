@@ -8,8 +8,9 @@ Normative contract for LLM tool calls into the deterministic GIS core ([MAC-231]
 
 - Clients pass `sessionId` (opaque string, 8–128 chars, `[a-zA-Z0-9_-]+`) on every tool call except the first `list_fixtures`, which may omit it and receive a new id.
 - A **session** holds validation **runs** keyed by `runId` (64-char hex digest from the core).
-- Storage is **in-memory**, **bounded**, and **TTL-scoped** (defaults in `packages/alexa-tools`). Suitable for Vercel demo with documented cold-start loss ([ADR 001](./adr-001-alexa-simulation.md)).
+- Storage is **in-memory**, **bounded**, and **TTL-scoped** (defaults in `packages/alexa-tools`). Suitable for Vercel demo with documented cold-start / multi-instance loss ([ADR 001](./adr-001-alexa-simulation.md)).
 - **Stateless callers** may start a new session per demo script; **bounded session** callers reuse one `sessionId` across the validate → list → explain → export flow.
+- **Recovery (MAC-400):** If the client still holds a `sessionId` but `describeSession` is null (TTL, eviction, or a different serverless instance), the loop does **not** keep forcing `run_validation` on the dead id. It reopens via `list_fixtures` (same id when provided). When the current user validate command names a fixture that appears in the **server fixture catalog**, it runs `run_validation` once. Otherwise it prompts choose/revalidate. Client transcript, `runId`, and finding cards are never treated as proof of a prior successful validation. Re-validating the same fixture updates the existing `runId` and does not consume an extra slot toward `maxRunsPerSession`.
 
 ## Shared limits
 
@@ -66,8 +67,8 @@ Error:
 | --- | --- |
 | `invalid_request` | Bad parameters, unsupported fixture, oversize payload |
 | `not_found` | Unknown `runId`, `findingId`, or `fixtureId` |
-| `session_expired` | TTL elapsed |
-| `session_full` | Run or session cap exceeded |
+| `session_expired` | TTL elapsed, or the session id is unknown on this instance |
+| `session_full` | Run or session cap exceeded (re-validating an already-stored `runId` does not count as a new run) |
 | `limit_exceeded` | Page size or feature limits exceeded |
 | `refused` | Policy refusal (e.g. explain without stored run) |
 

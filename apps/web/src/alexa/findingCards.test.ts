@@ -41,4 +41,20 @@ describe("nextFindingCards", () => {
 
     expect(next).toEqual({ cards: [], selectedId: null });
   });
+
+  it("clears cards when the session context is no longer valid", () => {
+    const listed = nextFindingCards({ cards: [], selectedId: null }, [card(1), card(2)], run);
+
+    const cleared = nextFindingCards(listed, [], null, { contextValid: false });
+
+    expect(cleared).toEqual({ cards: [], selectedId: null });
+  });
+
+  it("keeps cards when runId is null but context remains valid", () => {
+    const listed = nextFindingCards({ cards: [], selectedId: null }, [card(1)], run);
+
+    const afterEmpty = nextFindingCards(listed, [], null);
+
+    expect(afterEmpty.cards).toHaveLength(1);
+  });
 });

@@ -32,6 +32,12 @@ import {
   trimTranscriptForModel,
 } from "./modelPayload.js";
 import { forcedToolForTurn, toolChoiceForTurn } from "./orchestrationToolChoice.js";
+import {
+  catalogFixtureFromValidateCommand,
+  isRunScopedIntent,
+  lastUserContent,
+  SESSION_RECOVERY_PROMPT,
+} from "./sessionRecovery.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -77,24 +83,23 @@ export class ConversationalLoop {
   }
 
   private async runUntilDeadline(input: AlexaSimChatRequest, deadlineMs: number, progress: LoopProgress): Promise<AlexaSimChatResponse> {
-    let sessionId = input.sessionId ?? "";
+    const clientSessionId = input.sessionId ?? "";
+    let sessionId = clientSessionId;
     let findingCards: readonly CitedFindingCard[] = [];
     let runId: string | null = null;
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
     let synthesisAttempted = false;
 
-    const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
+    const snapshot = clientSessionId ? await this.tools.describeSession(clientSessionId) : null;
+    const sessionAlive = snapshot !== null;
+    /** Tool choice must not treat a client-held id as live when the server Map has no run. */
+    const orchestrationSessionId = sessionAlive ? clientSessionId : "";
     if (snapshot) {
       runId = snapshot.runId;
       progress.runId = runId;
       knownIds = collectCitationIdsFromFindings(snapshot.prioritizedFindings);
     }
-    const transcript: ChatMessage[] = [
-      { role: "system", content: ALEXA_SIM_SYSTEM_INSTRUCTIONS },
-      ...(snapshot ? [sessionContextMessage(snapshot)] : []),
-      ...input.messages.filter((message) => message.role !== "system"),
-    ];
     const reply = (assistantMessage: string, refused: boolean): AlexaSimChatResponse => ({
       sessionId,
       assistantMessage,
@@ -103,16 +108,30 @@ export class ConversationalLoop {
       refused,
       qgisExport,
     });
+    const recoveryUserText = !sessionAlive && clientSessionId ? lastUserContent(input.messages) : "";
+    const recoverableFixture = recoveryUserText ? catalogFixtureFromValidateCommand(recoveryUserText) : null;
+    if (!sessionAlive && clientSessionId) {
+      if (!recoverableFixture && isRunScopedIntent(recoveryUserText)) {
+        progress.sessionId = clientSessionId;
+        return reply(SESSION_RECOVERY_PROMPT, true);
+      }
+    }
+    const transcript: ChatMessage[] = [
+      { role: "system", content: ALEXA_SIM_SYSTEM_INSTRUCTIONS },
+      ...(snapshot ? [sessionContextMessage(snapshot)] : []),
+      ...input.messages.filter((message) => message.role !== "system"),
+    ];
+    let recoveryRevalidated = false;
 
     for (let round = 0; round < this.maxToolRounds; round += 1) {
       const llmCallsRemaining = this.maxToolRounds - round + (synthesisAttempted ? 0 : 1);
-      const forced = round === 0 ? forcedToolForTurn(transcript, sessionId) : null;
+      const forced = round === 0 ? forcedToolForTurn(transcript, orchestrationSessionId) : null;
       const completion = await this.completeRound({
         transcript,
-        sessionId,
+        sessionId: orchestrationSessionId,
         deadlineMs,
         roundIndex: round,
-        toolChoice: toolChoiceForTurn(transcript, sessionId, round),
+        toolChoice: toolChoiceForTurn(transcript, orchestrationSessionId, round),
         tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
         llmCallsRemaining,
       });
@@ -146,6 +165,47 @@ export class ConversationalLoop {
           knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
           if (!executed.result.ok && executed.result.error === "refused") {
             return reply(executed.result.message, true);
+          }
+          if (
+            !sessionAlive
+            && !recoveryRevalidated
+            && recoverableFixture
+            && toolCall.name === "list_fixtures"
+            && executed.result.ok
+          ) {
+            recoveryRevalidated = true;
+            const revalidated = await executeAlexaTool(
+              this.tools,
+              "run_validation",
+              JSON.stringify({ sessionId, fixtureId: recoverableFixture }),
+              sessionId || undefined,
+            );
+            if (revalidated.result.sessionId) sessionId = revalidated.result.sessionId;
+            progress.sessionId = sessionId;
+            const revalidatedCompact = compactToolResultForModel(revalidated.result);
+            voiceAnswer = readVoiceAnswerFromCompactPayload(revalidatedCompact) ?? voiceAnswer;
+            transcript.push({
+              role: "assistant",
+              content: "",
+              toolCalls: [{
+                id: "server-recovery-run_validation",
+                name: "run_validation",
+                argumentsJson: JSON.stringify({ sessionId, fixtureId: recoverableFixture }),
+              }],
+            });
+            transcript.push({
+              role: "tool",
+              content: JSON.stringify(revalidatedCompact),
+              toolCallId: "server-recovery-run_validation",
+            });
+            const revalidatedState = extractStructuredState(revalidated.result, findingCards);
+            findingCards = revalidatedState.findings;
+            runId = revalidatedState.runId ?? runId;
+            progress.runId = runId;
+            knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
+            if (!revalidated.result.ok && revalidated.result.error === "refused") {
+              return reply(revalidated.result.message, true);
+            }
           }
         }
         // The tool's deterministic answer is the reply; the model only chose the tool.
@@ -263,11 +323,23 @@ function sessionIdFromProgress(progress: LoopProgress, input: AlexaSimChatReques
 }
 
 /**
- * When the user explicitly asked for a tool that needs only the session (export, list), a model
- * that answers "please wait", or times out, instead of calling it gets the call made for it.
+ * When the user explicitly asked for a tool that needs only the session (export, list), or when
+ * recovery needs list_fixtures to reopen a client-held session id, a model that answers "please
+ * wait" or times out instead of calling it gets the call made for it.
  */
 function withServerSideToolCall(assistant: ChatMessage, forced: string | null, sessionId: string): ChatMessage {
   if (assistant.toolCalls && assistant.toolCalls.length > 0) return assistant;
+  if (forced === "list_fixtures") {
+    return {
+      role: "assistant",
+      content: "",
+      toolCalls: [{
+        id: "server-list_fixtures",
+        name: "list_fixtures",
+        argumentsJson: sessionId ? JSON.stringify({ sessionId }) : "{}",
+      }],
+    };
+  }
   if (!sessionId || (forced !== "export_qgis" && forced !== "list_findings")) return assistant;
   return {
     role: "assistant",

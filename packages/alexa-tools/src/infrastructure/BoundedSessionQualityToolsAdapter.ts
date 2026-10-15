@@ -34,16 +34,23 @@ type SessionRecord = {
   lastAccessAtMs: number;
 };
 
+type AlexaToolLimits = {
+  readonly [K in keyof typeof ALEXA_TOOL_LIMITS]: (typeof ALEXA_TOOL_LIMITS)[K] extends number
+    ? number
+    : (typeof ALEXA_TOOL_LIMITS)[K];
+};
+
 export type BoundedSessionQualityToolsAdapterOptions = {
   readonly fixturesDirectory: string;
   readonly now?: () => number;
-  readonly limits?: Partial<typeof ALEXA_TOOL_LIMITS>;
+  /** Partial overrides; numeric fields accept any number so tests can lower caps. */
+  readonly limits?: Partial<AlexaToolLimits>;
 };
 
 export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   private readonly fixturesDirectory: string;
   private readonly now: () => number;
-  private readonly limits: typeof ALEXA_TOOL_LIMITS;
+  private readonly limits: AlexaToolLimits;
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly engine = new PlanarPolygonEngine();
   private readonly digest = new Sha256Digest();
@@ -72,9 +79,6 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
     if (!this.limits.fixtureIdPattern.test(input.fixtureId) || !this.fixtureIds.has(input.fixtureId)) {
       return toolError(sessionId, "not_found", `Unknown fixture ${input.fixtureId}.`, { fixtureId: input.fixtureId });
     }
-    if (session.runs.size >= this.limits.maxRunsPerSession) {
-      return toolError(sessionId, "session_full", `Sessions are limited to ${this.limits.maxRunsPerSession} runs.`);
-    }
     const path = resolveFixturePath(this.fixturesDirectory, input.fixtureId);
     const sourceBytes = readFileSync(path);
     if (sourceBytes.byteLength > this.limits.maxBytes) {
@@ -101,6 +105,10 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       startedAt: completedAt,
       completedAt,
     });
+    const replacingExistingRun = session.runs.has(run.runId);
+    if (!replacingExistingRun && session.runs.size >= this.limits.maxRunsPerSession) {
+      return toolError(sessionId, "session_full", `Sessions are limited to ${this.limits.maxRunsPerSession} runs.`);
+    }
     // Re-insert so Map order tracks the most recent validation (describeSession reads the last entry).
     session.runs.delete(run.runId);
     session.runs.set(run.runId, run);
