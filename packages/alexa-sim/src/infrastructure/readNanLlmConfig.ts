@@ -14,7 +14,7 @@ const DEFAULT_TIMEOUT_MS = 45_000;
 const MAX_TIMEOUT_MS = 55_000;
 const DEFAULT_ROUND_TIMEOUT_MS = 24_000;
 const DEFAULT_MAX_TOOL_ROUNDS = 4;
-const DEFAULT_MAX_TOKENS = 384;
+const DEFAULT_MAX_TOKENS = 1024;
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];

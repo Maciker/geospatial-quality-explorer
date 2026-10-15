@@ -7,6 +7,7 @@ export type LlmCompletionRequest = {
   readonly toolSessionId?: string;
   /** Shown in alexa-sim LLM round logs for live diagnosis. */
   readonly stepLabel?: string;
+  readonly toolChoice?: "auto" | "none";
 };
 
 export type OpenAiToolDefinition = {

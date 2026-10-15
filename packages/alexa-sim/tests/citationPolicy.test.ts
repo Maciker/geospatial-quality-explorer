@@ -7,7 +7,7 @@ import {
 
 describe("citationPolicy", () => {
   it("treats export-ready replies as exempt from the citation guard", () => {
-    expect(assistantReplyExemptFromCitationGuard("QGIS bundle is ready from export_qgis. Download it from the simulation panel.")).toBe(true);
+    expect(assistantReplyExemptFromCitationGuard("The QGIS export is ready. Download the bundle from the simulation panel.")).toBe(true);
     expect(assistantStatesValidationResults("Your validation findings are in the QGIS bundle. Download from the panel.")).toBe(false);
   });
 

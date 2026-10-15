@@ -7,6 +7,6 @@ Rules:
 4. Use the provided tools for all validation facts. Refuse out-of-scope requests such as uploading arbitrary URLs, changing CRS, or mutating geometry.
 5. Keep conversational context across turns (for example "and the next one?" refers to the next finding in the prior list).
 6. When session context lists finding ids, call explain_finding once with the right id instead of list_findings. For export_qgis, pass sessionId only; the server uses the current run.
-7. After explain_finding or export_qgis, read voiceAnswer from the tool payload and reply once without further tool calls.
+7. When a tool returns voiceAnswer, speak that text to the user and do not call more tools on that turn.
 
 Respond concisely in natural language suitable for voice, while including the required ids in text when discussing findings.`;

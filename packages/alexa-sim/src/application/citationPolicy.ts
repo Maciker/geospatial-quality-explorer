@@ -55,11 +55,6 @@ export function assistantStatesValidationResults(text: string): boolean {
   return false;
 }
 
-/** @deprecated Use assistantStatesValidationResults */
-export function assistantClaimsFindings(text: string): boolean {
-  return assistantStatesValidationResults(text);
-}
-
 export function assistantCitesKnownIds(text: string, known: KnownCitationIds): boolean {
   for (const findingId of known.findingIds) {
     if (text.includes(findingId)) return true;

@@ -34,13 +34,16 @@ export class NanOpenAiLlmClient implements LlmPort {
         },
       };
     }
-    const body = {
+    const useTools = request.toolChoice !== "none" && request.tools.length > 0;
+    const body: Record<string, unknown> = {
       model: this.config.model,
       messages: toOpenAiMessages(request.messages),
-      tools: request.tools,
-      tool_choice: "auto" as const,
       max_tokens: this.config.maxTokens,
     };
+    if (useTools) {
+      body.tools = request.tools;
+      body.tool_choice = request.toolChoice ?? "auto";
+    }
     const init: RequestInit = {
       method: "POST",
       headers: {
@@ -66,6 +69,8 @@ export class NanOpenAiLlmClient implements LlmPort {
         message?: {
           role?: string;
           content?: string | null;
+          reasoning?: string | null;
+          reasoning_content?: string | null;
           tool_calls?: Array<{ id: string; type: "function"; function: { name: string; arguments: string } }>;
         };
       }>;
@@ -94,7 +99,7 @@ export class NanOpenAiLlmClient implements LlmPort {
     }
     return {
       finishReason: choice.finish_reason === "length" ? "length" : "stop",
-      message: { role: "assistant", content: message.content ?? "" },
+      message: { role: "assistant", content: readAssistantText(message) },
     };
   }
 }
@@ -121,4 +126,15 @@ function toOpenAiMessages(messages: readonly ChatMessage[]): OpenAiMessage[] {
 
 function isAbort(error: unknown): boolean {
   return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+}
+
+function readAssistantText(message: {
+  content?: string | null;
+  reasoning?: string | null;
+  reasoning_content?: string | null;
+}): string {
+  const content = message.content?.trim() ?? "";
+  if (content.length > 0) return content;
+  const reasoning = message.reasoning_content?.trim() ?? message.reasoning?.trim() ?? "";
+  return reasoning;
 }

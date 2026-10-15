@@ -83,13 +83,25 @@ describe("What the live model receives", () => {
     expect(context).toContain(`${runId}:1:geometry.empty`);
   });
 
+  it("uses user-facing voiceAnswer text on QGIS export tool payloads", async () => {
+    const { llm, requests } = recordingLlm();
+    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
+
+    await runScript(loop, ["Validate the portfolio fixture.", "Export QGIS."]);
+
+    const exportTool = toolMessages(requests).find((content) => content.includes("voiceAnswer") && content.includes("findings.qgs"));
+    expect(exportTool).toBeDefined();
+    expect(exportTool).toContain("Download the bundle from the simulation panel");
+    expect(exportTool).not.toContain("Tell the user");
+  });
+
   it("adds voiceAnswer to explain_finding tool payloads for a single follow-up reply", async () => {
     const { llm, requests } = recordingLlm();
     const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
 
     await runScript(loop, ["Validate the portfolio fixture.", "List the findings.", "Explain the next finding."]);
 
-    const explainTool = toolMessages(requests).find((content) => content.includes("voiceAnswer"));
+    const explainTool = toolMessages(requests).find((content) => content.includes("voiceAnswer") && content.includes("\"finding\""));
     expect(explainTool).toBeDefined();
     expect(explainTool).toContain("findingId");
     expect(explainTool).not.toContain("coordinates");

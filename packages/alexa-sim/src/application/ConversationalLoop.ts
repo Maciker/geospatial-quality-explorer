@@ -22,9 +22,15 @@ import {
 } from "./citationPolicy.js";
 import { executeAlexaTool } from "./executeAlexaTool.js";
 import { findingSummariesToCards, mergeFindingCards } from "./extractFindingCards.js";
-import type { LlmPort } from "./LlmPort.js";
+import type { LlmCompletionResponse, LlmPort } from "./LlmPort.js";
 import { ALEXA_QUALITY_TOOL_DEFINITIONS } from "./openAiToolDefinitions.js";
-import { compactToolResultForModel, sessionContextMessage, trimTranscriptForModel } from "./modelPayload.js";
+import { describeLlmStep } from "./llmStepLabel.js";
+import {
+  compactToolResultForModel,
+  readVoiceAnswerFromCompactPayload,
+  sessionContextMessage,
+  trimTranscriptForModel,
+} from "./modelPayload.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -82,6 +88,8 @@ export class ConversationalLoop {
     let runId: string | null = null;
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
+    let lastVoiceAnswer: string | null = null;
+    let synthesisAttempted = false;
 
     const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
     if (snapshot) {
@@ -100,29 +108,18 @@ export class ConversationalLoop {
     ];
 
     for (let round = 0; round < this.maxToolRounds; round += 1) {
-      const remainingMs = deadlineMs - Date.now();
-      if (remainingMs <= 0) {
+      const completion = await this.completeRound({
+        transcript,
+        sessionId,
+        deadlineMs,
+        roundIndex: round,
+        toolChoice: "auto",
+        tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
+      });
+      if (completion.kind === "timeout") {
         return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress);
       }
-      const roundBudgetMs = Math.min(remainingMs, this.roundTimeoutMs);
-      const roundSignal = AbortSignal.timeout(roundBudgetMs);
-      const stepLabel = describeLlmStep(transcript, round);
-      let completion;
-      try {
-        completion = await this.llm.complete({
-          messages: trimTranscriptForModel(transcript),
-          tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
-          signal: roundSignal,
-          stepLabel,
-          ...(sessionId ? { toolSessionId: sessionId } : {}),
-        });
-      } catch (error) {
-        if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
-          return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress);
-        }
-        throw error;
-      }
-      if (completion.finishReason === "timeout") {
+      if (completion.response.finishReason === "timeout") {
         return {
           sessionId,
           assistantMessage: "The language model timed out.",
@@ -132,17 +129,19 @@ export class ConversationalLoop {
           qgisExport,
         };
       }
-      const assistant = completion.message;
+      const assistant = completion.response.message;
       if (assistant.toolCalls && assistant.toolCalls.length > 0) {
         transcript.push(assistant);
         for (const toolCall of assistant.toolCalls) {
           const executed = await executeAlexaTool(this.tools, toolCall.name, toolCall.argumentsJson, sessionId || undefined);
           if (executed.result.sessionId) sessionId = executed.result.sessionId;
           progress.sessionId = sessionId;
-          const payload = JSON.stringify(compactToolResultForModel(executed.result));
+          const compacted = compactToolResultForModel(executed.result);
+          const voice = readVoiceAnswerFromCompactPayload(compacted);
+          if (voice) lastVoiceAnswer = voice;
           transcript.push({
             role: "tool",
-            content: payload,
+            content: JSON.stringify(compacted),
             toolCallId: toolCall.id,
           });
           const extracted = extractStructuredState(executed.result, findingCards);
@@ -164,41 +163,51 @@ export class ConversationalLoop {
         }
         continue;
       }
-      const text = assistant.content.trim();
-      if (text.length === 0) {
-        return {
-          sessionId,
-          assistantMessage: "I do not have a response right now.",
-          findings: findingCards,
-          runId,
-          refused: true,
-          qgisExport,
-        };
-      }
-      if (
-        !assistantReplyExemptFromCitationGuard(text)
-        && assistantStatesValidationResults(text)
-        && !findingCards.some((card) => text.includes(card.findingId))
-        && !assistantCitesKnownIds(text, knownIds)
-        && !(runId !== null && text.includes(runId))
-      ) {
-        return {
-          sessionId,
-          assistantMessage: refusalTextForMissingCitation(),
-          findings: findingCards,
-          runId,
-          refused: true,
-          qgisExport,
-        };
-      }
-      return {
+      const resolved = await this.resolveAssistantText({
+        assistantText: assistant.content,
+        transcript,
         sessionId,
-        assistantMessage: text,
-        findings: findingCards,
-        runId,
-        refused: false,
-        qgisExport,
-      };
+        deadlineMs,
+        roundIndex: round,
+        lastVoiceAnswer,
+        synthesisAttempted,
+      });
+      synthesisAttempted = resolved.synthesisAttempted;
+      if (resolved.text !== null) {
+        const guarded = applyCitationGuard(resolved.text, findingCards, knownIds, runId);
+        if (guarded.refused) {
+          return {
+            sessionId,
+            assistantMessage: guarded.message,
+            findings: findingCards,
+            runId,
+            refused: true,
+            qgisExport,
+          };
+        }
+        return {
+          sessionId,
+          assistantMessage: guarded.message,
+          findings: findingCards,
+          runId,
+          refused: false,
+          qgisExport,
+        };
+      }
+      break;
+    }
+    if (lastVoiceAnswer) {
+      const guarded = applyCitationGuard(lastVoiceAnswer, findingCards, knownIds, runId);
+      if (!guarded.refused) {
+        return {
+          sessionId,
+          assistantMessage: guarded.message,
+          findings: findingCards,
+          runId,
+          refused: false,
+          qgisExport,
+        };
+      }
     }
     return {
       sessionId,
@@ -208,6 +217,76 @@ export class ConversationalLoop {
       refused: true,
       qgisExport,
     };
+  }
+
+  private async resolveAssistantText(input: {
+    readonly assistantText: string;
+    readonly transcript: ChatMessage[];
+    readonly sessionId: string;
+    readonly deadlineMs: number;
+    readonly roundIndex: number;
+    readonly lastVoiceAnswer: string | null;
+    readonly synthesisAttempted: boolean;
+  }): Promise<{ readonly text: string | null; readonly synthesisAttempted: boolean }> {
+    const trimmed = input.assistantText.trim();
+    if (trimmed.length > 0) {
+      return { text: trimmed, synthesisAttempted: input.synthesisAttempted };
+    }
+    if (input.lastVoiceAnswer) {
+      return { text: input.lastVoiceAnswer, synthesisAttempted: input.synthesisAttempted };
+    }
+    if (input.synthesisAttempted || input.transcript.at(-1)?.role !== "tool") {
+      return { text: null, synthesisAttempted: input.synthesisAttempted };
+    }
+    const synthesis = await this.completeRound({
+      transcript: input.transcript,
+      sessionId: input.sessionId,
+      deadlineMs: input.deadlineMs,
+      roundIndex: input.roundIndex,
+      toolChoice: "none",
+      tools: [],
+      stepSuffix: " synthesis",
+    });
+    if (synthesis.kind === "timeout") {
+      return { text: null, synthesisAttempted: true };
+    }
+    const synthesisText = synthesis.response.message.content.trim();
+    return {
+      text: synthesisText.length > 0 ? synthesisText : null,
+      synthesisAttempted: true,
+    };
+  }
+
+  private async completeRound(input: {
+    readonly transcript: readonly ChatMessage[];
+    readonly sessionId: string;
+    readonly deadlineMs: number;
+    readonly roundIndex: number;
+    readonly toolChoice: "auto" | "none";
+    readonly tools: typeof ALEXA_QUALITY_TOOL_DEFINITIONS | [];
+    readonly stepSuffix?: string;
+  }): Promise<{ kind: "timeout" } | { kind: "ok"; response: LlmCompletionResponse }> {
+    const remainingMs = input.deadlineMs - Date.now();
+    if (remainingMs <= 0) return { kind: "timeout" };
+    const roundBudgetMs = Math.min(remainingMs, this.roundTimeoutMs);
+    const roundSignal = AbortSignal.timeout(roundBudgetMs);
+    const stepLabel = `${describeLlmStep(input.transcript, input.roundIndex)}${input.stepSuffix ?? ""}`;
+    try {
+      const response = await this.llm.complete({
+        messages: trimTranscriptForModel(input.transcript),
+        tools: input.tools,
+        toolChoice: input.toolChoice,
+        signal: roundSignal,
+        stepLabel,
+        ...(input.sessionId ? { toolSessionId: input.sessionId } : {}),
+      });
+      return { kind: "ok", response };
+    } catch (error) {
+      if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+        return { kind: "timeout" };
+      }
+      throw error;
+    }
   }
 
   private timeoutResponse(
@@ -230,18 +309,22 @@ export class ConversationalLoop {
   }
 }
 
-function describeLlmStep(transcript: readonly ChatMessage[], roundIndex: number): string {
-  const last = transcript.at(-1);
-  if (!last) return `turn ${roundIndex + 1} initial`;
-  if (last.role === "user") return `turn ${roundIndex + 1} after user`;
-  if (last.role === "tool") {
-    const preview = last.content.slice(0, 80).replace(/\s+/g, " ");
-    return `turn ${roundIndex + 1} after tool ${preview}`;
+function applyCitationGuard(
+  text: string,
+  findingCards: readonly CitedFindingCard[],
+  knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
+  runId: string | null,
+): { refused: boolean; message: string } {
+  if (
+    !assistantReplyExemptFromCitationGuard(text)
+    && assistantStatesValidationResults(text)
+    && !findingCards.some((card) => text.includes(card.findingId))
+    && !assistantCitesKnownIds(text, knownIds)
+    && !(runId !== null && text.includes(runId))
+  ) {
+    return { refused: true, message: refusalTextForMissingCitation() };
   }
-  if (last.role === "assistant" && last.toolCalls && last.toolCalls.length > 0) {
-    return `turn ${roundIndex + 1} after assistant tool_calls ${last.toolCalls.map((call) => call.name).join(",")}`;
-  }
-  return `turn ${roundIndex + 1} follow-up`;
+  return { refused: false, message: text };
 }
 
 function extractStructuredState(

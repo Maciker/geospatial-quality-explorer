@@ -13,15 +13,33 @@ export function compactToolResultForModel(result: object): unknown {
       names: ["findings.qgs", "findings.geojson", "findings.qml", "run-metadata.json"],
       note: "Delivered to the user's download button. Do not repeat file contents.",
     };
-    data.voiceAnswer = "The QGIS export is ready. Tell the user to download the bundle from the simulation panel.";
+    data.voiceAnswer = "The QGIS export is ready. Download the bundle from the simulation panel.";
   }
-  if (Array.isArray(data.findings)) data.findings = data.findings.map(withoutGeometry);
+  if ("findingCount" in data && "runId" in data && typeof data.datasetName === "string") {
+    data.voiceAnswer = `Validation finished for ${data.datasetName}. runId ${String(data.runId)}. ${String(data.findingCount)} findings. Ask when you want the prioritized list.`;
+  }
+  if (Array.isArray(data.findings)) {
+    const summaries = data.findings.map(withoutGeometry);
+    data.findings = summaries;
+    const first = summaries[0];
+    if (isRecord(first)) {
+      data.voiceAnswer = `Top finding: ${formatFindingVoiceAnswer(first)}`;
+    }
+  }
   if (isRecord(data.finding)) {
     const finding = withoutGeometry(data.finding);
     data.finding = finding;
     if (isRecord(finding)) data.voiceAnswer = formatFindingVoiceAnswer(finding);
   }
   return { ...result, data };
+}
+
+export function readVoiceAnswerFromCompactPayload(compacted: unknown): string | null {
+  if (!isRecord(compacted) || !isRecord(compacted.data)) return null;
+  const voice = compacted.data.voiceAnswer;
+  if (typeof voice !== "string") return null;
+  const trimmed = voice.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 export function sessionContextMessage(snapshot: SessionSnapshot): ChatMessage {
@@ -34,7 +52,7 @@ export function sessionContextMessage(snapshot: SessionSnapshot): ChatMessage {
       `Session context from the server: sessionId ${snapshot.sessionId}; current runId ${snapshot.runId} (dataset ${snapshot.datasetName}).`,
       findings,
       "Use these ids directly with explain_finding or export_qgis; omit runId on export_qgis to use the current run. \"Next\" means the id after the last one discussed. Call list_findings only when the user asks for the full list.",
-      "After explain_finding or export_qgis, read voiceAnswer from the tool result and reply once in natural language without calling more tools.",
+      "After tools return voiceAnswer, speak that text to the user in natural language without calling more tools.",
     ].join(" "),
   };
 }
