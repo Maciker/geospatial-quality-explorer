@@ -34,7 +34,7 @@ export type AlexaChatResponse = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-export type AlexaSimHttpErrorInit = {
+type AlexaSimHttpErrorInit = {
   readonly status: number;
   readonly code: string;
   readonly retryAfterSeconds: number | null;
@@ -54,7 +54,7 @@ export class AlexaSimHttpError extends Error {
   }
 }
 
-export function parseRetryAfterSeconds(header: string | null): number | null {
+function parseRetryAfterSeconds(header: string | null): number | null {
   if (header === null || header.trim().length === 0) return null;
   const asNumber = Number(header);
   if (Number.isFinite(asNumber) && asNumber >= 0) return asNumber;

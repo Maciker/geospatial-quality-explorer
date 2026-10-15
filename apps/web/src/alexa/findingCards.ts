@@ -5,7 +5,7 @@ export type FindingCardsState = {
   readonly selectedId: string | null;
 };
 
-export type NextFindingCardsOptions = {
+type NextFindingCardsOptions = {
   /** When false, drop prior cards even if runId is null (lost session / invalid context). */
   readonly contextValid?: boolean;
 };

@@ -1,7 +1,7 @@
 import { AlexaSimHttpError } from "./alexaSimApi";
 
 /** Finite automatic retries for app rate limits only. */
-export const MAX_ALEXA_SIM_AUTO_RETRIES = 2;
+const MAX_ALEXA_SIM_AUTO_RETRIES = 2;
 const MAX_RETRY_AFTER_SECONDS = 60;
 const DEFAULT_RATE_LIMIT_WAIT_SECONDS = 5;
 
