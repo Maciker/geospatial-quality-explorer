@@ -5,16 +5,14 @@ import { BoundedSessionQualityToolsAdapter } from "../../alexa-tools/src/infrast
 import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionResponse, LlmPort } from "../src/application/LlmPort.js";
 import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm.js";
-import { blankValidationToolChainLlm, portfolioValidateListMessages } from "./support/conversationalLoopFixtures.js";
+import { blankValidationToolChainLlm, portfolioValidateListMessages, stallUntilAbort, textReply, toolCallReply, validatePortfolio } from "./support/conversationalLoopFixtures.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 
 describe("Empty assistant content after tools", () => {
   it("speaks voiceAnswer when the model returns blank text after explain_finding", async () => {
     const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
-    const setup = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
-      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
-    });
+    const setup = await validatePortfolio(tools);
     const listed = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
       sessionId: setup.sessionId,
       messages: portfolioValidateListMessages(setup.assistantMessage),
@@ -25,20 +23,9 @@ describe("Empty assistant content after tools", () => {
         if (last?.role === "user" && last.content.includes("Explain")) {
           const context = request.messages.find((message) => message.content.includes("priority order"))?.content ?? "";
           const firstId = /order: ([a-f0-9]{64}:\d+:[a-z0-9_.]+)/.exec(context)?.[1];
-          return {
-            finishReason: "tool_calls",
-            message: {
-              role: "assistant",
-              content: "",
-              toolCalls: [{
-                id: "ex1",
-                name: "explain_finding",
-                argumentsJson: JSON.stringify({ sessionId: setup.sessionId, findingId: firstId }),
-              }],
-            },
-          };
+          return toolCallReply("ex1", "explain_finding", { sessionId: setup.sessionId, findingId: firstId });
         }
-        return { finishReason: "stop", message: { role: "assistant", content: "" } };
+        return textReply("");
       },
     };
 
@@ -68,28 +55,13 @@ describe("Empty assistant content after tools", () => {
 
   it("returns voiceAnswer when the final model call times out after list_findings", async () => {
     const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
-    const setup = await new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }).run({
-      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
-    });
+    const setup = await validatePortfolio(tools);
     const slowFinalLlm: LlmPort = {
       async complete(request): Promise<LlmCompletionResponse> {
         if (!request.messages.some((message) => message.role === "tool")) {
-          return {
-            finishReason: "tool_calls",
-            message: {
-              role: "assistant",
-              content: "",
-              toolCalls: [{
-                id: "list",
-                name: "list_findings",
-                argumentsJson: JSON.stringify({ sessionId: setup.sessionId, runId: setup.runId }),
-              }],
-            },
-          };
+          return toolCallReply("list", "list_findings", { sessionId: setup.sessionId, runId: setup.runId });
         }
-        return new Promise((_resolve, reject) => {
-          request.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
-        });
+        return stallUntilAbort(request.signal);
       },
     };
 

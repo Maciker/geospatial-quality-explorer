@@ -38,7 +38,8 @@ function lastToolResult(messages: readonly ChatMessage[]): unknown {
   return null;
 }
 
-function toolCall(id: string, name: string, args: Record<string, unknown>): LlmCompletionResponse {
+/** A model reply that calls one tool; shared with the test fixtures. */
+export function toolCall(id: string, name: string, args: Record<string, unknown>): LlmCompletionResponse {
   return {
     finishReason: "tool_calls",
     message: {
