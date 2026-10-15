@@ -23,6 +23,7 @@ import { executeAlexaTool } from "./executeAlexaTool.js";
 import { findingSummariesToCards, mergeFindingCards } from "./extractFindingCards.js";
 import type { LlmPort } from "./LlmPort.js";
 import { ALEXA_QUALITY_TOOL_DEFINITIONS } from "./openAiToolDefinitions.js";
+import { compactToolResultForModel, sessionContextMessage } from "./modelPayload.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -31,6 +32,8 @@ export type ConversationalLoopOptions = {
   readonly maxToolRounds?: number;
   readonly timeoutMs?: number;
 };
+
+type LoopProgress = { sessionId: string; runId: string | null };
 
 export class ConversationalLoop {
   private readonly tools: QualityToolsPort;
@@ -48,15 +51,17 @@ export class ConversationalLoop {
   async run(input: AlexaSimChatRequest): Promise<AlexaSimChatResponse> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    // Survives a timeout, so a slow model does not cost the user the session and run it already built.
+    const progress: LoopProgress = { sessionId: input.sessionId ?? "", runId: null };
     try {
-      return await this.runWithSignal(input, controller.signal);
+      return await this.runWithSignal(input, controller.signal, progress);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         return {
-          sessionId: input.sessionId ?? "",
-          assistantMessage: "The request timed out before I could finish checking the dataset.",
+          sessionId: progress.sessionId,
+          assistantMessage: "The request timed out before I could finish checking the dataset. Your session is kept; ask again or shorten the request.",
           findings: [],
-          runId: null,
+          runId: progress.runId,
           refused: true,
           qgisExport: null,
         };
@@ -67,15 +72,25 @@ export class ConversationalLoop {
     }
   }
 
-  private async runWithSignal(input: AlexaSimChatRequest, signal: AbortSignal): Promise<AlexaSimChatResponse> {
+  private async runWithSignal(input: AlexaSimChatRequest, signal: AbortSignal, progress: LoopProgress): Promise<AlexaSimChatResponse> {
     let sessionId = input.sessionId ?? "";
     let findingCards: readonly CitedFindingCard[] = [];
     let runId: string | null = null;
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
 
+    const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
+    if (snapshot) {
+      // Server-sourced ids are legitimate citations even when the model answers without a tool call.
+      knownIds = mergeCitationIds(knownIds, {
+        findingIds: new Set(snapshot.prioritizedFindingIds),
+        ruleIds: new Set(),
+        featureIds: new Set(),
+      });
+    }
     const transcript: ChatMessage[] = [
       { role: "system", content: ALEXA_SIM_SYSTEM_INSTRUCTIONS },
+      ...(snapshot ? [sessionContextMessage(snapshot)] : []),
       ...input.messages.filter((message) => message.role !== "system"),
     ];
 
@@ -102,7 +117,8 @@ export class ConversationalLoop {
         for (const toolCall of assistant.toolCalls) {
           const executed = await executeAlexaTool(this.tools, toolCall.name, toolCall.argumentsJson, sessionId || undefined);
           if (executed.result.sessionId) sessionId = executed.result.sessionId;
-          const payload = JSON.stringify(executed.result);
+          progress.sessionId = sessionId;
+          const payload = JSON.stringify(compactToolResultForModel(executed.result));
           transcript.push({
             role: "tool",
             content: payload,
@@ -111,6 +127,7 @@ export class ConversationalLoop {
           const extracted = extractStructuredState(executed.result, findingCards);
           findingCards = extracted.findings;
           runId = extracted.runId ?? runId;
+          progress.runId = runId;
           qgisExport = extracted.qgisExport ?? qgisExport;
           knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
           if (!executed.result.ok && executed.result.error === "refused") {

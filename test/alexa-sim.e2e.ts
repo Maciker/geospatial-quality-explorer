@@ -19,4 +19,19 @@ test("Alexa+ simulation validates portfolio and cites findings with mock LLM", a
   const card = page.getByLabel("Finding cards and map").getByRole("button", { name: /geometry\./ }).first();
   await expect(card).toBeVisible();
   await expect(card).toContainText("featureId");
+  const cards = page.getByLabel("Finding cards and map").getByRole("button", { name: /(geometry|identifier)\./ });
+  const listedCount = await cards.count();
+  await page.getByLabel("Message Alexa simulation").fill("Explain the next finding.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(chat.getByText(/identifier\.duplicate/).last()).toBeVisible({ timeout: 30_000 });
+  await expect(cards).toHaveCount(listedCount);
+  const overflowing = await chat.locator("div > div").evaluateAll((bubbles) =>
+    bubbles.filter((bubble) => bubble.scrollWidth > bubble.clientWidth + 1).length);
+  expect(overflowing).toBe(0);
+  await page.getByLabel("Message Alexa simulation").fill("Export QGIS.");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(chat.getByText(/QGIS bundle is ready/i)).toBeVisible({ timeout: 30_000 });
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download last QGIS bundle" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^qgis-[a-f0-9]{8}\.zip$/);
 });

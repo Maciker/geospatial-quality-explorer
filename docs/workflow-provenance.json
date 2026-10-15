@@ -28,7 +28,7 @@
     "two-round correction limit and supported-PR-path coverage",
     "local gis-data-integrity skill and repository skill scope in AGENTS.md (2026-10-14)"
   ],
-  "skills": "All canonical .ai/skills and references match upstream commit 9fee873 verbatim, except the local gis-data-integrity skill. Generated adapters are regenerated locally.",
+  "skills": "All canonical .ai/skills and references match upstream commit 9fee873 in content, except the local gis-data-integrity skill. Line endings are normalized to LF (upstream ships some references with CRLF), as in the 2026-10-14 sync. Generated adapters are regenerated locally.",
   "sourceCommit": "9fee87341827d8ad865f514f81b922a7e792ca23",
   "postPrReview": {
     "canonical": ".ai/commands/post-pr-review.md",

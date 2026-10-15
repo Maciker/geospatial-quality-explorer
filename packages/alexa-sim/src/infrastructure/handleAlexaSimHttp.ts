@@ -3,6 +3,7 @@ import type { AlexaSimChatRequest, ChatMessage } from "../domain/chatTypes.js";
 import { createBoundedQualityToolsAdapter } from "./createToolsAdapter.js";
 import { createLlmClient } from "./createLlmClient.js";
 import { FixedWindowRateLimiter } from "./FixedWindowRateLimiter.js";
+import { LlmUnavailableError } from "./NanOpenAiLlmClient.js";
 import { corsHeadersForRequest, readAlexaSimCorsOrigins } from "./parseCorsOrigins.js";
 import { readNanLlmConfig } from "./readNanLlmConfig.js";
 
@@ -84,8 +85,24 @@ export async function handleAlexaSimHttp(
   const loop = new ConversationalLoop({
     tools: createBoundedQualityToolsAdapter(),
     llm: createLlmClient(),
+    timeoutMs: readNanLlmConfig().timeoutMs,
   });
-  const result = await loop.run(parsed);
+  let result;
+  try {
+    result = await loop.run(parsed);
+  } catch (error) {
+    if (error instanceof LlmUnavailableError) {
+      console.error(`alexa-sim: ${error.message}`);
+      response.status(502).end(JSON.stringify({
+        error: "llm_unavailable",
+        message: "The language model is unavailable right now. Try again shortly.",
+      }));
+      return;
+    }
+    console.error(`alexa-sim: unexpected ${error instanceof Error ? error.name : "error"} in the conversation loop.`);
+    response.status(500).end(JSON.stringify({ error: "internal_error", message: "The request could not be completed." }));
+    return;
+  }
   response.status(200);
   response.end(JSON.stringify({ ...result, llmMode: currentLlmMode() }));
 }

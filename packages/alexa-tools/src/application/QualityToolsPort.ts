@@ -10,6 +10,7 @@ import type {
   ListFixturesOutput,
   RunValidationInput,
   RunValidationOutput,
+  SessionSnapshot,
 } from "../domain/toolContracts.js";
 
 export type QualityToolsPort = {
@@ -18,4 +19,6 @@ export type QualityToolsPort = {
   listFindings(input: ListFindingsInput): Promise<ToolResult<ListFindingsOutput>>;
   explainFinding(input: ExplainFindingInput): Promise<ToolResult<ExplainFindingOutput>>;
   exportQgis(input: ExportQgisInput): Promise<ToolResult<ExportQgisOutput>>;
+  /** Latest run of an active session, or null; never creates or extends a session. */
+  describeSession(sessionId: string): Promise<SessionSnapshot | null>;
 };

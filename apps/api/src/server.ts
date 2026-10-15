@@ -56,7 +56,11 @@ async function route(
 ): Promise<void> {
   const url = new URL(request.url ?? "/", "http://127.0.0.1");
   if (url.pathname.startsWith("/api/v1/alexa-sim")) {
-    await handleAlexaSimRoute(request, response);
+    // A rejected promise here would be unhandled (route is fire-and-forget) and stop the process.
+    await handleAlexaSimRoute(request, response).catch(() => {
+      if (!response.headersSent) send(response, 500, { error: "internal_error", message: "The request could not be completed." });
+      else response.end();
+    });
     return;
   }
   applyCors(request, response);

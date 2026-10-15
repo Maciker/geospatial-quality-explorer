@@ -67,7 +67,7 @@ TypeScript on Node.js for the validator, CLI, API and React/MapLibre web app; Po
 
 ## Project docs
 
-[Demo](docs/demo.md) · [CLI](docs/cli.md) · [API](docs/api.md) · [QGIS review](docs/qgis-review.md) · [Contracts](docs/contracts.md) · [Limitations](docs/limitations.md) · [Architecture](docs/architecture.md) · [Development](docs/development.md) · [Roadmap](docs/roadmap.md) · [Alexa+ tool contracts](docs/hackathon/tool-contracts.md)
+[Demo](docs/demo.md) · [CLI](docs/cli.md) · [API](docs/api.md) · [QGIS review](docs/qgis-review.md) · [Contracts](docs/contracts.md) · [Limitations](docs/limitations.md) · [Architecture](docs/architecture.md) · [Development](docs/development.md) · [Roadmap](docs/roadmap.md) · [Alexa+ hackathon delivery](docs/hackathon/README.md) · [Tool contracts](docs/hackathon/tool-contracts.md)
 
 ## How this repository is built
 

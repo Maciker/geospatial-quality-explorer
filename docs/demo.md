@@ -16,7 +16,7 @@ Open the Vite URL with `?sim=alexa`. The badges read *Simulation of Alexa+ — n
 1. `Validate the portfolio fixture.` — the reply cites a 64-character run id.
 2. `List the findings.` — finding cards appear with `findingId`, `ruleId` and `featureId`, and the map draws them.
 3. `Explain the next finding.` — the explanation comes from the deterministic core, not the model.
-4. `Export QGIS.` — download the bundle and open `findings.qgs` (see [qgis-review](qgis-review.md)).
+4. `Export QGIS.` — then click **Download last QGIS bundle**, unzip `qgis-<run>.zip` into one folder and open `findings.qgs` in QGIS 3 (see [qgis-review](qgis-review.md)).
 
 The mock understands these phrasings only; the live model accepts free wording. Asking it to repair geometry is refused by design.
 

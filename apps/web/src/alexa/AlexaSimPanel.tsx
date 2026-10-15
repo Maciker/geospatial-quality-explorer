@@ -9,6 +9,7 @@ import {
   type AlexaFindingCard,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
+import { nextFindingCards, type FindingCardsState } from "./findingCards";
 import { downloadQgisArtifacts } from "./downloadQgisZip";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -30,8 +31,11 @@ export default function AlexaSimPanel() {
       content: "Hi, I am Alexa in a labeled simulation. Ask me to validate the portfolio CC0 fixture or list findings.",
     },
   ]);
-  const [findings, setFindings] = useState<AlexaFindingCard[]>([]);
-  const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
+  // One state so a reply and a click during the request cannot overwrite each other.
+  const [cardsState, setCardsState] = useState<FindingCardsState>({ cards: [], selectedId: null });
+  const findings = cardsState.cards;
+  const selectedFindingId = cardsState.selectedId;
+  const selectFinding = (findingId: string) => setCardsState((previous) => ({ ...previous, selectedId: findingId }));
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,8 +94,7 @@ export default function AlexaSimPanel() {
       const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
       setSessionId(response.sessionId);
       if (response.llmMode) setLlmMode(response.llmMode);
-      setFindings(response.findings);
-      if (response.findings[0] && !selectedFindingId) setSelectedFindingId(response.findings[0].findingId);
+      setCardsState((previous) => nextFindingCards(previous, response.findings, response.runId));
       setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
       if (response.qgisExport) setLastQgisResponse(response);
       speak(response.assistantMessage);
@@ -109,7 +112,7 @@ export default function AlexaSimPanel() {
       </p>
       <p className={styles.modelBadge} aria-label="Language model mode">
         {llmMode === "live" && "Model: live LLM"}
-        {llmMode === "mock" && "Model: deterministic mock (no API key configured)"}
+        {llmMode === "mock" && "Model: deterministic mock (scripted replies)"}
         {llmMode === null && "Model: checking…"}
       </p>
       <header>
@@ -190,7 +193,7 @@ export default function AlexaSimPanel() {
                 key={finding.findingId}
                 type="button"
                 className={`${styles.card} ${selectedFindingId === finding.findingId ? styles.cardSelected : ""}`}
-                onClick={() => setSelectedFindingId(finding.findingId)}
+                onClick={() => selectFinding(finding.findingId)}
               >
                 <strong>{finding.ruleId}</strong>
                 <div className={styles.cardMeta}>
@@ -210,7 +213,7 @@ export default function AlexaSimPanel() {
           <div className={styles.mapWrap}>
             <FindingsMap
               features={mapFeatures}
-              onSelect={(findingId) => setSelectedFindingId(findingId)}
+              onSelect={selectFinding}
             />
           </div>
         </aside>
@@ -228,7 +231,7 @@ function speak(text: string): void {
   window.speechSynthesis.speak(utterance);
 }
 
-function toFindingFeatures(findings: AlexaFindingCard[]): FindingFeature[] {
+function toFindingFeatures(findings: readonly AlexaFindingCard[]): FindingFeature[] {
   return findings.flatMap((finding) => {
     if (!isGeometry(finding.geometry)) return [];
     return [{
