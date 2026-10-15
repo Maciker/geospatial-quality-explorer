@@ -55,7 +55,7 @@ Ruleset `vector-core` 1.1.0 reports empty geometry, missing and duplicate featur
 
 ## Data and licenses
 
-The fixtures in `packages/quality/fixtures/vector` are original synthetic geometries dedicated to the public domain (CC0 1.0). The map has no remote basemap, so no tile terms apply. Code is MIT ([LICENSE](LICENSE)); third-party notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Real datasets and generated outputs stay local (`outputs/`, `data/raw/` are ignored).
+Synthetic fixtures in `packages/quality/fixtures/vector` are original geometries dedicated to the public domain (CC0 1.0). Natural Earth Admin 0 samples (`ne-admin0-westeurope*`) are public domain per [Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/) (`NaturalEarth-public-domain` — not CC0); see `packages/quality/fixtures/LICENSE.md` and `fixtures/provenance/`. The map has no remote basemap, so no tile terms apply. Code is MIT ([LICENSE](LICENSE)); third-party notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Other real datasets and generated outputs stay local (`outputs/`, `data/raw/` are ignored).
 
 ## Technology choices
 

@@ -25,7 +25,7 @@ import type {
   SessionSnapshot,
 } from "../domain/toolContracts.js";
 import { toolError, toolSuccess, type ToolResult } from "../domain/toolErrors.js";
-import { listFixtureCatalog, resolveFixturePath } from "./listFixtureCatalog.js";
+import { listFixtureCatalog, loadFixtureManifest, resolveFixturePath } from "./listFixtureCatalog.js";
 
 const SNAPSHOT_FINDING_LIMIT = 20;
 
@@ -91,14 +91,15 @@ export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
       return toolError(sessionId, "invalid_request", "The fixture file is not valid JSON.");
     }
     const completedAt = new Date(this.now());
+    const manifest = loadFixtureManifest(this.fixturesDirectory, input.fixtureId);
     const run = validateDataset({
       collection,
       sourceBytes,
       declaration: {
         name: input.fixtureId,
-        sourceCrs: "EPSG:4326",
-        license: "CC0-1.0",
-        parameters: {},
+        sourceCrs: manifest.defaultSourceCrs,
+        license: manifest.license,
+        parameters: { ...(manifest.parameters ?? {}) },
       },
       digest: this.digest,
       engine: this.engine,

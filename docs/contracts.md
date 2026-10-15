@@ -28,6 +28,6 @@ Positions are longitude and latitude pairs. Three-dimensional coordinates are re
 
 ## Fixtures
 
-Reviewed synthetic fixtures live in `packages/quality/fixtures/vector/`. Expected rule and feature ids live in `packages/quality/fixtures/expected/`. The files are CC0; see `packages/quality/fixtures/LICENSE.md`.
+Reviewed fixtures live in `packages/quality/fixtures/vector/` (synthetic CC0 samples and Natural Earth Western Europe samples). Expected rule and feature ids live in `packages/quality/fixtures/expected/`. Licenses are per dataset; see `packages/quality/fixtures/LICENSE.md`.
 
 `packages/quality/fixtures/vector/clean.geojson` is a single valid square. Its expected finding list is empty.

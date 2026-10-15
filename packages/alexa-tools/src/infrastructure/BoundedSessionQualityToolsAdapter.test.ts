@@ -18,6 +18,35 @@ describe("BoundedSessionQualityToolsAdapter", () => {
     if (!result.ok) return;
     expect(result.sessionId.length).toBeGreaterThanOrEqual(8);
     expect(result.data.fixtures.some((fixture) => fixture.fixtureId === "portfolio")).toBe(true);
+    const ne = result.data.fixtures.find((fixture) => fixture.fixtureId === "ne-admin0-westeurope");
+    expect(ne?.license).toBe("NaturalEarth-public-domain");
+    expect(ne?.scaleNote).toMatch(/1:110m/i);
+  });
+
+  it("validates the Natural Earth sample with its own license and provenance parameters", async () => {
+    const adapter = createAdapter();
+    const sessionId = await openAdapterSession(adapter);
+    const validated = await runFixtureValidation(adapter, sessionId, "ne-admin0-westeurope");
+    expect(validated.findingCount).toBe(0);
+    const exported = await adapter.exportQgis({ sessionId, runId: validated.runId });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) return;
+    expect(exported.data.files.metadata).toContain("NaturalEarth-public-domain");
+    expect(exported.data.files.metadata).toContain("1:110m");
+  });
+
+  it("surfaces didactic errors on the Natural Earth demo-errors fixture", async () => {
+    const adapter = createAdapter();
+    const sessionId = await openAdapterSession(adapter);
+    const validated = await runFixtureValidation(adapter, sessionId, "ne-admin0-westeurope-demo-errors");
+    expect(validated.findingCount).toBeGreaterThanOrEqual(3);
+    const listed = await adapter.listFindings({ sessionId, runId: validated.runId, limit: 20 });
+    expect(listed.ok).toBe(true);
+    if (!listed.ok) return;
+    const ruleIds = new Set(listed.data.findings.map((finding) => finding.ruleId));
+    expect(ruleIds.has("geometry.invalid")).toBe(true);
+    expect(ruleIds.has("identifier.duplicate")).toBe(true);
+    expect(ruleIds.has("geometry.empty")).toBe(true);
   });
 
   it("validates a clean fixture with zero findings", async () => {

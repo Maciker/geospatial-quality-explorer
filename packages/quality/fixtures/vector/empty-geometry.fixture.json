@@ -1,0 +1,8 @@
+{
+  "label": "empty geometry",
+  "license": "CC0-1.0",
+  "defaultSourceCrs": "EPSG:4326",
+  "origin": "Synthetic fixture created for Geospatial Quality Explorer",
+  "transformation": "none",
+  "scaleNote": "Synthetic unit-square geometry; not a surveyed place"
+}

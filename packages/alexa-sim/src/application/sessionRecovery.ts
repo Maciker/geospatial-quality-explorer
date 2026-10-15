@@ -1,8 +1,13 @@
 /** User-facing recovery copy when the server no longer has a validated run for this session. */
 export const SESSION_RECOVERY_PROMPT =
-  "This session no longer has a validated run on this server. Ask me to validate an allowed fixture (for example the portfolio fixture), then we can list findings, explain, or export again.";
+  "This session no longer has a validated run on this server. Ask me to validate an allowed fixture (for example portfolio or ne-admin0-westeurope), then we can list findings, explain, or export again.";
 
-const CATALOG_FIXTURE_TOKEN = /\b(portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/;
+/** Longer ids first so `ne-admin0-westeurope-demo-errors` wins over `ne-admin0-westeurope`. */
+const CATALOG_FIXTURE_TOKEN =
+  /\b(ne-admin0-westeurope-demo-errors|ne-admin0-westeurope|portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/;
+
+const CATALOG_FIXTURE_MENTION =
+  /\b(?:fixture|ne-admin0-westeurope-demo-errors|ne-admin0-westeurope|portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/;
 
 /** Leading courtesy words that still make a command (aligned with orchestrationToolChoice). */
 const POLITE_PREFIX = /^(?:(?:ok(?:ay)?|now|then|and|so|alright|great|thanks|hi|hello|hey|yes|yeah|sure)\b[\s,]*)*(?:(?:please|can you|could you|would you|will you|let's|lets|go ahead and|i want you to|i'd like you to)\b[\s,]*)*(?:please\b[\s,]*)?/;
@@ -13,9 +18,7 @@ export function catalogFixtureFromValidateCommand(userText: string): string | nu
     const command = commandText(clause);
     if (command === null) continue;
     if (!/^(?:validate|run (?:the )?validation|check)\b/.test(command)) continue;
-    if (!/\b(?:fixture|portfolio|clean|duplicate-ids|empty-geometry|invalid-polygon|multipolygon|valid-hole)\b/.test(command)) {
-      continue;
-    }
+    if (!CATALOG_FIXTURE_MENTION.test(command)) continue;
     const match = command.match(CATALOG_FIXTURE_TOKEN);
     if (match?.[1]) return match[1];
   }

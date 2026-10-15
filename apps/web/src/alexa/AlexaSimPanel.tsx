@@ -22,7 +22,7 @@ import { isAlexaSessionContextValid } from "./sessionContext";
 import styles from "./AlexaSimPanel.module.css";
 
 const WELCOME_MESSAGE =
-  "Hi, I am Alexa in a labeled simulation. Ask me to validate the portfolio CC0 fixture or list findings.";
+  "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope (Natural Earth), then list findings.";
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -200,7 +200,7 @@ export default function AlexaSimPanel() {
               aria-label="Message Alexa simulation"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Try: Validate the portfolio fixture"
+              placeholder="Try: Validate the ne-admin0-westeurope fixture"
               disabled={busy}
             />
             <button type="button" onClick={() => setVoiceEnabled((value) => !value)}>
@@ -267,7 +267,7 @@ export default function AlexaSimPanel() {
                 <p>{finding.explanation}</p>
               </button>
             ))}
-            {findings.length === 0 && <p>No finding cards yet. Validate a CC0 fixture to populate this list.</p>}
+            {findings.length === 0 && <p>No finding cards yet. Validate a catalog fixture to populate this list.</p>}
           </div>
           {selected && (
             <p aria-label="Finding detail">

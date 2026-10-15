@@ -1,0 +1,18 @@
+[
+  {
+    "ruleId": "geometry.empty",
+    "featureId": "DEMO-EMPTY"
+  },
+  {
+    "ruleId": "identifier.duplicate",
+    "featureId": "ESP"
+  },
+  {
+    "ruleId": "identifier.duplicate",
+    "featureId": "ESP"
+  },
+  {
+    "ruleId": "geometry.invalid",
+    "featureId": "PRT"
+  }
+]

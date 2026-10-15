@@ -112,7 +112,7 @@ export class DeterministicMockLlm implements LlmPort {
   }
 }
 
-const HELP_TEXT = "Ask me to validate the portfolio fixture, list findings, explain the next one, or export QGIS.";
+const HELP_TEXT = "Ask me to validate the portfolio or ne-admin0-westeurope fixture, list findings, explain the next one, or export QGIS.";
 
 function findLastToolContent(messages: readonly ChatMessage[]): string {
   for (let index = messages.length - 1; index >= 0; index -= 1) {

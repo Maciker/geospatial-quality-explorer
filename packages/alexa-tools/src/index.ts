@@ -30,4 +30,10 @@ export {
   BoundedSessionQualityToolsAdapter,
   type BoundedSessionQualityToolsAdapterOptions,
 } from "./infrastructure/BoundedSessionQualityToolsAdapter.js";
-export { listFixtureCatalog, resolveFixturePath } from "./infrastructure/listFixtureCatalog.js";
+export {
+  listFixtureCatalog,
+  loadFixtureManifest,
+  resolveFixturePath,
+  type FixtureCatalogEntry,
+  type FixtureManifest,
+} from "./infrastructure/listFixtureCatalog.js";

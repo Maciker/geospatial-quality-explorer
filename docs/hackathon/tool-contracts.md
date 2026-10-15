@@ -76,7 +76,7 @@ Error:
 
 ### `list_fixtures`
 
-**Purpose:** Enumerate CC0 reference datasets under `packages/quality/fixtures/vector/` for deterministic demos.
+**Purpose:** Enumerate catalog datasets under `packages/quality/fixtures/vector/` for deterministic demos (synthetic CC0 samples and Natural Earth Western Europe samples).
 
 **Input**
 
@@ -88,9 +88,9 @@ Error:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `fixtures` | array | `{ fixtureId, label, license, defaultSourceCrs }` |
+| `fixtures` | array | `{ fixtureId, label, license, defaultSourceCrs, origin?, transformation?, scaleNote?, didacticNote? }` from each `*.fixture.json` sidecar |
 
-Default CRS for fixtures: `EPSG:4326`. License: `CC0-1.0`.
+Default CRS when declared: `EPSG:4326`. License is **per dataset** (synthetic fixtures use `CC0-1.0`; Natural Earth samples use `NaturalEarth-public-domain` per [Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/), not CC0).
 
 ---
 
