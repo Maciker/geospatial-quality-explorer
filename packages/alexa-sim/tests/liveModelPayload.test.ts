@@ -82,4 +82,43 @@ describe("What the live model receives", () => {
     expect(context).toContain(runId);
     expect(context).toContain(`${runId}:1:geometry.empty`);
   });
+
+  it("keeps the session when the model times out after a tool call", async () => {
+    const llm: LlmPort = {
+      async complete(request) {
+        if (!request.messages.some((message) => message.role === "tool")) {
+          return { finishReason: "tool_calls", message: { role: "assistant", content: "", toolCalls: [{ id: "t1", name: "list_fixtures", argumentsJson: "{}" }] } };
+        }
+        return new Promise((_resolve, reject) => {
+          request.signal?.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+        });
+      },
+    };
+    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm, timeoutMs: 100 });
+
+    const response = await loop.run({ messages: [{ role: "user", content: "Which fixtures are there?" }] });
+
+    expect(response.assistantMessage).toMatch(/timed out/);
+    expect(response.sessionId.length).toBeGreaterThan(0);
+  });
+
+  it("accepts a reply that cites an id from the server's session context without a tool call", async () => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await runScript(new ConversationalLoop({ tools, llm: new DeterministicMockLlm() }), ["Validate the portfolio fixture."]);
+    const direct: LlmPort = {
+      async complete(request) {
+        const context = request.messages.find((message) => message.role === "system" && message.content.includes("priority order"))?.content ?? "";
+        const firstId = /order: ([a-f0-9]{64}:\d+:[a-z]+\.[a-z]+)/.exec(context)?.[1] ?? "unknown";
+        return { finishReason: "stop", message: { role: "assistant", content: `The first finding is findingId ${firstId}.` } };
+      },
+    };
+
+    const response = await new ConversationalLoop({ tools, llm: direct }).run({
+      sessionId: setup[0]!.sessionId,
+      messages: [{ role: "user", content: "Which finding comes first?" }],
+    });
+
+    expect(response.refused).toBe(false);
+    expect(response.assistantMessage).toContain(`${setup[0]!.runId}:1:geometry.empty`);
+  });
 });
