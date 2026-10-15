@@ -17,9 +17,9 @@ We built a **labeled web simulation** of Alexa+ for GIS quality review, using an
 
 **Product area:** NaN / OpenAI-compatible LLM setup for Alexa+ style demos.
 
-**What happened:** Early internal ADR text documented `ALEXA_SIM_LLM_*` variables while the hackathon brief and NaN docs use `NAN_*`. Starting the API without keys correctly falls back to a deterministic mock, but when developers set only one prefix, the UI still shows the mock badge and it looks like the live model failed.
+**What happened:** Early internal ADR text documented `ALEXA_SIM_LLM_*` variables while the hackathon brief and NaN docs use `NAN_*`. Starting the API without a key correctly falls back to a deterministic mock, but at the time that fallback was silent, so with the key under an unexpected name it was easy to misread the scripted replies as a broken live model.
 
-**Impact:** Minor time lost during integration; no blocker once aliases were implemented.
+**Impact:** Minor time lost during integration. Resolved by accepting both prefixes and later showing a *Model: deterministic mock / live LLM* badge.
 
 **Suggestion:** Publish one canonical env block in Alexa+ hackathon starter docs (for example `NAN_API_KEY`, `NAN_BASE_URL`, `NAN_MODEL`) and mention that samples may accept prefixed aliases. Call out that missing keys intentionally enable mock mode for CI and offline demos.
 

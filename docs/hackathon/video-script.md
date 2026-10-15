@@ -79,16 +79,16 @@ If I ask it to repair geometry, it refuses. Source GeoJSON is never mutated by A
 
 ## Shot 7 — Export QGIS (1:48–2:08)
 
-**UI action:** Send: `Export QGIS.` Trigger the download. Show the browser download completing (filename visible if possible).
+**UI action:** Send: `Export QGIS.` When the reply says the bundle is ready, click **Download last QGIS bundle**. Show the single `qgis-<run>.zip` download completing (filename visible if possible).
 
 **Narration:**  
-Export QGIS downloads a bundle for desktop review: a QGIS project, layer styles, and GeoJSON aligned with the same run.
+Export QGIS downloads one zip for desktop review: a QGIS project, its layer style, the findings GeoJSON and the run metadata, all from the same run.
 
 ---
 
 ## Shot 8 — QGIS proof (2:08–2:28)
 
-**UI action:** Cut to QGIS 3 with `findings.qgs` opened from the downloaded bundle. Pan/zoom one highlighted finding layer.
+**UI action:** Unzip `qgis-<run>.zip` into one folder, then cut to QGIS 3 with `findings.qgs` opened from that folder (the project loads `./findings.geojson` next to it). Pan/zoom one highlighted finding layer. Rehearse this once before recording.
 
 **Narration:**  
 In QGIS, stewards can continue review with familiar tools. The conversational demo and the desktop project describe the same run.

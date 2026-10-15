@@ -21,8 +21,9 @@ Agents prepare docs; humans review media, secrets, and public access.
 ## Hosted demo
 
 - [ ] Vercel project live at `<DEMO_URL>` (replace placeholder in [devpost-submission.md](./devpost-submission.md) and README if linked).
-- [ ] Vercel env: `NAN_API_KEY`, optional `NAN_MODEL=qwen3.6`, provider **spend limit** set.
-- [ ] Badge reads **Model: live LLM** on production; run validate → list → explain → export once.
+- [ ] Vercel env: `NAN_API_KEY` scoped to **Production** only, optional `NAN_MODEL=qwen3.6`, provider **spend limit** set.
+- [ ] Vercel Git fork protection left **on** (public repo); rotate the key if it was ever shared in chat or screenshots. See [development.md](../development.md#hosted-demo-vercel).
+- [ ] Badge reads **Model: live LLM** on production; run validate → list → explain → export once, and open the downloaded `qgis-<run>.zip` in QGIS 3.
 - [ ] Document cold-start/session TTL behavior if a judge reports a missing run id ([tool-contracts.md](./tool-contracts.md)).
 
 ---

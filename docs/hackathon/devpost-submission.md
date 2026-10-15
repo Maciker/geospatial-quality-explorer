@@ -22,10 +22,10 @@ The Amazon Alexa+ hackathon pushed us to explore voice-first GIS review. We chos
 
 Geospatial Quality Explorer runs a fixed ruleset (`vector-core`) over GeoJSON and records every finding with provenance (source hash, declared CRS, license, ruleset version). The **Alexa+ simulation** adds a conversational panel on top of that core:
 
-1. **Validate** a CC0 portfolio fixture (or upload within bounded limits).
+1. **Validate** one of the bundled CC0 fixtures, such as the portfolio dataset. The simulation works only on the reviewed fixture catalog; uploading your own GeoJSON is part of the local browser review, not the hosted simulation.
 2. **List** prioritized findings on the map and in cards—each with `findingId`, `ruleId`, and `featureId`.
 3. **Explain** the next finding using text from the deterministic core, not model invention.
-4. **Export** a QGIS bundle (`findings.qgs`, styles, GeoJSON) for desktop review.
+4. **Export** a QGIS bundle and download it as one zip (`findings.qgs`, `findings.qml`, `findings.geojson`, `run-metadata.json`) that opens directly in QGIS 3.
 
 The UI shows persistent badges: *Simulation of Alexa+ — not an Amazon product*, and whether replies use a **deterministic mock** or a **live LLM**. The model orchestrates tool calls; it does **not** judge geometry or mutate source data. Out-of-scope requests (for example “repair this polygon”) are refused.
 
@@ -34,8 +34,8 @@ The UI shows persistent badges: *Simulation of Alexa+ — not an Amazon product*
 ## How we built it
 
 - **Deterministic core:** TypeScript validation in `packages/quality`—same rules and limits as the CLI and loopback API.
-- **Tool boundary:** `packages/alexa-tools` exposes typed tools (`validate_fixture`, `list_findings`, `explain_finding`, `export_qgis`, …) with bounded in-memory sessions ([tool contracts](./tool-contracts.md)).
-- **Persona layer:** OpenAI-compatible chat completions via **NaN** (`qwen3.6` by default). The API key lives only in server-side config (`NAN_API_KEY` on Vercel or local API)—never in the browser.
+- **Tool boundary:** `packages/alexa-tools` exposes five typed tools (`list_fixtures`, `run_validation`, `list_findings`, `explain_finding`, `export_qgis`) with bounded in-memory sessions ([tool contracts](./tool-contracts.md)).
+- **Persona layer:** OpenAI-compatible chat completions via **NaN** (`qwen3.6` by default). The API key lives only in server-side config (`NAN_API_KEY` on Vercel or the local API): it is never bundled into the browser, never placed in the model context, and provider error bodies are not logged or returned. If the model fails, the chat answers a generic 502 instead.
 - **Web UI:** React + MapLibre in `apps/web`; speech-capable input for demo video; simulation labeling in copy and layout.
 - **Hosted demo:** Vercel static web (`VITE_APP_MODE=alexa-only`) plus a serverless handler for `/api/v1/alexa-sim/*`, bundling CC0 fixtures for judges without PostGIS.
 

@@ -4,7 +4,7 @@ Status: accepted (2026-10-12)
 
 Tracker: [MAC-229](https://linear.app/maciker/issue/MAC-229), gate [MAC-230](https://linear.app/maciker/issue/MAC-230), implementation [MAC-231](https://linear.app/maciker/issue/MAC-231), delivery [MAC-232](https://linear.app/maciker/issue/MAC-232), friction log [MAC-371](https://linear.app/maciker/issue/MAC-371).
 
-Hackathon: [Amazon Alexa+ on Devpost](https://alexa.devpost.com/) — submission deadline **2026-10-23 12:00 PT** (21:00 Madrid).
+Hackathon: [Amazon Alexa+ on Devpost](https://amazonappdev2026.devpost.com/) — submission deadline **2026-10-23 12:00 PT** (21:00 Madrid).
 
 Repository baseline for this ADR: commit `b899c81cfd5f4b25881aee56cf019c6e37b3f7d8` (`Merge pull request #21 from Maciker/feat/post-pr-review-workflow`).
 

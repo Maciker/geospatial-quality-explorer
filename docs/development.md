@@ -51,9 +51,13 @@ Chat requests are bounded: 64 KiB body, 40 messages, 4,000 characters per messag
 
 Before sharing the URL:
 
-1. Set `NAN_API_KEY` (and optionally `NAN_MODEL`) in the Vercel project, never in Git.
-2. Set a spend limit at the LLM provider. The rate limit is per serverless instance and only best-effort.
-3. Set `ALEXA_SIM_CORS_ORIGINS` only if the web app is served from another origin.
-4. Open the URL, check the badge reads **Model: live LLM**, and run the validate → list → explain → export script once.
+1. Set `NAN_API_KEY` (and optionally `NAN_MODEL`) in the Vercel project for the **Production** environment only, never in Git and never as a `VITE_*` variable. Preview deployments then run the mock.
+2. Keep Vercel's Git fork protection on: with a public repository, a pull request from a fork must not build with your environment variables.
+3. Set a spend limit at the LLM provider. The rate limit is per serverless instance and only best-effort, so spend, not disclosure, is the main exposure.
+4. Set `ALEXA_SIM_CORS_ORIGINS` only if the web app is served from another origin.
+5. Open the URL, check the badge reads **Model: live LLM**, and run the validate → list → explain → export script once.
+6. If the key was ever pasted into a chat, screenshot or ticket, rotate it before publishing.
+
+How the key is protected: it is read only on the server, sent only in the `Authorization` header to the provider, never placed in the model context, and never returned to the browser. If the provider fails, the chat answers `502 llm_unavailable` and only the HTTP status is logged, because provider error bodies can echo the key.
 
 Sessions and runs live in function memory and can disappear on a cold start; start a new chat if a run id is no longer known.
