@@ -38,6 +38,26 @@ afterEach(() => {
   resetSharedToolsAdapterForTests();
 });
 
+async function chat(): Promise<{ status: number; body: string }> {
+  const result = { status: 0, body: "" };
+  const response = {
+    status(code: number) {
+      result.status = code;
+      return response;
+    },
+    setHeader() {},
+    end(payload?: string) {
+      result.body = payload ?? "";
+    },
+  };
+  await handleAlexaSimHttp(
+    { method: "POST", headers: {}, body: JSON.stringify({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] }), pathname: "/api/v1/alexa-sim/chat", clientAddress: "198.51.100.20" },
+    response,
+    { rateLimiter: new FixedWindowRateLimiter({ limit: 10, windowMs: 60_000 }) },
+  );
+  return result;
+}
+
 describe("LLM provider failures", () => {
   it("reports only the provider status, never the provider body", async () => {
     const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false });
@@ -53,24 +73,7 @@ describe("LLM provider failures", () => {
     process.env.NAN_API_KEY = SECRET;
     process.env.NAN_BASE_URL = providerUrl;
     delete process.env.ALEXA_SIM_MOCK_LLM;
-    let status = 0;
-    let body = "";
-    const response = {
-      status(code: number) {
-        status = code;
-        return response;
-      },
-      setHeader() {},
-      end(payload?: string) {
-        body = payload ?? "";
-      },
-    };
-
-    await handleAlexaSimHttp(
-      { method: "POST", headers: {}, body: JSON.stringify({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] }), pathname: "/api/v1/alexa-sim/chat", clientAddress: "198.51.100.20" },
-      response,
-      { rateLimiter: new FixedWindowRateLimiter({ limit: 10, windowMs: 60_000 }) },
-    );
+    const { status, body } = await chat();
 
     expect(status).toBe(502);
     expect(JSON.parse(body)).toMatchObject({ error: "llm_unavailable" });
@@ -82,24 +85,7 @@ describe("LLM provider failures", () => {
     process.env.NAN_API_KEY = SECRET;
     process.env.NAN_BASE_URL = providerUrl.replace("/v1", "/garbled");
     delete process.env.ALEXA_SIM_MOCK_LLM;
-    let status = 0;
-    let body = "";
-    const response = {
-      status(code: number) {
-        status = code;
-        return response;
-      },
-      setHeader() {},
-      end(payload?: string) {
-        body = payload ?? "";
-      },
-    };
-
-    await handleAlexaSimHttp(
-      { method: "POST", headers: {}, body: JSON.stringify({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] }), pathname: "/api/v1/alexa-sim/chat", clientAddress: "198.51.100.21" },
-      response,
-      { rateLimiter: new FixedWindowRateLimiter({ limit: 10, windowMs: 60_000 }) },
-    );
+    const { status, body } = await chat();
 
     expect(status).toBe(502);
     expect(body).not.toContain(SECRET);
