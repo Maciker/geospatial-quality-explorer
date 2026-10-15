@@ -62,4 +62,4 @@ Before sharing the URL:
 
 How the key is protected: it is read only on the server, sent only in the `Authorization` header to the provider, never placed in the model context, and never returned to the browser. If the provider fails, the chat answers `502 llm_unavailable` and only the HTTP status is logged, because provider error bodies can echo the key.
 
-Sessions and runs live in function memory and can disappear on a cold start; start a new chat if a run id is no longer known.
+Sessions and runs live in function memory and can disappear on a cold start or when traffic hits a different serverless instance. The chat recovers by reopening the client `sessionId` and, when the current message names an allow-listed fixture (for example the portfolio fixture), revalidating that fixture once. If the message does not name a catalog fixture, the assistant asks you to validate again; you can also use **New clean session**. Do not treat browser cards, transcript text, or a remembered `runId` as proof of a completed validation.
