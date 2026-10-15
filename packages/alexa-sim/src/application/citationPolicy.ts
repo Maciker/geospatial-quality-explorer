@@ -30,28 +30,34 @@ export function mergeCitationIds(left: KnownCitationIds, right: KnownCitationIds
   };
 }
 
-const NUMBER_WORD = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|ten|several|many|some)`;
+const NUMBER_WORD = String.raw`(?:one|two|three|four|five|six|seven|eight|nine|ten|several|many|some|multiple|numerous|a few|dozens of|a handful of)`;
 const PROBLEM_NOUNS = String.raw`findings?|issues?|errors?|warnings?|problems?|defects?|duplicates?|self-intersections?|overlaps?`;
 const PROBLEM_NOUN = `(?:${PROBLEM_NOUNS})`;
 const DEFECT_NOUN = String.raw`(?:${PROBLEM_NOUNS}|polygons?|features?|geometr(?:y|ies))`;
-/** A word count is stated only after a verb: "has three", not "explain one finding at a time". */
-const STATING_VERB = String.raw`\b(?:has|have|had|found|finds|is|are|was|were|contains?|detected|returned|reports?|shows?|with)\s+(?:only\s+|just\s+)?`;
 
-/** "7 errors", "has three invalid polygons": a count only the tools may report. */
-const POSITIVE_COUNT = [
-  new RegExp(String.raw`(?<![\w:.-])\d+\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
-  new RegExp(String.raw`${STATING_VERB}${NUMBER_WORD}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`),
-];
-/** "found no problems": a clean verdict. "has no geometry" restates a finding and is not a count. */
-const ZERO_COUNT = new RegExp(String.raw`${STATING_VERB}(?:no|zero)\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b`);
+/** "7 errors" is a count; "the top 3 findings" or "up to 5 findings" describes what can be listed. */
+const DIGIT_COUNT = new RegExp(String.raw`(?<![\w:.-])(?<!\b(?:top|first|next|up to|at most)\s)\d+\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`);
+const WORD_COUNT = new RegExp(String.raw`(?<![\w-])${NUMBER_WORD}\s+(?:[\w-]+\s+){0,2}${DEFECT_NOUN}\b`);
+/** "No errors were found": a clean verdict. "has no geometry" restates a finding and is not one. */
+const ZERO_COUNT = new RegExp(String.raw`(?<![\w-])(?:no|zero)\s+(?:[\w-]+\s+){0,2}${PROBLEM_NOUN}\b|\bnothing (?:wrong|to fix)\b`);
+/** Offers and questions ("I can explain one finding at a time") mention quantities without stating results. */
+const CAPABILITY = /\b(?:i can|i could|i will|i'll|can you|could you|do you|would you|want me|ask me|let me|at a time|or two)\b/;
+/** "No problem!" is courtesy, not a verdict. */
+const COURTESY = /\bno (?:problem|worries)\b(?=\s*(?:[!,.]|$))/g;
+
+function positiveCount(lowered: string): boolean {
+  return DIGIT_COUNT.test(lowered) || (!CAPABILITY.test(lowered) && WORD_COUNT.test(lowered));
+}
+
+function zeroCount(lowered: string): boolean {
+  return !CAPABILITY.test(lowered) && ZERO_COUNT.test(lowered.replace(COURTESY, ""));
+}
 
 /**
  * Assertions about this dataset: counts, a feature or dataset said to have a defect, or a verdict
  * such as "the data is fine". Capability text, questions and definitions are not claims.
  */
 const DATASET_CLAIMS: readonly RegExp[] = [
-  ...POSITIVE_COUNT,
-  ZERO_COUNT,
   /\bself-intersects\b|\bself-intersecting\b|\b(?:is|are) duplicated\b|\boverlaps (?:with )?\w/,
   /\b(?:has|have|had|contains?|shows?|found|detected)\s+(?:an?\s+|one\s+)?(?:[\w-]+\s+){0,2}(?:empty geometr\w*|self-intersection|duplicate|overlap|geometry errors?|errors?|problems?|issues?|defects?)\b/,
   /\bthere (?:is|are|was|were) (?:\w+\s+){0,3}(?:errors?|problems?|issues?|defects?)\b/,
@@ -63,7 +69,7 @@ const DATASET_CLAIMS: readonly RegExp[] = [
 export function assistantStatesValidationResults(text: string): boolean {
   if (FINDING_ID_PATTERN.test(text)) return true;
   const lowered = text.toLowerCase();
-  return DATASET_CLAIMS.some((pattern) => pattern.test(lowered));
+  return positiveCount(lowered) || zeroCount(lowered) || DATASET_CLAIMS.some((pattern) => pattern.test(lowered));
 }
 
 /**
@@ -77,9 +83,9 @@ export function assistantClaimsAreGrounded(text: string, known: KnownCitationIds
     const claim = withoutKnownIds(sentence, known);
     const lowered = claim.toLowerCase();
     if (!assistantStatesValidationResults(claim)) return true;
-    if (POSITIVE_COUNT.some((pattern) => pattern.test(lowered))) return false;
+    if (positiveCount(lowered)) return false;
     if (HEDGE.test(lowered)) return true;
-    if (ZERO_COUNT.test(lowered)) return false;
+    if (zeroCount(lowered)) return false;
     return claim !== sentence;
   });
 }

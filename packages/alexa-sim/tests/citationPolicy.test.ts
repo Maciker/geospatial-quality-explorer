@@ -32,6 +32,8 @@ describe("citationPolicy", () => {
     "I can explain one finding at a time.",
     "I can list some features of the portfolio.",
     "Do you want me to list one finding or two?",
+    "Ask me for the top 3 findings.",
+    "I can show up to 5 findings.",
     refusalTextForMissingCitation(),
   ])("does not treat a neutral reply as a dataset claim: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(false);
@@ -49,6 +51,12 @@ describe("citationPolicy", () => {
     "Looks good, the data is all fine.",
     "That is out of scope, but the polygon is invalid.",
     "Feature empty-1 and cats-9 are broken.",
+    "No errors were found.",
+    "Seven issues exist.",
+    "Two features overlap.",
+    "Dozens of issues were reported.",
+    "Only a handful of problems remain.",
+    "I found nothing wrong.",
   ])("treats an invented quality claim as a validation result: %s", (text) => {
     expect(assistantStatesValidationResults(text)).toBe(true);
   });
