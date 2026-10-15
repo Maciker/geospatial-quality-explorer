@@ -21,7 +21,9 @@ export function forcedToolForTurn(transcript: readonly ChatMessage[], sessionId:
   if (!lastUser || hasToolResultSinceLastUser(transcript)) return null;
   const full = lastUser.content.toLowerCase();
   // Finding ids contain dots (ruleId); never parse them from a clause split on punctuation.
-  if (sessionId.length > 0 && EXPLAIN_FINDING_BY_ID.test(full)) return "explain_finding";
+  if (sessionId.length > 0 && commandText(full) !== null && EXPLAIN_FINDING_BY_ID.test(full)) {
+    return "explain_finding";
+  }
   for (const clause of full.split(/[.!?;]+/)) {
     const forced = forcedToolForCommand(commandText(clause), sessionId);
     if (forced) return forced;

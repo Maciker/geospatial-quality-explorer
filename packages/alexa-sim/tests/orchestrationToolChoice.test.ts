@@ -65,6 +65,7 @@ describe("orchestrationToolChoice", () => {
     "Don't validate the portfolio.",
     "explain what a self-intersection is",
     "Do not list the findings, just tell me the run id.",
+    `Don't explain finding ${"a".repeat(64)}:16:geometry.invalid.`,
   ])("does not force a tool for a question, negation or concept: %s", (content) => {
     expect(forcedToolForTurn([{ role: "user", content }], "sess-123")).toBeNull();
   });

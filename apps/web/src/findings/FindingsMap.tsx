@@ -104,7 +104,9 @@ export default function FindingsMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    let cancelled = false;
     const apply = () => {
+      if (cancelled) return;
       const source = map.getSource("source-layer") as maplibregl.GeoJSONSource | undefined;
       const findings = map.getSource("findings") as maplibregl.GeoJSONSource | undefined;
       source?.setData({
@@ -144,6 +146,10 @@ export default function FindingsMap(props: Props) {
     };
     if (map.isStyleLoaded()) apply();
     else map.once("load", apply);
+    return () => {
+      cancelled = true;
+      map.off("load", apply);
+    };
   }, [props.sourceFeatures, props.findingFeatures, props.selectedFindingId, props.fitNonce]);
 
   return (

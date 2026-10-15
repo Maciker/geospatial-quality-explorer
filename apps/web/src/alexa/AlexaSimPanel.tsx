@@ -148,6 +148,7 @@ export default function AlexaSimPanel() {
 
   function applySuccessfulResponse(nextMessages: AlexaChatMessage[], response: AlexaChatResponse): void {
     const contextValid = isAlexaSessionContextValid(response);
+    const hadFindingCards = findings.length > 0;
     setSessionId(response.sessionId);
     if (response.llmMode) setLlmMode(response.llmMode);
     setCardsState((previous) => nextFindingCards(previous, response.findings, response.runId, { contextValid }));
@@ -171,6 +172,10 @@ export default function AlexaSimPanel() {
       if (nextHash) setSourceHash(nextHash);
     } else if (response.sourceHash) {
       setSourceHash(response.sourceHash);
+    }
+    // Source may have already fitted to the full extent; re-fit once findings first appear.
+    if (!hadFindingCards && response.findings.length > 0) {
+      setFitNonce((value) => value + 1);
     }
     if (response.qgisExport && response.runId !== null) {
       setLastQgisResponse(response);

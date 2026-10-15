@@ -8,6 +8,7 @@ findings/
 qa/inputs/
 qa/outputs/
 qa/reports/
+pr-reviews/
 loop/
 repo-analysis/*
 !repo-analysis/.gitkeep
