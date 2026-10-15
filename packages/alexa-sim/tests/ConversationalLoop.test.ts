@@ -123,6 +123,83 @@ describe("ConversationalLoop", () => {
     expect(result.assistantMessage.toLowerCase()).toContain("timed out");
   }, 10_000);
 
+  it("allows QGIS export confirmations without citation ids", async () => {
+    const validated = await createLoop(new DeterministicMockLlm()).run({
+      messages: [{ role: "user", content: "Validate the portfolio fixture." }],
+    });
+    const exportLlm: LlmPort = {
+      async complete(request): Promise<LlmCompletionResponse> {
+        if (!request.messages.some((message) => message.role === "tool")) {
+          return {
+            finishReason: "tool_calls",
+            message: {
+              role: "assistant",
+              content: "",
+              toolCalls: [{
+                id: "e1",
+                name: "export_qgis",
+                argumentsJson: JSON.stringify({ sessionId: request.toolSessionId ?? validated.sessionId }),
+              }],
+            },
+          };
+        }
+        return {
+          finishReason: "stop",
+          message: {
+            role: "assistant",
+            content: "The QGIS bundle is ready. Download it from the simulation panel.",
+          },
+        };
+      },
+    };
+    const exported = await createLoop(exportLlm).run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "Export QGIS." },
+      ],
+    });
+    expect(exported.refused).toBe(false);
+    expect(exported.qgisExport).not.toBeNull();
+    expect(exported.assistantMessage.toLowerCase()).toContain("download");
+  });
+
+  it("finishes explain-the-next within two model rounds using enriched tool output", async () => {
+    let rounds = 0;
+    const mock = new DeterministicMockLlm();
+    const llm: LlmPort = {
+      complete(request) {
+        rounds += 1;
+        return mock.complete(request);
+      },
+    };
+    const loop = createLoop(llm);
+    const validated = await loop.run({ messages: [{ role: "user", content: "Validate the portfolio fixture." }] });
+    const listed = await loop.run({
+      sessionId: validated.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "List the findings." },
+      ],
+    });
+    rounds = 0;
+    const explained = await loop.run({
+      sessionId: listed.sessionId,
+      messages: [
+        { role: "user", content: "Validate the portfolio fixture." },
+        { role: "assistant", content: validated.assistantMessage },
+        { role: "user", content: "List the findings." },
+        { role: "assistant", content: listed.assistantMessage },
+        { role: "user", content: "Explain the next finding." },
+      ],
+    });
+    expect(rounds).toBeLessThanOrEqual(2);
+    expect(explained.refused).toBe(false);
+    expect(explained.assistantMessage).toContain("findingId");
+  });
+
   it("refuses assistant claims that omit citations", async () => {
     const uncitedLlm: LlmPort = {
       async complete(): Promise<LlmCompletionResponse> {

@@ -72,17 +72,20 @@ export async function executeAlexaTool(
           fixtureId: String(parsed.fixtureId ?? ""),
         }),
       };
-    case "list_findings":
+    case "list_findings": {
+      const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
+      const runId = await resolveRunId(tools, sessionId, parsed.runId);
       return {
         sessionId: fallbackSessionId ?? "",
         toolName: name,
         result: await tools.listFindings({
-          sessionId: String(parsed.sessionId ?? fallbackSessionId ?? ""),
-          runId: String(parsed.runId ?? ""),
+          sessionId,
+          runId,
           ...(typeof parsed.limit === "number" ? { limit: parsed.limit } : {}),
           ...(typeof parsed.cursor === "string" ? { cursor: parsed.cursor } : {}),
         }),
       };
+    }
     case "explain_finding":
       return {
         sessionId: fallbackSessionId ?? "",
@@ -92,14 +95,20 @@ export async function executeAlexaTool(
           findingId: String(parsed.findingId ?? ""),
         }),
       };
-    case "export_qgis":
+    case "export_qgis": {
+      const sessionId = String(parsed.sessionId ?? fallbackSessionId ?? "");
+      const runId = await resolveRunId(tools, sessionId, parsed.runId);
       return {
         sessionId: fallbackSessionId ?? "",
         toolName: name,
-        result: await tools.exportQgis({
-          sessionId: String(parsed.sessionId ?? fallbackSessionId ?? ""),
-          runId: String(parsed.runId ?? ""),
-        }),
+        result: await tools.exportQgis({ sessionId, runId }),
       };
+    }
   }
+}
+
+async function resolveRunId(tools: QualityToolsPort, sessionId: string, rawRunId: unknown): Promise<string> {
+  if (typeof rawRunId === "string" && rawRunId.trim().length > 0) return rawRunId.trim();
+  const snapshot = await tools.describeSession(sessionId);
+  return snapshot?.runId ?? "";
 }

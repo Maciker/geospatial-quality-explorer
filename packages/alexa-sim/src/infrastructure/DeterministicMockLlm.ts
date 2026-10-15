@@ -91,7 +91,7 @@ export class DeterministicMockLlm implements LlmPort {
           limit: 5,
         });
       }
-      if (user.includes("next one") || user.includes("next finding")) {
+      if (user.includes("next one") || user.includes("next finding") || (user.includes("explain") && user.includes("next"))) {
         const next = state.findings[state.findingIndex + 1];
         if (!next) {
           return {

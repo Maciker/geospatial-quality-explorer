@@ -13,8 +13,9 @@ import type {
   QgisExportArtifact,
 } from "../domain/chatTypes.js";
 import {
-  assistantClaimsFindings,
   assistantCitesKnownIds,
+  assistantReplyExemptFromCitationGuard,
+  assistantStatesValidationResults,
   collectCitationIdsFromFindings,
   mergeCitationIds,
   refusalTextForMissingCitation,
@@ -23,38 +24,43 @@ import { executeAlexaTool } from "./executeAlexaTool.js";
 import { findingSummariesToCards, mergeFindingCards } from "./extractFindingCards.js";
 import type { LlmPort } from "./LlmPort.js";
 import { ALEXA_QUALITY_TOOL_DEFINITIONS } from "./openAiToolDefinitions.js";
-import { compactToolResultForModel, sessionContextMessage } from "./modelPayload.js";
+import { compactToolResultForModel, sessionContextMessage, trimTranscriptForModel } from "./modelPayload.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
   readonly tools: QualityToolsPort;
   readonly llm: LlmPort;
   readonly maxToolRounds?: number;
+  /** Whole-request budget (sum of rounds, capped per round). */
   readonly timeoutMs?: number;
+  readonly roundTimeoutMs?: number;
 };
 
 type LoopProgress = { sessionId: string; runId: string | null };
+
+const DEFAULT_MAX_TOOL_ROUNDS = 4;
+const DEFAULT_ROUND_TIMEOUT_MS = 24_000;
 
 export class ConversationalLoop {
   private readonly tools: QualityToolsPort;
   private readonly llm: LlmPort;
   private readonly maxToolRounds: number;
   private readonly timeoutMs: number;
+  private readonly roundTimeoutMs: number;
 
   constructor(options: ConversationalLoopOptions) {
     this.tools = options.tools;
     this.llm = options.llm;
-    this.maxToolRounds = options.maxToolRounds ?? 8;
+    this.maxToolRounds = options.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS;
     this.timeoutMs = options.timeoutMs ?? 45_000;
+    this.roundTimeoutMs = options.roundTimeoutMs ?? DEFAULT_ROUND_TIMEOUT_MS;
   }
 
   async run(input: AlexaSimChatRequest): Promise<AlexaSimChatResponse> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    // Survives a timeout, so a slow model does not cost the user the session and run it already built.
+    const deadlineMs = Date.now() + this.timeoutMs;
     const progress: LoopProgress = { sessionId: input.sessionId ?? "", runId: null };
     try {
-      return await this.runWithSignal(input, controller.signal, progress);
+      return await this.runUntilDeadline(input, deadlineMs, progress);
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         return {
@@ -67,12 +73,10 @@ export class ConversationalLoop {
         };
       }
       throw error;
-    } finally {
-      clearTimeout(timer);
     }
   }
 
-  private async runWithSignal(input: AlexaSimChatRequest, signal: AbortSignal, progress: LoopProgress): Promise<AlexaSimChatResponse> {
+  private async runUntilDeadline(input: AlexaSimChatRequest, deadlineMs: number, progress: LoopProgress): Promise<AlexaSimChatResponse> {
     let sessionId = input.sessionId ?? "";
     let findingCards: readonly CitedFindingCard[] = [];
     let runId: string | null = null;
@@ -81,7 +85,8 @@ export class ConversationalLoop {
 
     const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
     if (snapshot) {
-      // Server-sourced ids are legitimate citations even when the model answers without a tool call.
+      runId = snapshot.runId;
+      progress.runId = runId;
       knownIds = mergeCitationIds(knownIds, {
         findingIds: new Set(snapshot.prioritizedFindingIds),
         ruleIds: new Set(),
@@ -95,12 +100,28 @@ export class ConversationalLoop {
     ];
 
     for (let round = 0; round < this.maxToolRounds; round += 1) {
-      const completion = await this.llm.complete({
-        messages: transcript,
-        tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
-        signal,
-        ...(sessionId ? { toolSessionId: sessionId } : {}),
-      });
+      const remainingMs = deadlineMs - Date.now();
+      if (remainingMs <= 0) {
+        return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress);
+      }
+      const roundBudgetMs = Math.min(remainingMs, this.roundTimeoutMs);
+      const roundSignal = AbortSignal.timeout(roundBudgetMs);
+      const stepLabel = describeLlmStep(transcript, round);
+      let completion;
+      try {
+        completion = await this.llm.complete({
+          messages: trimTranscriptForModel(transcript),
+          tools: ALEXA_QUALITY_TOOL_DEFINITIONS,
+          signal: roundSignal,
+          stepLabel,
+          ...(sessionId ? { toolSessionId: sessionId } : {}),
+        });
+      } catch (error) {
+        if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+          return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress);
+        }
+        throw error;
+      }
       if (completion.finishReason === "timeout") {
         return {
           sessionId,
@@ -154,13 +175,12 @@ export class ConversationalLoop {
           qgisExport,
         };
       }
-      const citesLoadedFindings = findingCards.some((card) => text.includes(card.findingId));
-      const citesStoredRun = runId !== null && text.includes(runId);
       if (
-        assistantClaimsFindings(text)
-        && !citesLoadedFindings
+        !assistantReplyExemptFromCitationGuard(text)
+        && assistantStatesValidationResults(text)
+        && !findingCards.some((card) => text.includes(card.findingId))
         && !assistantCitesKnownIds(text, knownIds)
-        && !citesStoredRun
+        && !(runId !== null && text.includes(runId))
       ) {
         return {
           sessionId,
@@ -189,6 +209,39 @@ export class ConversationalLoop {
       qgisExport,
     };
   }
+
+  private timeoutResponse(
+    sessionId: string,
+    findingCards: readonly CitedFindingCard[],
+    runId: string | null,
+    qgisExport: QgisExportArtifact | null,
+    progress: LoopProgress,
+  ): AlexaSimChatResponse {
+    progress.sessionId = sessionId;
+    progress.runId = runId;
+    return {
+      sessionId,
+      assistantMessage: "The request timed out before I could finish checking the dataset. Your session is kept; ask again or shorten the request.",
+      findings: findingCards,
+      runId,
+      refused: true,
+      qgisExport,
+    };
+  }
+}
+
+function describeLlmStep(transcript: readonly ChatMessage[], roundIndex: number): string {
+  const last = transcript.at(-1);
+  if (!last) return `turn ${roundIndex + 1} initial`;
+  if (last.role === "user") return `turn ${roundIndex + 1} after user`;
+  if (last.role === "tool") {
+    const preview = last.content.slice(0, 80).replace(/\s+/g, " ");
+    return `turn ${roundIndex + 1} after tool ${preview}`;
+  }
+  if (last.role === "assistant" && last.toolCalls && last.toolCalls.length > 0) {
+    return `turn ${roundIndex + 1} after assistant tool_calls ${last.toolCalls.map((call) => call.name).join(",")}`;
+  }
+  return `turn ${roundIndex + 1} follow-up`;
 }
 
 function extractStructuredState(

@@ -5,6 +5,8 @@ export type LlmCompletionRequest = {
   readonly tools: readonly OpenAiToolDefinition[];
   readonly signal?: AbortSignal;
   readonly toolSessionId?: string;
+  /** Shown in alexa-sim LLM round logs for live diagnosis. */
+  readonly stepLabel?: string;
 };
 
 export type OpenAiToolDefinition = {

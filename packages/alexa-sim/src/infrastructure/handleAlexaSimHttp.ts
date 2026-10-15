@@ -82,10 +82,13 @@ export async function handleAlexaSimHttp(
     response.status(400).end(JSON.stringify({ error: "invalid_request", message: parsed }));
     return;
   }
+  const llmConfig = readNanLlmConfig();
   const loop = new ConversationalLoop({
     tools: createBoundedQualityToolsAdapter(),
     llm: createLlmClient(),
-    timeoutMs: readNanLlmConfig().timeoutMs,
+    timeoutMs: llmConfig.timeoutMs,
+    roundTimeoutMs: llmConfig.roundTimeoutMs,
+    maxToolRounds: llmConfig.maxToolRounds,
   });
   let result;
   try {

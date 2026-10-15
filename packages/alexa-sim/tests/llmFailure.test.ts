@@ -71,7 +71,7 @@ async function chat(): Promise<{ status: number; body: string }> {
 
 describe("LLM provider failures", () => {
   it("reports only the provider status, never the provider body", async () => {
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 384 });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] }).catch((error: unknown) => error);
 
@@ -105,7 +105,7 @@ describe("LLM provider failures", () => {
   });
 
   it("keeps an abort while reading the reply as an abort, so the loop reports a timeout", async () => {
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/stall"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/stall"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 384 });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], signal: AbortSignal.timeout(200) }).catch((error: unknown) => error);
 
@@ -114,12 +114,12 @@ describe("LLM provider failures", () => {
 
   it("logs each model round's duration and status without content", async () => {
     const logged = vi.spyOn(console, "info").mockImplementation(() => {});
-    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/ok"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000 });
+    const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/ok"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 384 });
 
-    await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] });
+    await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], stepLabel: "turn 1 after user" });
 
     const lines = JSON.stringify(logged.mock.calls);
-    expect(lines).toMatch(/LLM round \d+ ms \(HTTP 200\)/);
+    expect(lines).toMatch(/LLM round \d+ ms \(HTTP 200\) turn 1 after user/);
     expect(lines).not.toContain("fine");
     logged.mockRestore();
   });

@@ -83,6 +83,18 @@ describe("What the live model receives", () => {
     expect(context).toContain(`${runId}:1:geometry.empty`);
   });
 
+  it("adds voiceAnswer to explain_finding tool payloads for a single follow-up reply", async () => {
+    const { llm, requests } = recordingLlm();
+    const loop = new ConversationalLoop({ tools: new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), llm });
+
+    await runScript(loop, ["Validate the portfolio fixture.", "List the findings.", "Explain the next finding."]);
+
+    const explainTool = toolMessages(requests).find((content) => content.includes("voiceAnswer"));
+    expect(explainTool).toBeDefined();
+    expect(explainTool).toContain("findingId");
+    expect(explainTool).not.toContain("coordinates");
+  });
+
   it("keeps the session when the model times out after a tool call", async () => {
     const llm: LlmPort = {
       async complete(request) {

@@ -6,6 +6,8 @@ type KnownCitationIds = {
   readonly featureIds: ReadonlySet<string>;
 };
 
+const FINDING_ID_PATTERN = /[a-f0-9]{64}:\d+:[a-z0-9_.]+/i;
+
 export function collectCitationIdsFromFindings(findings: readonly CitedFindingCard[]): KnownCitationIds {
   const findingIds = new Set<string>();
   const ruleIds = new Set<string>();
@@ -26,18 +28,36 @@ export function mergeCitationIds(left: KnownCitationIds, right: KnownCitationIds
   };
 }
 
-export function assistantClaimsFindings(text: string): boolean {
+/** Operational replies (exports, refusals) must not be replaced by the citation guard. */
+export function assistantReplyExemptFromCitationGuard(text: string): boolean {
   const lowered = text.toLowerCase();
-  return (
-    lowered.includes("finding")
-    || lowered.includes("issue")
-    || lowered.includes("error")
-    || lowered.includes("warning")
-    || lowered.includes("rule")
-    || lowered.includes("feature")
-    || lowered.includes("invalid")
-    || lowered.includes("geometry")
-  );
+  if (lowered.includes("out of scope")) return true;
+  if (lowered.includes("cannot do that")) return true;
+  if (/cannot (repair|edit|mutate|change)/.test(lowered)) return true;
+  if (/qgis|export_qgis/.test(lowered) && /download|bundle|ready|panel|simulation/.test(lowered)) return true;
+  if (/run validation before/.test(lowered)) return true;
+  if (/unknown finding|cannot invent|do not guess|cannot answer/.test(lowered)) return true;
+  return false;
+}
+
+/** True when the assistant asserts validation outcomes that require tool-backed ids. */
+export function assistantStatesValidationResults(text: string): boolean {
+  if (assistantReplyExemptFromCitationGuard(text)) return false;
+  if (FINDING_ID_PATTERN.test(text)) return true;
+  const lowered = text.toLowerCase();
+  if (lowered.includes("findingid") || lowered.includes("finding id")) return true;
+  if (/\d+\s+findings?\b/.test(lowered)) return true;
+  if (/validation\s+(found|detected|reported|failed|finished)/.test(lowered)) return true;
+  if (/(critical|high|medium|low)\s+(severity|finding|issue)/.test(lowered)) return true;
+  if (/finding(s)?\s+(is|are|shows|show|indicates|indicate|reports|report)\b/.test(lowered)) return true;
+  if (/(severe|critical)\s+(geometry|dataset|data)\s+(error|issue|problem)/.test(lowered)) return true;
+  if (/geometry\s+(error|issue|invalid|empty|self-intersect)/.test(lowered)) return true;
+  return false;
+}
+
+/** @deprecated Use assistantStatesValidationResults */
+export function assistantClaimsFindings(text: string): boolean {
+  return assistantStatesValidationResults(text);
 }
 
 export function assistantCitesKnownIds(text: string, known: KnownCitationIds): boolean {

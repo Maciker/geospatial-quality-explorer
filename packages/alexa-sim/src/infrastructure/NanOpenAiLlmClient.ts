@@ -39,6 +39,7 @@ export class NanOpenAiLlmClient implements LlmPort {
       messages: toOpenAiMessages(request.messages),
       tools: request.tools,
       tool_choice: "auto" as const,
+      max_tokens: this.config.maxTokens,
     };
     const init: RequestInit = {
       method: "POST",
@@ -69,7 +70,8 @@ export class NanOpenAiLlmClient implements LlmPort {
         };
       }>;
     };
-    console.info(`alexa-sim: LLM round ${Date.now() - startedAt} ms (HTTP ${response.status})`);
+    const step = request.stepLabel ? ` ${request.stepLabel}` : "";
+    console.info(`alexa-sim: LLM round ${Date.now() - startedAt} ms (HTTP ${response.status})${step}`);
     const choice = payload.choices?.[0];
     const message = choice?.message;
     if (!message) {

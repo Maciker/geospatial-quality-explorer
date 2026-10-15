@@ -5,10 +5,16 @@ export type NanLlmConfig = {
   readonly useMockLlm: boolean;
   /** Whole-conversation budget; capped below Vercel's 60 s maxDuration. */
   readonly timeoutMs: number;
+  readonly roundTimeoutMs: number;
+  readonly maxToolRounds: number;
+  readonly maxTokens: number;
 };
 
 const DEFAULT_TIMEOUT_MS = 45_000;
 const MAX_TIMEOUT_MS = 55_000;
+const DEFAULT_ROUND_TIMEOUT_MS = 24_000;
+const DEFAULT_MAX_TOOL_ROUNDS = 4;
+const DEFAULT_MAX_TOKENS = 384;
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];
@@ -29,5 +35,17 @@ export function readNanLlmConfig(): NanLlmConfig {
   const timeoutMs = Number.isFinite(configuredTimeout) && configuredTimeout > 0
     ? Math.min(configuredTimeout, MAX_TIMEOUT_MS)
     : DEFAULT_TIMEOUT_MS;
-  return { baseUrl, model, apiKey, useMockLlm, timeoutMs };
+  const configuredRoundTimeout = Number.parseInt(readEnv("ALEXA_SIM_ROUND_TIMEOUT_MS") ?? "", 10);
+  const roundTimeoutMs = Number.isFinite(configuredRoundTimeout) && configuredRoundTimeout > 0
+    ? Math.min(configuredRoundTimeout, timeoutMs)
+    : Math.min(DEFAULT_ROUND_TIMEOUT_MS, timeoutMs);
+  const configuredMaxRounds = Number.parseInt(readEnv("ALEXA_SIM_MAX_TOOL_ROUNDS") ?? "", 10);
+  const maxToolRounds = Number.isFinite(configuredMaxRounds) && configuredMaxRounds > 0
+    ? configuredMaxRounds
+    : DEFAULT_MAX_TOOL_ROUNDS;
+  const configuredMaxTokens = Number.parseInt(readEnv("ALEXA_SIM_MAX_TOKENS") ?? "", 10);
+  const maxTokens = Number.isFinite(configuredMaxTokens) && configuredMaxTokens > 0
+    ? configuredMaxTokens
+    : DEFAULT_MAX_TOKENS;
+  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens };
 }
