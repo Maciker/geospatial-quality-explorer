@@ -29,8 +29,15 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.2fr);
+  /* minmax(0, …) lets long ids wrap instead of stretching the columns past the viewport. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 1rem;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .chatPanel {
@@ -40,6 +47,7 @@
   display: flex;
   flex-direction: column;
   min-height: 28rem;
+  min-width: 0;
 }
 
 .messages {
@@ -57,6 +65,9 @@
   padding: 0.65rem 0.75rem;
   max-width: 95%;
   line-height: 1.45;
+  /* Finding and run ids are 64+ characters with no spaces. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .bubbleUser {
@@ -96,6 +107,7 @@
 .sidePanel {
   display: grid;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .cards {
@@ -120,6 +132,7 @@
 .cardMeta {
   font-size: 0.82rem;
   color: #4d574d;
+  overflow-wrap: anywhere;
 }
 
 .mapWrap {

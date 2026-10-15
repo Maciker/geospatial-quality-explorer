@@ -1,0 +1,30 @@
+import type { AlexaFindingCard } from "./alexaSimApi";
+
+export type FindingCardsState = {
+  readonly cards: readonly AlexaFindingCard[];
+  readonly selectedId: string | null;
+};
+
+/**
+ * Replies only carry the cards a tool touched, so the panel accumulates them per run:
+ * a reply without cards keeps the list, an explanation updates and selects its card,
+ * and a different run id starts over.
+ */
+export function nextFindingCards(
+  previous: FindingCardsState,
+  incoming: readonly AlexaFindingCard[],
+  runId: string | null,
+): FindingCardsState {
+  const sameRun = runId === null ? previous.cards : previous.cards.filter((card) => card.findingId.startsWith(`${runId}:`));
+  const cards = [...sameRun];
+  for (const card of incoming) {
+    const index = cards.findIndex((existing) => existing.findingId === card.findingId);
+    if (index === -1) cards.push(card);
+    else cards[index] = card;
+  }
+  const selectedStillShown = cards.some((card) => card.findingId === previous.selectedId);
+  const selectedId = incoming.length === 1
+    ? incoming[0]!.findingId
+    : selectedStillShown ? previous.selectedId : cards[0]?.findingId ?? null;
+  return { cards, selectedId };
+}

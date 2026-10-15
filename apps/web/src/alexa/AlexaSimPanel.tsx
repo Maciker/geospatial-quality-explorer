@@ -9,6 +9,7 @@ import {
   type AlexaFindingCard,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
+import { nextFindingCards } from "./findingCards";
 import { downloadQgisArtifacts } from "./downloadQgisZip";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -90,8 +91,9 @@ export default function AlexaSimPanel() {
       const response = await postAlexaSimChat({ sessionId, messages: boundedHistory(nextMessages) });
       setSessionId(response.sessionId);
       if (response.llmMode) setLlmMode(response.llmMode);
-      setFindings(response.findings);
-      if (response.findings[0] && !selectedFindingId) setSelectedFindingId(response.findings[0].findingId);
+      const next = nextFindingCards({ cards: findings, selectedId: selectedFindingId }, response.findings, response.runId);
+      setFindings([...next.cards]);
+      setSelectedFindingId(next.selectedId);
       setMessages([...nextMessages, { role: "assistant", content: response.assistantMessage }]);
       if (response.qgisExport) setLastQgisResponse(response);
       speak(response.assistantMessage);
@@ -109,7 +111,7 @@ export default function AlexaSimPanel() {
       </p>
       <p className={styles.modelBadge} aria-label="Language model mode">
         {llmMode === "live" && "Model: live LLM"}
-        {llmMode === "mock" && "Model: deterministic mock (no API key configured)"}
+        {llmMode === "mock" && "Model: deterministic mock (scripted replies)"}
         {llmMode === null && "Model: checking…"}
       </p>
       <header>
