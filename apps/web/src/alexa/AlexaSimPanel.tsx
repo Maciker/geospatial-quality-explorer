@@ -61,6 +61,8 @@ export default function AlexaSimPanel() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  /** Bumped on clean session / dataset change so a late source response cannot repaint a stale layer. */
+  const sourceLoadGeneration = useRef(0);
 
   const findingFeatures = useMemo(() => toFindingMapFeatures(findings), [findings]);
   const sourceFeatures = useMemo(
@@ -110,6 +112,7 @@ export default function AlexaSimPanel() {
   }, [voiceEnabled]);
 
   function clearLayerState(): void {
+    sourceLoadGeneration.current += 1;
     setSourceLayer(null);
     setDatasetName(null);
     setSourceHash(null);
@@ -128,11 +131,14 @@ export default function AlexaSimPanel() {
   }
 
   async function loadSourceForDataset(name: string): Promise<void> {
+    const generation = ++sourceLoadGeneration.current;
     try {
       const source = await getAlexaFixtureSource(name);
+      if (generation !== sourceLoadGeneration.current) return;
       setSourceLayer(source);
       setFitNonce((value) => value + 1);
     } catch (loadError) {
+      if (generation !== sourceLoadGeneration.current) return;
       setSourceLayer(null);
       if (loadError instanceof AlexaSimHttpError) {
         setError(formatAlexaSimErrorMessage(loadError));

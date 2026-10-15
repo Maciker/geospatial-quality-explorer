@@ -3,7 +3,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { GeoJsonGeometry } from "../lib/api";
-import type { FindingMapFeature, SourceMapFeature } from "./mapFeatures";
+import { featuresForFit, type FindingMapFeature, type SourceMapFeature } from "./mapFeatures";
 import styles from "./FindingsMap.module.css";
 
 type Props = {
@@ -186,7 +186,7 @@ function fitToLayers(
 ): void {
   const selected = findingFeatures.find((feature) => feature.properties.findingId === selectedFindingId);
   const bounds = new maplibregl.LngLatBounds();
-  const focus = selected ? [selected] : [...sourceFeatures, ...findingFeatures];
+  const focus = featuresForFit(sourceFeatures, findingFeatures, selectedFindingId);
   for (const feature of focus) extendBounds(bounds, feature.geometry);
   if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 36, maxZoom: selected ? 8 : 5 });
 }

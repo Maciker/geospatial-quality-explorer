@@ -45,7 +45,10 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await page.getByRole("button", { name: "Download last QGIS bundle" }).click();
   expect((await download).suggestedFilename()).toMatch(/^qgis-[a-f0-9]{8}\.zip$/);
 
-  await page.getByLabel("Findings map").screenshot({
+  const map = page.getByLabel("Findings map");
+  await expect(map.locator("canvas")).toBeVisible();
+  await expect(page.getByLabel("Layer provenance")).toContainText("ne-admin0");
+  await map.screenshot({
     path: "apps/web/test-results/mac-402-ne-demo-errors-map.png",
   });
 });

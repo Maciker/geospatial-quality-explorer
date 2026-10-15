@@ -91,3 +91,20 @@ function isPolygonGeometry(value: unknown): value is GeoJsonGeometry {
   const type = (value as { type?: string }).type;
   return type === "Polygon" || type === "MultiPolygon";
 }
+
+/**
+ * Prefer finding overlays for the initial fit so overseas territories in the
+ * source layer (e.g. French Guiana on FRA) do not pull Europe out of frame.
+ */
+export function featuresForFit(
+  sourceFeatures: readonly SourceMapFeature[],
+  findingFeatures: readonly FindingMapFeature[],
+  selectedFindingId: string | null,
+): readonly { readonly geometry: GeoJsonGeometry | null }[] {
+  if (selectedFindingId) {
+    const selected = findingFeatures.find((feature) => feature.properties.findingId === selectedFindingId);
+    if (selected) return [selected];
+  }
+  if (findingFeatures.length > 0) return findingFeatures;
+  return sourceFeatures;
+}
