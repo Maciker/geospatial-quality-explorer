@@ -5,21 +5,27 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function stubJsonError(status: number, payload: object, headers: Record<string, string> = {}): void {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      new Response(JSON.stringify(payload), {
+        status,
+        headers: { "Content-Type": "application/json", ...headers },
+      }),
+    ),
+  );
+}
+
+async function postFailure(): Promise<unknown> {
+  return postAlexaSimChat({ messages: [{ role: "user", content: "hi" }] }).catch((error: unknown) => error);
+}
+
 describe("postAlexaSimChat errors", () => {
   it("preserves status, error code, and Retry-After on rate limit", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ error: "rate_limited", message: "Too many requests." }), {
-          status: 429,
-          headers: { "Retry-After": "12", "Content-Type": "application/json" },
-        }),
-      ),
-    );
+    stubJsonError(429, { error: "rate_limited", message: "Too many requests." }, { "Retry-After": "12" });
 
-    const failure = await postAlexaSimChat({ messages: [{ role: "user", content: "hi" }] }).catch(
-      (error: unknown) => error,
-    );
+    const failure = await postFailure();
 
     expect(failure).toBeInstanceOf(AlexaSimHttpError);
     const httpError = failure as AlexaSimHttpError;
@@ -30,19 +36,9 @@ describe("postAlexaSimChat errors", () => {
   });
 
   it("preserves llm_unavailable as a distinct 502 code", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(JSON.stringify({ error: "llm_unavailable", message: "The language model is unavailable." }), {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        }),
-      ),
-    );
+    stubJsonError(502, { error: "llm_unavailable", message: "The language model is unavailable." });
 
-    const failure = await postAlexaSimChat({ messages: [{ role: "user", content: "hi" }] }).catch(
-      (error: unknown) => error,
-    );
+    const failure = await postFailure();
 
     expect(failure).toBeInstanceOf(AlexaSimHttpError);
     const httpError = failure as AlexaSimHttpError;
