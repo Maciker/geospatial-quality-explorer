@@ -8,8 +8,11 @@ export type NanLlmConfig = {
   readonly roundTimeoutMs: number;
   readonly maxToolRounds: number;
   readonly maxTokens: number;
-  /** When false, request chat_template_kwargs.enable_thinking=false for lower latency. */
-  readonly enableThinking: boolean;
+  /**
+   * Send chat_template_kwargs.enable_thinking=false for lower latency. Only the NaN provider (or an
+   * explicit ALEXA_SIM_DISABLE_THINKING=1) gets it; strict OpenAI-compatible APIs reject unknown fields.
+   */
+  readonly disableThinking: boolean;
 };
 
 const DEFAULT_TIMEOUT_MS = 45_000;
@@ -17,6 +20,7 @@ const MAX_TIMEOUT_MS = 55_000;
 const DEFAULT_ROUND_TIMEOUT_MS = 24_000;
 const DEFAULT_MAX_TOOL_ROUNDS = 4;
 const DEFAULT_MAX_TOKENS = 1024;
+const DEFAULT_BASE_URL = "https://api.nan.builders/v1";
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name];
@@ -26,7 +30,7 @@ function readEnv(name: string): string | undefined {
 export function readNanLlmConfig(): NanLlmConfig {
   const baseUrl = readEnv("NAN_BASE_URL")
     ?? readEnv("ALEXA_SIM_LLM_BASE_URL")
-    ?? "https://api.nan.builders/v1";
+    ?? DEFAULT_BASE_URL;
   const model = readEnv("NAN_MODEL")
     ?? readEnv("ALEXA_SIM_LLM_MODEL")
     ?? "qwen3.6";
@@ -51,5 +55,16 @@ export function readNanLlmConfig(): NanLlmConfig {
     : DEFAULT_MAX_TOKENS;
   const thinkingFlag = readEnv("ALEXA_SIM_ENABLE_THINKING") ?? readEnv("NAN_ENABLE_THINKING");
   const enableThinking = thinkingFlag === "1" || thinkingFlag === "true";
-  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens, enableThinking };
+  const kwargFlag = readEnv("ALEXA_SIM_DISABLE_THINKING");
+  const disableThinking = !enableThinking && (isNanBaseUrl(baseUrl) || kwargFlag === "1" || kwargFlag === "true");
+  return { baseUrl, model, apiKey, useMockLlm, timeoutMs, roundTimeoutMs, maxToolRounds, maxTokens, disableThinking };
+}
+
+function isNanBaseUrl(baseUrl: string): boolean {
+  try {
+    const host = new URL(baseUrl).hostname;
+    return host === "nan.builders" || host.endsWith(".nan.builders");
+  } catch {
+    return false;
+  }
 }

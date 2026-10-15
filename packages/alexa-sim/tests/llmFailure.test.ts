@@ -82,7 +82,7 @@ async function chat(): Promise<{ status: number; body: string }> {
 describe("LLM provider failures", () => {
   it("reports only the provider status, never the provider body", async () => {
     const client = new NanOpenAiLlmClient({ baseUrl: providerUrl, model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
-      enableThinking: false });
+      disableThinking: true });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] }).catch((error: unknown) => error);
 
@@ -117,7 +117,7 @@ describe("LLM provider failures", () => {
 
   it("keeps an abort while reading the reply as an abort, so the loop reports a timeout", async () => {
     const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/stall"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
-      enableThinking: false });
+      disableThinking: true });
 
     const failure = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], signal: AbortSignal.timeout(200) }).catch((error: unknown) => error);
 
@@ -127,7 +127,7 @@ describe("LLM provider failures", () => {
   it("logs each model round's duration and status without content", async () => {
     const logged = vi.spyOn(console, "info").mockImplementation(() => {});
     const client = new NanOpenAiLlmClient({ baseUrl: providerUrl.replace("/v1", "/ok"), model: "test", apiKey: SECRET, useMockLlm: false, timeoutMs: 45_000, roundTimeoutMs: 24_000, maxToolRounds: 4, maxTokens: 1024,
-      enableThinking: false });
+      disableThinking: true });
 
     await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [], stepLabel: "turn 1 after user" });
 
@@ -147,7 +147,7 @@ describe("LLM provider failures", () => {
       roundTimeoutMs: 24_000,
       maxToolRounds: 4,
       maxTokens: 1024,
-      enableThinking: false,
+      disableThinking: true,
     });
 
     const response = await client.complete({ messages: [{ role: "user", content: "hi" }], tools: [] });
@@ -165,5 +165,30 @@ describe("LLM provider failures", () => {
     const capped = readNanLlmConfig().timeoutMs;
 
     expect([fallback, configured, capped]).toEqual([45_000, 52_000, 55_000]);
+  });
+
+  it("asks only the NaN provider, or an explicit opt-in, to disable thinking", () => {
+    const saved = { thinking: process.env.ALEXA_SIM_ENABLE_THINKING, kwarg: process.env.ALEXA_SIM_DISABLE_THINKING };
+    const disableThinkingFor = (baseUrl: string | undefined, env: Record<string, string> = {}) => {
+      if (baseUrl === undefined) delete process.env.NAN_BASE_URL;
+      else process.env.NAN_BASE_URL = baseUrl;
+      delete process.env.ALEXA_SIM_ENABLE_THINKING;
+      delete process.env.ALEXA_SIM_DISABLE_THINKING;
+      Object.assign(process.env, env);
+      return readNanLlmConfig().disableThinking;
+    };
+    try {
+      expect([
+        disableThinkingFor(undefined),
+        disableThinkingFor("https://api.openai.com/v1"),
+        disableThinkingFor("https://api.openai.com/v1", { ALEXA_SIM_DISABLE_THINKING: "1" }),
+        disableThinkingFor(undefined, { ALEXA_SIM_ENABLE_THINKING: "1" }),
+      ]).toEqual([true, false, true, false]);
+    } finally {
+      for (const [name, value] of [["ALEXA_SIM_ENABLE_THINKING", saved.thinking], ["ALEXA_SIM_DISABLE_THINKING", saved.kwarg]] as const) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
   });
 });

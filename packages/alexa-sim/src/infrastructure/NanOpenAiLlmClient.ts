@@ -40,7 +40,7 @@ export class NanOpenAiLlmClient implements LlmPort {
       messages: toOpenAiMessages(request.messages),
       max_tokens: this.config.maxTokens,
     };
-    if (!this.config.enableThinking) {
+    if (this.config.disableThinking) {
       body.chat_template_kwargs = { enable_thinking: false };
     }
     if (useTools) {
