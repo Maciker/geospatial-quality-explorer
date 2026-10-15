@@ -34,16 +34,23 @@ type SessionRecord = {
   lastAccessAtMs: number;
 };
 
+type AlexaToolLimits = {
+  readonly [K in keyof typeof ALEXA_TOOL_LIMITS]: (typeof ALEXA_TOOL_LIMITS)[K] extends number
+    ? number
+    : (typeof ALEXA_TOOL_LIMITS)[K];
+};
+
 export type BoundedSessionQualityToolsAdapterOptions = {
   readonly fixturesDirectory: string;
   readonly now?: () => number;
-  readonly limits?: Partial<typeof ALEXA_TOOL_LIMITS>;
+  /** Partial overrides; numeric fields accept any number so tests can lower caps. */
+  readonly limits?: Partial<AlexaToolLimits>;
 };
 
 export class BoundedSessionQualityToolsAdapter implements QualityToolsPort {
   private readonly fixturesDirectory: string;
   private readonly now: () => number;
-  private readonly limits: typeof ALEXA_TOOL_LIMITS;
+  private readonly limits: AlexaToolLimits;
   private readonly sessions = new Map<string, SessionRecord>();
   private readonly engine = new PlanarPolygonEngine();
   private readonly digest = new Sha256Digest();
