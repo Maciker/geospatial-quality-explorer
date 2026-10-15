@@ -24,4 +24,13 @@ describe("describeLlmStep", () => {
     expect(label).not.toContain("secret-session");
     expect(label).not.toContain("sessionId");
   });
+
+  it("does not log a tool name the model invented", () => {
+    const transcript: ChatMessage[] = [
+      { role: "user", content: "Validate portfolio." },
+      { role: "assistant", content: "", toolCalls: [{ id: "tc1", name: "leak sk-123 here", argumentsJson: "{}" }] },
+    ];
+
+    expect(describeLlmStep(transcript, 1)).toBe("turn 2 after assistant tool_calls unknown");
+  });
 });

@@ -29,4 +29,16 @@ describe("executeAlexaTool", () => {
     const exportData = exported.result.data as { runId: string };
     expect(exportData.runId).toBe(validated.data.runId);
   });
+
+  it.each(["", "  ", "null"])("treats blank tool arguments %j as no arguments", async (argumentsJson) => {
+    const listed = await executeAlexaTool(new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), "list_fixtures", argumentsJson, undefined);
+
+    expect(listed.result.ok).toBe(true);
+  });
+
+  it.each(["[]", "42", "\"portfolio\""])("rejects tool arguments %s that are not an object", async (argumentsJson) => {
+    const listed = await executeAlexaTool(new BoundedSessionQualityToolsAdapter({ fixturesDirectory }), "list_fixtures", argumentsJson, undefined);
+
+    expect(listed.result).toMatchObject({ ok: false, error: "invalid_request" });
+  });
 });

@@ -35,10 +35,8 @@ export async function executeAlexaTool(
       },
     };
   }
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(argumentsJson) as Record<string, unknown>;
-  } catch {
+  const parsed = parseToolArguments(argumentsJson);
+  if (parsed === null) {
     const sessionId = fallbackSessionId ?? "unknown";
     return {
       sessionId,
@@ -47,7 +45,7 @@ export async function executeAlexaTool(
         ok: false,
         sessionId,
         error: "invalid_request",
-        message: "Tool arguments must be valid JSON.",
+        message: "Tool arguments must be a JSON object.",
       },
     };
   }
@@ -113,4 +111,16 @@ async function resolveRunId(tools: QualityToolsPort, sessionId: string, rawRunId
   if (typeof rawRunId === "string" && rawRunId.trim().length > 0) return rawRunId.trim();
   const snapshot = await tools.describeSession(sessionId);
   return snapshot?.runId ?? "";
+}
+
+/** Blank or null arguments mean "no arguments"; anything else must be a JSON object. */
+function parseToolArguments(argumentsJson: string): Record<string, unknown> | null {
+  if (argumentsJson.trim().length === 0) return {};
+  try {
+    const parsed: unknown = JSON.parse(argumentsJson);
+    if (parsed === null) return {};
+    return typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
 }
