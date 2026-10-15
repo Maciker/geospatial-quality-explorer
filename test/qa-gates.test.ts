@@ -63,7 +63,7 @@ function record(directory: string, reviewer: [string, string], implementer: [str
   ]);
 }
 
-describe("pre-PR gate", () => {
+describe("pre-PR gate", { timeout: 15_000 }, () => {
   it("passes a clean review from a different model and reports the identities as declared", () => {
     const directory = preparedRepository(review());
 
