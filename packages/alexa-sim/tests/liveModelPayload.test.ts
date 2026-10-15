@@ -6,7 +6,7 @@ import { ConversationalLoop } from "../src/application/ConversationalLoop.js";
 import type { LlmCompletionRequest, LlmPort } from "../src/application/LlmPort.js";
 import type { ChatMessage } from "../src/domain/chatTypes.js";
 import { trimTranscriptForModel } from "../src/application/modelPayload.js";
-import { stallUntilAbort } from "./support/conversationalLoopFixtures.js";
+import { stallUntilAbort, textReply, toolCallReply, validatePortfolio } from "./support/conversationalLoopFixtures.js";
 import { DeterministicMockLlm, resetDeterministicMockLlmState } from "../src/infrastructure/DeterministicMockLlm.js";
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
@@ -207,5 +207,65 @@ describe("What the live model receives", () => {
     const orphans = trimmed.filter((message) => message.role === "tool" && !calledIds.has(message.toolCallId ?? ""));
     expect(orphans).toEqual([]);
     expect(trimmed[0]?.role).toBe("system");
+  });
+
+  describe("grounding replies in the tool output", () => {
+    async function explainWith(reply: (realId: string) => string) {
+      const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+      const setup = await validatePortfolio(tools);
+      const snapshot = await tools.describeSession(setup.sessionId);
+      const realId = snapshot!.prioritizedFindingIds[1]!;
+      let calls = 0;
+      const llm: LlmPort = {
+        async complete() {
+          calls += 1;
+          return calls === 1
+            ? toolCallReply("x1", "explain_finding", { sessionId: setup.sessionId, findingId: realId })
+            : textReply(reply(realId));
+        },
+      };
+      const response = await new ConversationalLoop({ tools, llm }).run({
+        sessionId: setup.sessionId,
+        messages: [{ role: "user", content: "Explain the next finding." }],
+      });
+      return { response, realId };
+    }
+
+    it("replaces invented ids with the tool's own answer", async () => {
+      const { response, realId } = await explainWith(() => "findingId ID001 (identifier.duplicate) on featureId dup-1: the id is reused.");
+
+      expect(response.refused).toBe(false);
+      expect(response.assistantMessage).toContain(realId);
+      expect(response.assistantMessage).toContain("same-parcel");
+      expect(response.assistantMessage).not.toContain("ID001");
+      expect(response.assistantMessage).not.toContain("dup-1");
+    });
+
+    it("replaces a real finding id paired with an invented feature id", async () => {
+      const { response } = await explainWith((realId) => `findingId ${realId} (identifier.duplicate) on featureId dup-1: the id is reused.`);
+
+      expect(response.assistantMessage).not.toContain("dup-1");
+      expect(response.assistantMessage).toContain("same-parcel");
+    });
+
+    it("keeps a reply whose ids all match the tool output", async () => {
+      const { response } = await explainWith((realId) => `Sure. findingId ${realId} (identifier.duplicate) on featureId same-parcel: two features share that id.`);
+
+      expect(response.assistantMessage).toMatch(/^Sure\./);
+    });
+  });
+
+  it("runs the export itself when the model only says to wait", async () => {
+    const tools = new BoundedSessionQualityToolsAdapter({ fixturesDirectory });
+    const setup = await validatePortfolio(tools);
+    const llm: LlmPort = { async complete() { return textReply("Please wait while I prepare the export."); } };
+
+    const response = await new ConversationalLoop({ tools, llm }).run({
+      sessionId: setup.sessionId,
+      messages: [{ role: "user", content: "Export QGIS." }],
+    });
+
+    expect(response.qgisExport?.runId).toBe(setup.runId);
+    expect(response.assistantMessage).toBe("The QGIS export is ready. Download the bundle from the simulation panel.");
   });
 });

@@ -55,6 +55,21 @@ export function assistantStatesValidationResults(text: string): boolean {
   return QUALITY_CLAIM_TERMS.test(text.toLowerCase());
 }
 
+/**
+ * Every id the reply names must come from tool output: a finding id the tools returned, a rule id
+ * of such a finding, or a feature id on a loaded card. Invented ids such as "ID001" or "dup-1" fail.
+ */
+export function assistantCitesOnlyKnownIds(text: string, known: KnownCitationIds): boolean {
+  const knownRules = new Set([...known.ruleIds, ...[...known.findingIds].map((id) => id.slice(id.lastIndexOf(":") + 1))]);
+  const named = (pattern: RegExp) => [...text.matchAll(pattern)].map((match) => (match[1] ?? match[0]).replace(/[.,;:!?]+$/, ""));
+  const findingIds = [...named(/[a-f0-9]{64}:\d+:[a-z0-9_.]+[a-z0-9_]/gi), ...named(/\bfinding\s*id\s*:?\s*([^\s,;()]+)/gi)];
+  const featureIds = named(/\bfeature\s*id\s*:?\s*([^\s,;():]+)/gi);
+  const ruleIds = [...named(/\brule\s*id\s*:?\s*([^\s,;()]+)/gi), ...named(/\b(?:geometry|identifier)\.[a-z_]+\b/g)];
+  return findingIds.every((id) => known.findingIds.has(id))
+    && featureIds.every((id) => known.featureIds.has(id))
+    && ruleIds.every((id) => knownRules.has(id));
+}
+
 export function assistantCitesKnownIds(text: string, known: KnownCitationIds): boolean {
   for (const findingId of known.findingIds) {
     if (text.includes(findingId)) return true;

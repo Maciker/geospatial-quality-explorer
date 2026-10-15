@@ -15,6 +15,7 @@ import type {
 import { NEUTRAL_EMPTY_REPLY_FALLBACK } from "./assistantFallbacks.js";
 import {
   assistantCitesKnownIds,
+  assistantCitesOnlyKnownIds,
   assistantReplyExemptFromCitationGuard,
   assistantStatesValidationResults,
   collectCitationIdsFromFindings,
@@ -33,7 +34,7 @@ import {
   sessionContextMessage,
   trimTranscriptForModel,
 } from "./modelPayload.js";
-import { toolChoiceForTurn } from "./orchestrationToolChoice.js";
+import { forcedToolForTurn, toolChoiceForTurn } from "./orchestrationToolChoice.js";
 import { ALEXA_SIM_SYSTEM_INSTRUCTIONS } from "./systemInstructions.js";
 
 export type ConversationalLoopOptions = {
@@ -85,6 +86,8 @@ export class ConversationalLoop {
     let qgisExport: QgisExportArtifact | null = null;
     let knownIds = collectCitationIdsFromFindings(findingCards);
     let lastVoiceAnswer: string | null = null;
+    // Findings a tool returned on this turn; the reply must cite at least one of them.
+    let turnFindingIds: ReadonlySet<string> = new Set();
     let synthesisAttempted = false;
 
     const snapshot = sessionId ? await this.tools.describeSession(sessionId) : null;
@@ -115,12 +118,12 @@ export class ConversationalLoop {
         llmCallsRemaining,
       });
       if (completion.kind === "timeout") {
-        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer, turnFindingIds);
         if (recovered) return recovered;
         return this.timeoutResponse(sessionId, findingCards, runId, qgisExport, progress, lastVoiceAnswer);
       }
       if (completion.response.finishReason === "timeout") {
-        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+        const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer, turnFindingIds);
         if (recovered) return recovered;
         return {
           sessionId,
@@ -131,7 +134,11 @@ export class ConversationalLoop {
           qgisExport,
         };
       }
-      const assistant = completion.response.message;
+      const assistant = withServerSideToolCall(
+        completion.response.message,
+        round === 0 ? forcedToolForTurn(transcript, sessionId) : null,
+        sessionId,
+      );
       if (assistant.toolCalls && assistant.toolCalls.length > 0) {
         transcript.push(assistant);
         for (const toolCall of assistant.toolCalls) {
@@ -146,6 +153,8 @@ export class ConversationalLoop {
             content: JSON.stringify(compacted),
             toolCallId: toolCall.id,
           });
+          const touched = findingIdsInToolResult(executed.result);
+          if (touched.size > 0) turnFindingIds = touched;
           const extracted = extractStructuredState(executed.result, findingCards);
           findingCards = extracted.findings;
           runId = extracted.runId ?? runId;
@@ -177,11 +186,11 @@ export class ConversationalLoop {
       });
       synthesisAttempted = resolved.synthesisAttempted;
       if (resolved.text !== null) {
-        return this.finishTurn(sessionId, resolved.text, findingCards, knownIds, runId, qgisExport, lastVoiceAnswer);
+        return this.finishTurn(sessionId, resolved.text, findingCards, knownIds, runId, qgisExport, lastVoiceAnswer, turnFindingIds);
       }
       break;
     }
-    const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer);
+    const recovered = this.recoverFromVoiceAnswer(sessionId, findingCards, runId, qgisExport, knownIds, lastVoiceAnswer, turnFindingIds);
     if (recovered) return recovered;
     return {
       sessionId,
@@ -200,9 +209,10 @@ export class ConversationalLoop {
     qgisExport: QgisExportArtifact | null,
     knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
     lastVoiceAnswer: string | null,
+    turnFindingIds: ReadonlySet<string>,
   ): AlexaSimChatResponse | null {
     if (!lastVoiceAnswer) return null;
-    return this.finishTurn(sessionId, lastVoiceAnswer, findingCards, knownIds, runId, qgisExport, null);
+    return this.finishTurn(sessionId, lastVoiceAnswer, findingCards, knownIds, runId, qgisExport, null, turnFindingIds);
   }
 
   private finishTurn(
@@ -213,11 +223,13 @@ export class ConversationalLoop {
     runId: string | null,
     qgisExport: QgisExportArtifact | null,
     groundedFallback: string | null,
+    turnFindingIds: ReadonlySet<string>,
   ): AlexaSimChatResponse {
-    const guarded = applyCitationGuard(text, findingCards, knownIds, runId);
-    if (guarded.refused && groundedFallback && groundedFallback !== text) {
-      // The tool already produced cited text; prefer it to the model's uncited paraphrase.
-      return this.finishTurn(sessionId, groundedFallback, findingCards, knownIds, runId, qgisExport, null);
+    const guarded = applyCitationGuard(text, findingCards, knownIds, runId, turnFindingIds);
+    const stalls = STALLING_REPLY.test(text);
+    if ((guarded.refused || stalls) && groundedFallback && groundedFallback !== text) {
+      // The tool already produced cited text; prefer it to the model's uncited or mismatched paraphrase.
+      return this.finishTurn(sessionId, groundedFallback, findingCards, knownIds, runId, qgisExport, null, turnFindingIds);
     }
     return {
       sessionId,
@@ -340,22 +352,52 @@ function sessionIdFromProgress(progress: LoopProgress, input: AlexaSimChatReques
   return progress.sessionId.length > 0 ? progress.sessionId : (input.sessionId ?? "");
 }
 
+/** A reply that promises work instead of reporting it, although the tool already finished. */
+const STALLING_REPLY = /\b(please wait|one moment|just a moment|hold on|working on it|in progress)\b|\bi(?:'ll| will) (?:now )?(?:prepare|start|export|generate|create|run)\b/i;
+
 function applyCitationGuard(
   text: string,
   findingCards: readonly CitedFindingCard[],
   knownIds: ReturnType<typeof collectCitationIdsFromFindings>,
   runId: string | null,
+  turnFindingIds: ReadonlySet<string>,
 ): { refused: boolean; message: string } {
-  if (
-    !assistantReplyExemptFromCitationGuard(text)
+  const uncited = !assistantReplyExemptFromCitationGuard(text)
     && assistantStatesValidationResults(text)
     && !findingCards.some((card) => text.includes(card.findingId))
     && !assistantCitesKnownIds(text, knownIds)
-    && !(runId !== null && text.includes(runId))
-  ) {
+    && !(runId !== null && text.includes(runId));
+  const mismatched = !assistantCitesOnlyKnownIds(text, knownIds);
+  const missesTurnFinding = turnFindingIds.size > 0 && ![...turnFindingIds].some((id) => text.includes(id));
+  if (uncited || mismatched || missesTurnFinding) {
     return { refused: true, message: refusalTextForMissingCitation() };
   }
   return { refused: false, message: text };
+}
+
+/** Ids of the findings a list or explain tool returned. */
+function findingIdsInToolResult(result: { ok: boolean; data?: unknown }): ReadonlySet<string> {
+  if (!result.ok || typeof result.data !== "object" || result.data === null) return new Set();
+  const data = result.data as { findings?: unknown; finding?: unknown };
+  const findings = Array.isArray(data.findings) ? data.findings : data.finding ? [data.finding] : [];
+  return new Set(findings.flatMap((finding) =>
+    typeof finding === "object" && finding !== null && typeof (finding as { findingId?: unknown }).findingId === "string"
+      ? [(finding as { findingId: string }).findingId]
+      : []));
+}
+
+/**
+ * When the turn's intent forces a tool that needs only the session (export, list), a model that
+ * answers "please wait" instead of calling it gets the call made for it.
+ */
+function withServerSideToolCall(assistant: ChatMessage, forced: string | null, sessionId: string): ChatMessage {
+  if (assistant.toolCalls && assistant.toolCalls.length > 0) return assistant;
+  if (!sessionId || (forced !== "export_qgis" && forced !== "list_findings")) return assistant;
+  return {
+    role: "assistant",
+    content: "",
+    toolCalls: [{ id: `server-${forced}`, name: forced, argumentsJson: JSON.stringify({ sessionId }) }],
+  };
 }
 
 function extractStructuredState(

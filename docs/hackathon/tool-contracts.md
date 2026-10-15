@@ -31,6 +31,12 @@ Aligned with `docs/contracts.md` and `DATASET_LIMITS`:
 
 The browser receives full tool results. The model receives a compact copy: finding geometries are removed and `export_qgis` file contents are replaced by the file names. On a request that carries a `sessionId`, the server prepends a system message with the session's current `runId`, dataset and up to 20 prioritized `findingId`s (`QualityToolsPort.describeSession`).
 
+## Grounding rules for model replies
+
+- Turns that ask to validate, list, explain or export force the matching tool call (`tool_choice`). If the model still answers without calling `export_qgis` or `list_findings` (for example "please wait"), the server makes that call with the session id.
+- Each tool returns a deterministic `voiceAnswer` built from its own output.
+- The model's reply is replaced by that `voiceAnswer` when it states quality results without citing tool ids, names any finding, rule or feature id the tools did not return (for example `ID001` or `dup-1`), omits the finding the tool returned on that turn, or only promises work ("please wait") after the tool finished. With no `voiceAnswer` available, the reply is refused instead.
+
 ## Response envelope
 
 Success:
