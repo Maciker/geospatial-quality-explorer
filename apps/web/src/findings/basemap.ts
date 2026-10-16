@@ -31,7 +31,7 @@ export function planBasemap(style: unknown): BasemapPlan | null {
   const sources = Object.entries(style.sources)
     .filter((entry): entry is [string, Record<string, unknown>] => isRecord(entry[1]) && typeof entry[1].type === "string")
     .map(([id, spec]) => ({ id: PREFIX + id, spec: withAttribution(spec) as unknown as SourceSpecification }));
-  const known = new Set(Object.keys(style.sources).map((id) => PREFIX + id));
+  const known = new Set(sources.map((source) => source.id));
   const layers = style.layers.flatMap((layer): LayerSpecification[] => {
     if (!isRecord(layer) || typeof layer.id !== "string" || typeof layer.type !== "string") return [];
     if (layer.source === undefined) return [{ ...layer, id: PREFIX + layer.id } as unknown as LayerSpecification];
@@ -49,7 +49,10 @@ export function planBasemap(style: unknown): BasemapPlan | null {
 
 function withAttribution(spec: Record<string, unknown>): Record<string, unknown> {
   const tiled = spec.type === "vector" || spec.type === "raster";
-  return tiled && spec.attribution === undefined ? { ...spec, attribution: BASEMAP_ATTRIBUTION } : spec;
+  if (!tiled) return spec;
+  // The OpenStreetMap credit must always be on screen: keep the provider's text only if it names OSM.
+  const declared = typeof spec.attribution === "string" ? spec.attribution : "";
+  return declared.includes("OpenStreetMap") ? spec : { ...spec, attribution: BASEMAP_ATTRIBUTION };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

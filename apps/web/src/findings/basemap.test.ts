@@ -47,9 +47,29 @@ describe("planBasemap", () => {
     expect(BASEMAP_ATTRIBUTION).toContain("OpenMapTiles");
   });
 
-  it("keeps an attribution the style already declares", () => {
+  it("keeps a declared attribution that credits OpenStreetMap", () => {
+    const declared = "© OpenStreetMap contributors via provider";
+    const plan = planBasemap({ ...vectorStyle, sources: { s: { type: "vector", url: "u", attribution: declared } }, layers: [{ id: "l", type: "fill", source: "s" }] });
+    expect(plan?.sources[0]?.spec).toMatchObject({ attribution: declared });
+  });
+
+  it("replaces a declared attribution that does not credit OpenStreetMap", () => {
     const plan = planBasemap({ ...vectorStyle, sources: { s: { type: "vector", url: "u", attribution: "custom" } }, layers: [{ id: "l", type: "fill", source: "s" }] });
-    expect(plan?.sources[0]?.spec).toMatchObject({ attribution: "custom" });
+    expect(plan?.sources[0]?.spec).toMatchObject({ attribution: BASEMAP_ATTRIBUTION });
+  });
+
+  it("drops layers that point at a source entry that is not a usable source", () => {
+    const plan = planBasemap({
+      ...vectorStyle,
+      sources: { ...vectorStyle.sources, broken: "nope", untyped: {} },
+      layers: [...vectorStyle.layers, { id: "bad", type: "fill", source: "broken" }, { id: "bad2", type: "fill", source: "untyped" }],
+    });
+    expect(plan?.layers.map((layer) => layer.id)).toEqual(["basemap-background", "basemap-water", "basemap-place_label"]);
+  });
+
+  it("ignores a sprite that is not a single URL string", () => {
+    const plan = planBasemap({ ...vectorStyle, sprite: [{ id: "a", url: "u" }] });
+    expect(plan?.sprite).toBeUndefined();
   });
 
   it("returns the glyphs and sprite endpoints", () => {
