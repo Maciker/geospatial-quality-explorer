@@ -21,6 +21,7 @@ import {
   shouldAutoRetryAlexaSimError,
 } from "./alexaSimRetry";
 import { shouldStickChatToBottom } from "./chatScroll";
+import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
@@ -76,11 +77,7 @@ export default function AlexaSimPanel() {
     [sourceLayer],
   );
   const selected = findings.find((finding) => finding.findingId === selectedFindingId) ?? null;
-  const provenanceLabel = sourceLayer
-    ? `${sourceLayer.label} · ${sourceLayer.license} · ${sourceLayer.sourceCrs}`
-      + (sourceHash ? ` · hash ${sourceHash.slice(0, 12)}…` : "")
-      + (sourceLayer.scaleNote ? ` · ${sourceLayer.scaleNote}` : "")
-    : null;
+  const provenanceLabel = sourceLayer ? buildProvenanceLabel(sourceLayer, sourceHash) : null;
 
   useEffect(() => {
     let active = true;

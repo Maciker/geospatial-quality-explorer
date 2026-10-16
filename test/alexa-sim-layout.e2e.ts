@@ -104,7 +104,7 @@ const stackedSizes = [[800, 1000], [700, 450], [667, 375], [390, 844], [375, 667
 // Wider than the stacked breakpoint but too short or narrow for the viewport-locked desktop layout (browser zoom, small laptops).
 const shortSizes = [[933, 600], [1100, 650], [1280, 500]] as const;
 // Short but wide windows keep the viewport-locked layout, so the composer must still be on screen.
-const lockedShortSizes = [[1366, 650], [1366, 601], [1536, 730], [1440, 621], [1101, 701], [1101, 601], [901, 701]] as const;
+const lockedShortSizes = [[1366, 650], [1366, 601], [1536, 730], [1440, 621], [1101, 701], [1101, 601], [901, 701], [1251, 601], [1401, 601]] as const;
 
 async function expectUsable(page: Page): Promise<Awaited<ReturnType<typeof boxes>>> {
   const b = await boxes(page);

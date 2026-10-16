@@ -15,7 +15,7 @@ Approved by: Iker (chat, 2026-10-16: "Prepara los arreglos en la rama"), scope =
 - The list and detail panels are bounded in the whole unlocked band, so 20 findings no longer stretch the map to 1700px.
 - Run review keeps its 420px map (`.mapStandalone` sets a height again).
 - The page unlocks (scrolls) below 600px high, below 900px wide, and in windows up to 1100px wide and 700px high (typical of a zoomed browser). Wide windows between 601 and 760px high keep the viewport-locked layout but compact the header (title and lead share a row) and the chat/detail shares, so the composer stays on screen and the list keeps 1-3 cards. A unit test keeps the two copies of the unlock media query identical.
-- In locked windows 901-1250px wide and up to 760px high the provenance note in the map toolbar is clamped to two lines (`--provenance-lines`); the full text stays in the DOM, for screen readers, and in the tooltip. Without it the map was ~150px tall at 1101x601 and 901x701.
+- In locked windows 901-1400px wide and up to 760px high the provenance note in the map toolbar is clamped to two lines (`--provenance-lines`); the full text stays in the DOM, for screen readers, and in the tooltip. The note now starts with the licence, the CRS and the hash (`buildProvenanceLabel`), so the clamp never hides them; the dataset name and the scale note follow. Without the clamp the map was ~150px tall at 1101x601 and 901x701.
 - Run review: the map wrapper no longer stretches to the height of the findings list (`.mapShellStandalone`).
 - The layout spec is checked with the CI fonts (Inter hidden, DejaVu Sans fallback), because the sizes depend on font metrics and the first two attempts passed locally and failed in CI.
 
