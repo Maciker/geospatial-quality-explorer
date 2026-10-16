@@ -22,6 +22,7 @@ import {
 } from "./alexaSimRetry";
 import { shouldStickChatToBottom } from "./chatScroll";
 import { isAlexaSessionContextValid } from "./sessionContext";
+import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
 const WELCOME_MESSAGE =
@@ -64,6 +65,8 @@ export default function AlexaSimPanel() {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const stickChatRef = useRef(true);
+  const voiceEnabledRef = useRef(false);
+  voiceEnabledRef.current = voiceEnabled;
   /** Bumped on clean session / dataset change so a late source response cannot repaint a stale layer. */
   const sourceLoadGeneration = useRef(0);
 
@@ -184,7 +187,7 @@ export default function AlexaSimPanel() {
       setLastQgisResponse(response);
       setConfirmedRunId(response.runId);
     }
-    speak(response.assistantMessage, voiceEnabled);
+    speakReply(response.assistantMessage, () => voiceEnabledRef.current);
   }
 
   useEffect(() => {
@@ -321,7 +324,7 @@ export default function AlexaSimPanel() {
               findingFeatures={findingFeatures}
               selectedFindingId={selectedFindingId}
               fitNonce={fitNonce}
-              provenanceLabel={provenanceLabel}
+              provenanceLabel={provenanceLabel ?? "No layer loaded yet."}
               onSelect={selectFinding}
             />
           </div>
@@ -426,12 +429,12 @@ export default function AlexaSimPanel() {
             <button
               type="button"
               onClick={() => {
-                setVoiceEnabled((value) => {
-                  if (value && typeof window !== "undefined" && "speechSynthesis" in window) {
-                    window.speechSynthesis.cancel();
-                  }
-                  return !value;
-                });
+                const next = !voiceEnabledRef.current;
+                voiceEnabledRef.current = next;
+                if (!next && typeof window !== "undefined" && "speechSynthesis" in window) {
+                  window.speechSynthesis.cancel();
+                }
+                setVoiceEnabled(next);
               }}
               aria-pressed={voiceEnabled}
               title={voiceEnabled ? "Mute spoken replies and hide the mic button" : "Enable spoken replies and mic input"}
@@ -462,14 +465,6 @@ export default function AlexaSimPanel() {
       </p>
     </main>
   );
-}
-
-function speak(text: string, enabled: boolean): void {
-  if (!enabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
 }
 
 function isMissingGeometry(finding: AlexaFindingCard): boolean {

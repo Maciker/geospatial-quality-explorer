@@ -9,13 +9,16 @@
   --danger: #8a1f1f;
   --radius: 10px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  box-sizing: border-box;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.75rem;
-  min-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   max-width: 100rem;
   margin: 0 auto;
   padding: 0.85rem 1rem 1rem;
+  overflow: hidden;
   color: var(--ink);
   background:
     radial-gradient(1200px 480px at 12% -10%, #dfe9df 0%, transparent 55%),
@@ -37,6 +40,7 @@
 .modelBadge,
 .simBadge {
   display: inline-block;
+  margin: 0;
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
   font-size: 0.85rem;
@@ -75,7 +79,6 @@
   grid-template-rows: minmax(0, 1fr) minmax(11rem, 28vh);
   gap: 0.75rem;
   min-height: 0;
-  min-height: calc(100vh - 7.5rem);
 }
 
 .mapRegion {
@@ -181,8 +184,7 @@
 
 .toolbar button,
 .composer button,
-.detailCopy,
-.mapRegion button {
+.detailCopy {
   padding: 0.45rem 0.65rem;
   border-radius: 8px;
   border: 1px solid #5a6658;
