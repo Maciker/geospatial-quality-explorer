@@ -162,7 +162,7 @@ export default function FindingsMap(props: Props) {
   }, [props.sourceFeatures, props.findingFeatures, props.selectedFindingId, props.fitNonce]);
 
   return (
-    <div className={styles.mapShell}>
+    <div className={props.standaloneHeight ? styles.mapShellStandalone : styles.mapShell}>
       <div className={styles.toolbar}>
         <button
           type="button"

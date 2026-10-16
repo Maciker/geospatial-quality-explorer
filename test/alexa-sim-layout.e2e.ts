@@ -103,6 +103,8 @@ const desktopSizes = [[1440, 900], [1280, 720], [1024, 768]] as const;
 const stackedSizes = [[800, 1000], [700, 450], [667, 375], [390, 844], [375, 667], [320, 256]] as const;
 // Wider than the stacked breakpoint but too short or narrow for the viewport-locked desktop layout (browser zoom, small laptops).
 const shortSizes = [[933, 600], [1100, 650], [1280, 500]] as const;
+// Short but wide windows keep the viewport-locked layout, so the composer must still be on screen.
+const lockedShortSizes = [[1366, 650], [1366, 601], [1536, 730], [1440, 621], [1101, 701]] as const;
 
 async function expectUsable(page: Page): Promise<Awaited<ReturnType<typeof boxes>>> {
   const b = await boxes(page);
@@ -121,7 +123,7 @@ for (const [width, height] of desktopSizes) {
     await page.setViewportSize({ width, height });
     await openWithFindings(page, "ESP");
     const b = await boxes(page);
-    expect(b.map.height).toBeGreaterThanOrEqual(300);
+    expect(b.map.height).toBeGreaterThanOrEqual(240);
     expect(b.send.bottom).toBeLessThanOrEqual(b.viewportHeight);
     expect(b.input.bottom).toBeLessThanOrEqual(b.viewportHeight);
     expect(b.input.right).toBeLessThanOrEqual(b.voice.left + 0.5);
@@ -147,16 +149,30 @@ for (const [width, height] of shortSizes) {
   });
 }
 
+for (const [width, height] of lockedShortSizes) {
+  test(`locked ${width}x${height} keeps the composer on screen with a list and a map`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await openWithFindings(page, "ESP", 16);
+    const b = await boxes(page);
+    const cards = await box(page.locator("[class*=cards]"));
+    const documentHeight = await page.locator("html").evaluate((html) => html.scrollHeight);
+    expect(documentHeight).toBeLessThanOrEqual(height);
+    expect(b.send.bottom).toBeLessThanOrEqual(b.viewportHeight);
+    expect(b.map.height).toBeGreaterThanOrEqual(180);
+    expect(cards.height).toBeGreaterThanOrEqual(56);
+  });
+}
+
 // The viewport-locked and the unlocked layouts both have to cope with the 20 findings a list can return.
-// 620/621 and 700/701 are the seams of the unlock media query.
-const crowdedSizes = [[933, 600], [1100, 700], [1100, 701], [1440, 620], [1440, 621]] as const;
+// Seams of the unlock media query: 600/601 high, and 1100 wide with 700/701 high (900/901 wide is covered by the stacked sizes).
+const crowdedSizes = [[933, 600], [1100, 700], [1100, 701], [1440, 600], [1440, 601]] as const;
 
 for (const [width, height] of crowdedSizes) {
   test(`20 findings at ${width}x${height} keep the list, the map and the page bounded`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await openWithFindings(page, "ESP", 16);
     const b = await expectUsable(page);
-    expect(b.map.height).toBeLessThanOrEqual(1000);
+    expect(b.map.height).toBeLessThanOrEqual(b.viewportHeight);
     const cards = await box(page.locator("[class*=cards]"));
     expect(cards.height).toBeLessThanOrEqual(260);
     expect(cards.height).toBeGreaterThanOrEqual(56);
@@ -171,6 +187,9 @@ for (const [width, height] of [[1440, 900], [390, 844]] as const) {
     const map = await box(page.getByLabel("Findings map"));
     expect(map.height).toBeGreaterThanOrEqual(410);
     expect(map.height).toBeLessThanOrEqual(430);
+    // The map wrapper must not stretch to the height of the findings list and leave a gap above the detail.
+    const detail = await box(page.getByLabel("Finding detail"));
+    expect(detail.top - map.bottom).toBeLessThanOrEqual(40);
   });
 }
 

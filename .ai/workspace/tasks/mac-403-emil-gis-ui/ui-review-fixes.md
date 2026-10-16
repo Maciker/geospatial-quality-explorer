@@ -14,7 +14,9 @@ Approved by: Iker (chat, 2026-10-16: "Prepara los arreglos en la rama"), scope =
 - The layout spec no longer calls the rate-limited fixture endpoint (it serves the real file from a route stub); the first version made CI fail when workers ran in parallel.
 - The list and detail panels are bounded in the whole unlocked band, so 20 findings no longer stretch the map to 1700px.
 - Run review keeps its 420px map (`.mapStandalone` sets a height again).
-- The page unlocks below 620px high (was 560) so the list keeps at least one card; a unit test keeps the two copies of the unlock media query identical.
+- The page unlocks (scrolls) below 600px high, below 900px wide, and in windows up to 1100px wide and 700px high (typical of a zoomed browser). Wide windows between 601 and 760px high keep the viewport-locked layout but compact the header (title and lead share a row) and the chat/detail shares, so the composer stays on screen and the list keeps 1-3 cards. A unit test keeps the two copies of the unlock media query identical.
+- Run review: the map wrapper no longer stretches to the height of the findings list (`.mapShellStandalone`).
+- The layout spec is checked with the CI fonts (Inter hidden, DejaVu Sans fallback), because the sizes depend on font metrics and the first two attempts passed locally and failed in CI.
 
 ## Not done (P3 notes of the review)
 Live announcement of chat replies, "Copied" feedback, error-banner layout shift, reasons for disabled controls beyond `title`, list count / scroll affordance, descendant selectors and hardcoded colours versus `frontend-patterns`, mixed language ("sin geometría"), map camera animation on selection.

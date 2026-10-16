@@ -7,6 +7,11 @@
   min-height: 0;
 }
 
+.mapShellStandalone {
+  composes: mapShell;
+  height: auto;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

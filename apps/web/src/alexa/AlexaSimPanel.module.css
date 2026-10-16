@@ -335,13 +335,14 @@
 }
 
 /* Narrow or short windows scroll the page (see App.module.css, same condition) instead of squeezing the panels. */
-@media (max-width: 900px), (max-height: 620px), (max-width: 1100px) and (max-height: 700px) {
+@media (max-width: 900px), (max-height: 600px), (max-width: 1100px) and (max-height: 700px) {
   .page {
     overflow: visible;
   }
 
+  /* Below this the page scrolls; above it the unlocked layout fills the viewport exactly like the locked one. */
   .workspace {
-    min-height: 34rem;
+    min-height: 27rem;
   }
 
   /* An unbounded list would otherwise stretch the page-height rail (and the map beside it). */
@@ -382,6 +383,32 @@
   .messages {
     min-height: 10rem;
     max-height: 22rem;
+  }
+}
+
+/* Wide but short windows that keep the viewport-locked layout: spend less height on the header and the chat so the list and the map keep room. */
+@media (min-width: 901px) and (max-height: 760px) {
+  .chrome {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 1rem;
+    align-items: baseline;
+  }
+
+  .badgeRow,
+  .error {
+    grid-column: 1 / -1;
+  }
+
+  .chromeLead {
+    max-width: none;
+  }
+
+  .workspace {
+    grid-template-rows: minmax(0, 1fr) minmax(9rem, 24vh);
+  }
+
+  .findingsRail {
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 34%);
   }
 }
 
