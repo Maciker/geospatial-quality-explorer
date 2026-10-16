@@ -13,6 +13,8 @@ type Props = {
   fitNonce: number;
   provenanceLabel: string | null;
   onSelect: (findingId: string) => void;
+  /** When true, keep a 420px floor for pages without a sized parent (FindingsReview). */
+  standaloneHeight?: boolean;
 };
 
 export default function FindingsMap(props: Props) {
@@ -37,6 +39,12 @@ export default function FindingsMap(props: Props) {
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => {
+          map.resize();
+        });
+    resizeObserver?.observe(element);
     map.on("load", () => {
       map.addSource("source-layer", { type: "geojson", data: emptyCollection() });
       map.addSource("findings", { type: "geojson", data: emptyCollection() });
@@ -96,6 +104,7 @@ export default function FindingsMap(props: Props) {
     });
     mapRef.current = map;
     return () => {
+      resizeObserver?.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -153,7 +162,7 @@ export default function FindingsMap(props: Props) {
   }, [props.sourceFeatures, props.findingFeatures, props.selectedFindingId, props.fitNonce]);
 
   return (
-    <div className={styles.mapShell}>
+    <div className={props.standaloneHeight ? styles.mapShellStandalone : styles.mapShell}>
       <div className={styles.toolbar}>
         <button
           type="button"
@@ -171,11 +180,18 @@ export default function FindingsMap(props: Props) {
           <span><i className={styles.legendError} /> Error</span>
           <span><i className={styles.legendWarning} /> Warning</span>
         </div>
+        {props.provenanceLabel != null && (
+          <p className={styles.provenance} aria-label="Layer provenance" title={props.provenanceLabel}>
+            {props.provenanceLabel}
+          </p>
+        )}
       </div>
-      {props.provenanceLabel && (
-        <p className={styles.provenance} aria-label="Layer provenance">{props.provenanceLabel}</p>
-      )}
-      <div ref={container} className={styles.map} role="application" aria-label="Findings map" />
+      <div
+        ref={container}
+        className={`${styles.map}${props.standaloneHeight ? ` ${styles.mapStandalone}` : ""}`}
+        role="application"
+        aria-label="Findings map"
+      />
     </div>
   );
 }

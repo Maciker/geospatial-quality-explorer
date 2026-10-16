@@ -20,7 +20,10 @@ import {
   retryDelayMs,
   shouldAutoRetryAlexaSimError,
 } from "./alexaSimRetry";
+import { shouldStickChatToBottom } from "./chatScroll";
+import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
+import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
 const WELCOME_MESSAGE =
@@ -61,6 +64,10 @@ export default function AlexaSimPanel() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+  const stickChatRef = useRef(true);
+  const voiceEnabledRef = useRef(false);
+  voiceEnabledRef.current = voiceEnabled;
   /** Bumped on clean session / dataset change so a late source response cannot repaint a stale layer. */
   const sourceLoadGeneration = useRef(0);
 
@@ -70,11 +77,7 @@ export default function AlexaSimPanel() {
     [sourceLayer],
   );
   const selected = findings.find((finding) => finding.findingId === selectedFindingId) ?? null;
-  const provenanceLabel = sourceLayer
-    ? `${sourceLayer.label} · ${sourceLayer.license} · ${sourceLayer.sourceCrs}`
-      + (sourceHash ? ` · hash ${sourceHash.slice(0, 12)}…` : "")
-      + (sourceLayer.scaleNote ? ` · ${sourceLayer.scaleNote}` : "")
-    : null;
+  const provenanceLabel = sourceLayer ? buildProvenanceLabel(sourceLayer, sourceHash) : null;
 
   useEffect(() => {
     let active = true;
@@ -181,8 +184,16 @@ export default function AlexaSimPanel() {
       setLastQgisResponse(response);
       setConfirmedRunId(response.runId);
     }
-    speak(response.assistantMessage);
+    speakReply(response.assistantMessage, () => voiceEnabledRef.current);
   }
+
+  useEffect(() => {
+    const scroller = messagesRef.current;
+    if (!scroller || !stickChatRef.current) return;
+    // Instant jump so scroll events from a smooth animation cannot clear stick
+    // before the assistant reply is painted.
+    scroller.scrollTop = scroller.scrollHeight;
+  }, [messages]);
 
   async function sendMessage(text: string): Promise<void> {
     const trimmed = text.trim();
@@ -224,85 +235,59 @@ export default function AlexaSimPanel() {
     }
   }
 
+  const canExplain = selectedFindingId !== null && !busy;
+  const canExport = confirmedRunId !== null && !busy;
+  const canDownload = lastQgisResponse !== null && lastQgisResponse.runId === confirmedRunId && !busy;
+
   return (
     <main className={styles.page}>
-      <p className={styles.simBadge} role="note">
-        Simulation of Alexa+ — not an Amazon product
-      </p>
-      <p className={styles.modelBadge} aria-label="Language model mode">
-        {llmMode === "live" && "Model: live LLM"}
-        {llmMode === "mock" && "Model: deterministic mock (scripted replies)"}
-        {llmMode === null && "Model: checking…"}
-      </p>
-      <header>
+      <header className={styles.chrome}>
+        <div className={styles.badgeRow}>
+          <p className={styles.simBadge} role="note">
+            Simulation of Alexa+ — not an Amazon product
+          </p>
+          <p className={styles.modelBadge} aria-label="Language model mode">
+            {llmMode === "live" && "Model: live LLM"}
+            {llmMode === "mock" && "Model: deterministic mock (scripted replies)"}
+            {llmMode === null && "Model: checking…"}
+          </p>
+        </div>
         <h1>Alexa+ simulation for geospatial quality review</h1>
-        <p>Deterministic tools back every cited finding. The assistant never edits geometry.</p>
+        <p className={styles.chromeLead}>
+          Deterministic tools back every cited finding. The assistant never edits geometry.
+        </p>
+        {error && <p className={styles.error} role="alert">{error}</p>}
       </header>
-      <div className={styles.layout}>
-        <section className={styles.chatPanel} aria-label="Alexa simulation chat">
-          <div className={styles.messages}>
-            {messages.map((message, index) => (
-              <div
-                key={`${message.role}-${index}`}
-                data-role={message.role}
-                className={message.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
-              >
-                {message.content}
-              </div>
-            ))}
-          </div>
-          <form
-            className={styles.composer}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void sendMessage(draft);
-            }}
-          >
-            <input
-              aria-label="Message Alexa simulation"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Try: Validate the ne-admin0-westeurope-demo-errors fixture"
-              disabled={busy}
-            />
-            <button type="button" onClick={() => setVoiceEnabled((value) => !value)}>
-              {voiceEnabled ? "Voice on" : "Voice off"}
-            </button>
-            <button type="submit" disabled={busy}>
-              {busy ? "Thinking…" : "Send"}
-            </button>
-          </form>
-          {voiceEnabled && (
-            <div className={styles.composer}>
-              <button
-                type="button"
-                onClick={() => recognitionRef.current?.start()}
-                disabled={busy}
-              >
-                Hold to speak (Web Speech)
-              </button>
-            </div>
-          )}
-        </section>
-        <aside className={styles.sidePanel} aria-label="Finding cards and map">
+
+      <div className={styles.workspace} aria-label="Finding cards and map">
+        <section className={styles.mapRegion} aria-label="Map workspace">
           <div className={styles.toolbar}>
-            <button type="button" onClick={startCleanSession} disabled={busy}>
+            <button type="button" onClick={startCleanSession} disabled={busy} title={busy ? "Wait for the current request." : "Start a new clean session"}>
               New clean session
             </button>
             <button
               type="button"
               onClick={() => {
                 if (!selectedFindingId) return;
+                stickChatRef.current = true;
                 void sendMessage(`Explain finding ${selectedFindingId}.`);
               }}
-              disabled={busy || selectedFindingId === null}
+              disabled={!canExplain}
+              title={selectedFindingId === null ? "Select a finding first." : busy ? "Wait for the current request." : "Explain the selected finding"}
             >
               Explain selected finding
             </button>
             <button
               type="button"
               onClick={() => void sendMessage("Export QGIS bundle.")}
-              disabled={busy || confirmedRunId === null}
+              disabled={!canExport}
+              title={
+                busy
+                  ? "Wait for the current request."
+                  : confirmedRunId === null
+                    ? "Validate a fixture first."
+                    : "Export QGIS for the current run"
+              }
             >
               Export QGIS via Alexa
             </button>
@@ -318,16 +303,40 @@ export default function AlexaSimPanel() {
                   setError(downloadError instanceof Error ? downloadError.message : "Download failed.");
                 }
               }}
-              disabled={lastQgisResponse === null || lastQgisResponse.runId !== confirmedRunId}
+              disabled={!canDownload}
+              title={
+                busy
+                  ? "Wait for the current request."
+                  : lastQgisResponse === null || lastQgisResponse.runId !== confirmedRunId
+                    ? "Export the current run before downloading."
+                    : "Download the last QGIS ZIP"
+              }
             >
               Download last QGIS bundle
             </button>
           </div>
-          {(datasetName || sourceHash) && (
-            <p aria-label="Active dataset summary">
+          <div className={styles.mapWrap}>
+            <FindingsMap
+              sourceFeatures={sourceFeatures}
+              findingFeatures={findingFeatures}
+              selectedFindingId={selectedFindingId}
+              fitNonce={fitNonce}
+              provenanceLabel={provenanceLabel ?? "No layer loaded yet."}
+              onSelect={selectFinding}
+            />
+          </div>
+        </section>
+
+        <aside className={styles.findingsRail} aria-label="Findings list">
+          {(datasetName || sourceHash) ? (
+            <p className={styles.datasetSummary} aria-label="Active dataset summary">
               Dataset {datasetName ?? "unknown"}
               {sourceHash ? ` · sourceHash ${sourceHash.slice(0, 12)}…` : ""}
               {confirmedRunId ? ` · runId ${confirmedRunId.slice(0, 12)}…` : ""}
+            </p>
+          ) : (
+            <p className={styles.datasetSummary} aria-label="Active dataset summary">
+              No active dataset yet.
             </p>
           )}
           <div className={styles.cards}>
@@ -337,47 +346,122 @@ export default function AlexaSimPanel() {
                 type="button"
                 className={`${styles.card} ${selectedFindingId === finding.findingId ? styles.cardSelected : ""}`}
                 onClick={() => selectFinding(finding.findingId)}
+                aria-current={selectedFindingId === finding.findingId ? "true" : undefined}
               >
                 <strong>{finding.ruleId}</strong>
                 <div className={styles.cardMeta}>
                   {finding.severity} · featureId {finding.featureId}
                   {isMissingGeometry(finding) ? " · sin geometría" : ""}
                 </div>
-                <div className={styles.cardMeta}>findingId {finding.findingId}</div>
-                <p>{finding.explanation}</p>
               </button>
             ))}
-            {findings.length === 0 && <p>No finding cards yet. Validate a catalog fixture to populate this list.</p>}
+            {findings.length === 0 && (
+              <p className={styles.cardEmpty}>No findings yet. Validate a catalog fixture, then list findings.</p>
+            )}
           </div>
-          {selected && (
-            <p aria-label="Finding detail">
-              Suggested action: {selected.suggestedAction}
-              {isMissingGeometry(selected) ? " (feature has no geometry on the map)" : ""}
-            </p>
+          {selected ? (
+            <div className={styles.detail} aria-label="Finding detail">
+              <div className={styles.detailHeader}>
+                <strong>{selected.ruleId}</strong>
+                <button
+                  type="button"
+                  className={styles.detailCopy}
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(selected.findingId).catch(() => {
+                      setError("Could not copy findingId.");
+                    });
+                  }}
+                >
+                  Copy findingId
+                </button>
+              </div>
+              <p className={styles.detailId}>findingId {selected.findingId}</p>
+              <p>{selected.explanation}</p>
+              <p>
+                Suggested action: {selected.suggestedAction}
+                {isMissingGeometry(selected) ? " (feature has no geometry on the map)" : ""}
+              </p>
+            </div>
+          ) : (
+            <div className={styles.detail} aria-label="Finding detail">
+              <p className={styles.cardEmpty}>Select a finding to see detail and copyable IDs.</p>
+            </div>
           )}
-          <div className={styles.mapWrap}>
-            <FindingsMap
-              sourceFeatures={sourceFeatures}
-              findingFeatures={findingFeatures}
-              selectedFindingId={selectedFindingId}
-              fitNonce={fitNonce}
-              provenanceLabel={provenanceLabel}
-              onSelect={selectFinding}
-            />
-          </div>
         </aside>
+
+        <section className={styles.chatPanel} aria-label="Alexa simulation chat">
+          <div
+            className={styles.messages}
+            ref={messagesRef}
+            onScroll={(event) => {
+              if (!event.isTrusted) return;
+              stickChatRef.current = shouldStickChatToBottom(event.currentTarget);
+            }}
+          >
+            {messages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                data-role={message.role}
+                className={message.role === "user" ? styles.bubbleUser : styles.bubbleAssistant}
+              >
+                {message.content}
+              </div>
+            ))}
+          </div>
+          <form
+            className={styles.composer}
+            onSubmit={(event) => {
+              event.preventDefault();
+              stickChatRef.current = true;
+              void sendMessage(draft);
+            }}
+          >
+            <input
+              aria-label="Message Alexa simulation"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Try: Validate the ne-admin0-westeurope-demo-errors fixture"
+              disabled={busy}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const next = !voiceEnabledRef.current;
+                voiceEnabledRef.current = next;
+                if (!next && typeof window !== "undefined" && "speechSynthesis" in window) {
+                  window.speechSynthesis.cancel();
+                }
+                setVoiceEnabled(next);
+              }}
+              aria-pressed={voiceEnabled}
+              title={voiceEnabled ? "Mute spoken replies and hide the mic button" : "Enable spoken replies and mic input"}
+            >
+              {voiceEnabled ? "Voice on" : "Voice off"}
+            </button>
+            <button type="submit" disabled={busy} title={busy ? "Wait for the current request." : "Send message"}>
+              {busy ? "Thinking…" : "Send"}
+            </button>
+          </form>
+          {voiceEnabled && (
+            <div className={styles.composer}>
+              <button
+                type="button"
+                onClick={() => recognitionRef.current?.start()}
+                disabled={busy}
+                title="Click once to capture a voice message"
+              >
+                Click to speak (Web Speech)
+              </button>
+            </div>
+          )}
+        </section>
       </div>
-      {error && <p className={styles.error} role="alert">{error}</p>}
+
+      <p className={styles.statusLive} aria-live="polite">
+        {busy ? "Working on your request." : ""}
+      </p>
     </main>
   );
-}
-
-function speak(text: string): void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
 }
 
 function isMissingGeometry(finding: AlexaFindingCard): boolean {

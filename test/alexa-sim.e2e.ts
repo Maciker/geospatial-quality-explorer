@@ -16,10 +16,10 @@ test("Alexa+ simulation validates portfolio and cites findings with mock LLM", a
   await page.getByLabel("Message Alexa simulation").fill("List the findings.");
   await page.getByRole("button", { name: "Send" }).click();
   await expect(chat.getByText(/findingId/i)).toBeVisible({ timeout: 30_000 });
-  const card = page.getByLabel("Finding cards and map").getByRole("button", { name: /geometry\./ }).first();
+  const card = page.getByLabel("Findings list").getByRole("button", { name: /geometry\./ }).first();
   await expect(card).toBeVisible();
   await expect(card).toContainText("featureId");
-  const cards = page.getByLabel("Finding cards and map").getByRole("button", { name: /(geometry|identifier)\./ });
+  const cards = page.getByLabel("Findings list").getByRole("button", { name: /(geometry|identifier)\./ });
   const listedCount = await cards.count();
   await page.getByLabel("Message Alexa simulation").fill("Explain the next finding.");
   await page.getByRole("button", { name: "Send" }).click();

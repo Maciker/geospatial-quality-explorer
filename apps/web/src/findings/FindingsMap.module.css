@@ -1,6 +1,15 @@
 .mapShell {
   display: grid;
+  /* A parent can set --map-min-height so the canvas keeps a usable size when the toolbar wraps. */
+  grid-template-rows: auto minmax(var(--map-min-height, 0px), 1fr);
   gap: 0.4rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.mapShellStandalone {
+  composes: mapShell;
+  height: auto;
 }
 
 .toolbar {
@@ -46,12 +55,25 @@
 
 .provenance {
   margin: 0;
+  flex: 1 1 12rem;
   font-size: 0.8rem;
   color: #3a463c;
+  overflow-wrap: anywhere;
+  /* A parent can set --provenance-lines to clamp the note visually; the full text stays in the DOM and the title. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--provenance-lines, none);
+  overflow: hidden;
 }
 
 .map {
-  height: 420px;
+  height: 100%;
+  min-height: 0;
   border: 1px solid #c6cec4;
   background: #c5d4e0;
+}
+
+.mapStandalone {
+  height: 420px;
+  min-height: 420px;
 }

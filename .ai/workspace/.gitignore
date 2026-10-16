@@ -29,3 +29,6 @@ tasks/*
 # MAC-402 map source layer handoff (2026-10-15).
 !tasks/mac-402-map-source-layer/
 !tasks/mac-402-map-source-layer/**
+# MAC-403 Emil GIS UI handoff (2026-10-16).
+!tasks/mac-403-emil-gis-ui/
+!tasks/mac-403-emil-gis-ui/**
