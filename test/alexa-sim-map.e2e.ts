@@ -10,9 +10,13 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await page.goto("/?sim=alexa");
   await expect(page.getByRole("note")).toContainText("Simulation of Alexa+ — not an Amazon product");
 
+  // role=log is an implicit polite live region, so screen readers hear new replies appended inside it.
+  const conversation = page.getByRole("log", { name: "Conversation" });
+  await expect(conversation).toBeVisible();
+
   await page.getByLabel("Message Alexa simulation").fill("Validate the ne-admin0-westeurope-demo-errors fixture.");
   await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByLabel("Alexa simulation chat").getByText(/runId/i)).toBeVisible({ timeout: 30_000 });
+  await expect(conversation.getByText(/runId/i)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByLabel("Active dataset summary")).toContainText("ne-admin0-westeurope-demo-errors");
   await expect(page.getByLabel("Layer provenance")).toContainText("NaturalEarth-public-domain");
 

@@ -430,6 +430,8 @@ export default function AlexaSimPanel() {
         <section className={styles.chatPanel} aria-label="Alexa simulation chat">
           <div
             className={styles.messages}
+            role="log"
+            aria-label="Conversation"
             ref={messagesRef}
             onScroll={(event) => {
               if (!event.isTrusted) return;
