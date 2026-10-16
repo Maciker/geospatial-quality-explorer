@@ -49,11 +49,23 @@ export default function AlexaSimPanel() {
   const [cardsState, setCardsState] = useState<FindingCardsState>({ cards: [], selectedId: null });
   const findings = cardsState.cards;
   const selectedFindingId = cardsState.selectedId;
+  const clearCopyFeedback = () => {
+    if (copyFeedbackTimer.current) {
+      clearTimeout(copyFeedbackTimer.current);
+      copyFeedbackTimer.current = null;
+    }
+    setCopyFeedback(null);
+  };
+
   const selectFinding = (findingId: string) => {
     setCardsState((previous) => ({ ...previous, selectedId: findingId }));
-    setCopyFeedback(null);
+    clearCopyFeedback();
     setFitNonce((value) => value + 1);
   };
+
+  useEffect(() => () => {
+    if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+  }, []);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +145,7 @@ export default function AlexaSimPanel() {
     setLastQgisResponse(null);
     setConfirmedRunId(null);
     clearLayerState();
+    clearCopyFeedback();
     setError(null);
     setDraft("");
   }
@@ -372,9 +385,12 @@ export default function AlexaSimPanel() {
                   className={styles.detailCopy}
                   onClick={() => {
                     void navigator.clipboard?.writeText(selected.findingId).then(() => {
-                      if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+                      clearCopyFeedback();
                       setCopyFeedback("Copied");
-                      copyFeedbackTimer.current = setTimeout(() => setCopyFeedback(null), 1600);
+                      copyFeedbackTimer.current = setTimeout(() => {
+                        copyFeedbackTimer.current = null;
+                        setCopyFeedback(null);
+                      }, 1600);
                     }).catch(() => {
                       setError("Could not copy findingId.");
                     });

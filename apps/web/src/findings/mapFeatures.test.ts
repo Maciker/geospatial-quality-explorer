@@ -106,14 +106,19 @@ describe("mapFeatures", () => {
     });
     const forFit = featuresForFit(source, [], null);
     expect(forFit).toHaveLength(2);
-    const lons = forFit.flatMap((feature) => {
+    const coords = forFit.flatMap((feature) => {
       const geometry = feature.geometry;
-      if (!geometry) return [] as number[];
+      if (!geometry) return [] as Array<{ lon: number; lat: number }>;
       const rings = geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
-      return rings.flatMap((ring) => ring.map((position) => position[0] ?? 0));
+      return rings.flatMap((ring) => ring.map((position) => ({
+        lon: position[0] ?? 0,
+        lat: position[1] ?? 0,
+      })));
     });
-    expect(Math.min(...lons)).toBeGreaterThan(-20);
-    expect(Math.max(...lons)).toBeLessThan(40);
+    expect(Math.min(...coords.map((point) => point.lon))).toBeGreaterThan(-20);
+    expect(Math.max(...coords.map((point) => point.lon))).toBeLessThan(40);
+    expect(Math.max(...coords.map((point) => point.lat))).toBeLessThanOrEqual(72);
+    expect(source.every((feature) => feature.geometry.type === "MultiPolygon")).toBe(true);
   });
 
   it("pads a selected finding bbox so Explain/select keep regional context", () => {
