@@ -23,13 +23,10 @@ import {
 import { shouldStickChatToBottom } from "./chatScroll";
 import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
-import { copyFindingId } from "./copyFindingId";
+import { copyFindingId, errorAfterCopy } from "./copyFindingId";
 import { splitBreakableId } from "./formatBreakableId";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
-
-const COPY_UNAVAILABLE = "Clipboard is not available in this browser.";
-const COPY_FAILED = "Could not copy findingId.";
 
 const WELCOME_MESSAGE =
   "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope-demo-errors (Natural Earth), then list findings.";
@@ -391,15 +388,8 @@ export default function AlexaSimPanel() {
                   onClick={() => {
                     const copiedId = selected.findingId;
                     void copyFindingId(navigator.clipboard, copiedId).then((result) => {
-                      if (result === "unavailable") {
-                        setError(COPY_UNAVAILABLE);
-                        return;
-                      }
-                      if (result === "failed") {
-                        setError(COPY_FAILED);
-                        return;
-                      }
-                      setError((current) => (current === COPY_UNAVAILABLE || current === COPY_FAILED ? null : current));
+                      setError((current) => errorAfterCopy(result, current));
+                      if (result !== "copied") return;
                       clearCopyFeedback();
                       setCopyFeedback(copiedId);
                       copyFeedbackTimer.current = setTimeout(() => {
