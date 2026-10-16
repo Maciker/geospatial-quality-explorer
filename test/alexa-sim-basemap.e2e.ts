@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { E2E_BASEMAP_STYLE_URL as STYLE_URL, E2E_BASEMAP_TILES } from "./e2eBasemap.js";
 
-const STYLE_URL = "http://127.0.0.1:4173/__e2e/basemap-style.json";
-const TILE_PATTERN = "http://127.0.0.1:4173/__e2e/tiles/**";
+const TILE_PATTERN = `${E2E_BASEMAP_TILES}/**`;
 
 /** A vector style served locally, so the suite never reaches a third-party tile host. */
 const stubStyle = {
   version: 8,
   sources: {
-    stub: { type: "vector", tiles: ["http://127.0.0.1:4173/__e2e/tiles/{z}/{x}/{y}.pbf"], maxzoom: 6 },
+    stub: { type: "vector", tiles: [`${E2E_BASEMAP_TILES}/{z}/{x}/{y}.pbf`], maxzoom: 6 },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": "#eef2ee" } },

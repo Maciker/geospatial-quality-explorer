@@ -8,7 +8,7 @@ export const BASEMAP_ATTRIBUTION =
 
 const PREFIX = "basemap-";
 
-export type BasemapPlan = {
+type BasemapPlan = {
   readonly sources: readonly { readonly id: string; readonly spec: SourceSpecification }[];
   readonly layers: readonly LayerSpecification[];
   readonly glyphs?: string;

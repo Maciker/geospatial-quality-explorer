@@ -45,3 +45,7 @@ Reviewed revision: `c614b59c2da8bc87fe072f671c85317647ba6016` (2026-09-18).
 The collection contains LeanMind exercises/notes and Software Crafters masterclasses. The source is credited for the training concepts and architecture examples identified in the intake matrix. This change adds original summaries and links; it does not redistribute course applications, slides, exercises, datasets, provider configurations or course scripts verbatim.
 
 The collection has no root license in the reviewed tree. Some individual READMEs mention MIT, which is not treated as permission for every course file. Verify provenance and redistribution rights separately before copying additional training assets or publishing previously private material. This notice does not grant a license to the overall repository or retrospectively license pre-existing files.
+
+## OpenFreeMap / OpenStreetMap / OpenMapTiles — web basemap
+
+The browser map loads the OpenFreeMap "Positron" vector style at runtime from `https://tiles.openfreemap.org/styles/positron` (no API key). The tiles contain data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL) in the [OpenMapTiles](https://openmaptiles.org/) schema; the attribution is displayed on the map. Nothing from the basemap is stored, redistributed or used in validation runs, exports or QGIS bundles. The service is third-party and may change; confirm its current terms before relying on it. Set `VITE_BASEMAP_STYLE_URL=off` to disable it.
