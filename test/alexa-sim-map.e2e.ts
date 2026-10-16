@@ -20,15 +20,15 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await page.getByRole("button", { name: "Send" }).click();
   const cards = page.getByLabel("Findings list").getByRole("button", { name: /(geometry|identifier)\./ });
   await expect(cards.first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByLabel("Findings list").getByText(/no geometry/)).toBeVisible();
+  const emptyCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.empty/ });
+  await expect(emptyCard).toContainText(/no geometry/);
 
   const map = page.getByLabel("Findings map");
   await expect(map.locator("canvas")).toBeVisible();
   await expect(map).toBeInViewport();
 
-  const emptyCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.empty/ });
   await emptyCard.click();
-  await expect(page.getByLabel("Finding detail")).toContainText("no geometry");
+  await expect(page.getByLabel("Finding detail")).toContainText("feature has no geometry on the map");
 
   const invalidCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.invalid/ });
   await invalidCard.click();
