@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import FindingsMap from "../findings/FindingsMap";
 import { toFindingMapFeatures, toSourceMapFeatures } from "../findings/mapFeatures";
@@ -23,7 +23,7 @@ import {
 import { shouldStickChatToBottom } from "./chatScroll";
 import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
-import { formatBreakableId } from "./formatBreakableId";
+import { splitBreakableId } from "./formatBreakableId";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -384,7 +384,11 @@ export default function AlexaSimPanel() {
                   type="button"
                   className={styles.detailCopy}
                   onClick={() => {
-                    void navigator.clipboard?.writeText(selected.findingId).then(() => {
+                    if (!navigator.clipboard) {
+                      setError("Clipboard is not available in this browser.");
+                      return;
+                    }
+                    void navigator.clipboard.writeText(selected.findingId).then(() => {
                       clearCopyFeedback();
                       setCopyFeedback("Copied");
                       copyFeedbackTimer.current = setTimeout(() => {
@@ -399,7 +403,15 @@ export default function AlexaSimPanel() {
                   {copyFeedback === "Copied" ? "Copied" : "Copy findingId"}
                 </button>
               </div>
-              <p className={styles.detailId}>findingId {formatBreakableId(selected.findingId)}</p>
+              <p className={styles.detailId}>
+                findingId{" "}
+                {splitBreakableId(selected.findingId).map((part, index) => (
+                  <Fragment key={index}>
+                    {index > 0 ? <wbr /> : null}
+                    {part}
+                  </Fragment>
+                ))}
+              </p>
               <p className={styles.copyLive} aria-live="polite">
                 {copyFeedback === "Copied" ? "findingId copied to clipboard." : ""}
               </p>

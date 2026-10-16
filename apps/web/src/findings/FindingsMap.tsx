@@ -195,6 +195,7 @@ export default function FindingsMap(props: Props) {
           <span><i className={styles.legendSource} /> Source</span>
           <span><i className={styles.legendError} /> Error</span>
           <span><i className={styles.legendWarning} /> Warning</span>
+          {props.selectedFindingId != null && <span><i className={styles.legendSelected} /> Selected</span>}
         </div>
         {props.provenanceLabel != null && (
           <p className={styles.provenance} aria-label="Layer provenance" title={props.provenanceLabel}>

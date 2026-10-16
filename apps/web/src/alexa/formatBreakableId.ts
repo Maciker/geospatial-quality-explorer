@@ -1,4 +1,4 @@
-/** Insert soft wrap points so long finding/run ids break at separators, not mid-token. */
-export function formatBreakableId(value: string): string {
-  return value.replace(/([:-])/g, "$1\u200b");
+/** Parts of an id split after `:` and `-`; render them with `<wbr />` between so copied text stays exact. */
+export function splitBreakableId(value: string): string[] {
+  return value.split(/(?<=[:-])/);
 }
