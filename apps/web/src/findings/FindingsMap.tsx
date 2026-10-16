@@ -3,7 +3,13 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { GeoJsonGeometry } from "../lib/api";
-import { featuresForFit, type FindingMapFeature, type SourceMapFeature } from "./mapFeatures";
+import {
+  featuresForFit,
+  hasSelectedOverlay,
+  padBoundsForSelection,
+  type FindingMapFeature,
+  type SourceMapFeature,
+} from "./mapFeatures";
 import styles from "./FindingsMap.module.css";
 
 type Props = {
@@ -65,12 +71,17 @@ export default function FindingsMap(props: Props) {
         type: "fill",
         source: "findings",
         paint: {
-          "fill-color": ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
+          "fill-color": [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            "#f5c542",
+            ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
+          ],
           "fill-opacity": [
             "case",
             ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-            0.75,
-            0.45,
+            0.72,
+            0.22,
           ],
         },
       });
@@ -82,14 +93,14 @@ export default function FindingsMap(props: Props) {
           "line-color": [
             "case",
             ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-            "#111111",
-            "#10221a",
+            "#1a1a1a",
+            "#6b7a6d",
           ],
           "line-width": [
             "case",
             ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-            3.5,
-            2,
+            4.5,
+            1.25,
           ],
         },
       });
@@ -127,25 +138,31 @@ export default function FindingsMap(props: Props) {
         features: props.findingFeatures as GeoJSON.Feature[],
       });
       if (map.getLayer("findings-fill")) {
+        map.setPaintProperty("findings-fill", "fill-color", [
+          "case",
+          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+          "#f5c542",
+          ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
+        ]);
         map.setPaintProperty("findings-fill", "fill-opacity", [
           "case",
           ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          0.75,
-          0.45,
+          0.72,
+          0.22,
         ]);
       }
       if (map.getLayer("findings-line")) {
         map.setPaintProperty("findings-line", "line-color", [
           "case",
           ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          "#111111",
-          "#10221a",
+          "#1a1a1a",
+          "#6b7a6d",
         ]);
         map.setPaintProperty("findings-line", "line-width", [
           "case",
           ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          3.5,
-          2,
+          4.5,
+          1.25,
         ]);
       }
       if (lastFitNonce.current !== props.fitNonce) {
@@ -179,6 +196,7 @@ export default function FindingsMap(props: Props) {
           <span><i className={styles.legendSource} /> Source</span>
           <span><i className={styles.legendError} /> Error</span>
           <span><i className={styles.legendWarning} /> Warning</span>
+          {hasSelectedOverlay(props.findingFeatures, props.selectedFindingId) && <span><i className={styles.legendSelected} /> Selected</span>}
         </div>
         {props.provenanceLabel != null && (
           <p className={styles.provenance} aria-label="Layer provenance" title={props.provenanceLabel}>
@@ -210,7 +228,23 @@ function fitToLayers(
   const bounds = new maplibregl.LngLatBounds();
   const focus = featuresForFit(sourceFeatures, findingFeatures, selectedFindingId);
   for (const feature of focus) extendBounds(bounds, feature.geometry);
-  if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 36, maxZoom: selected ? 8 : 5 });
+  if (bounds.isEmpty()) return;
+  if (selected) {
+    const padded = padBoundsForSelection(
+      {
+        west: bounds.getWest(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        north: bounds.getNorth(),
+      },
+      2,
+    );
+    bounds.extend([padded.west, padded.south]);
+    bounds.extend([padded.east, padded.north]);
+    map.fitBounds(bounds, { padding: 56, maxZoom: 6 });
+    return;
+  }
+  map.fitBounds(bounds, { padding: 36, maxZoom: 5 });
 }
 
 function extendBounds(bounds: maplibregl.LngLatBounds, geometry: GeoJsonGeometry | null): void {

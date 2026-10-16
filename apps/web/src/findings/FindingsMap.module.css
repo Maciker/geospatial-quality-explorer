@@ -22,8 +22,9 @@
 
 .legend {
   display: flex;
-  gap: 0.75rem;
-  font-size: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
 }
 
 .legend span {
@@ -34,7 +35,8 @@
 
 .legendSource,
 .legendError,
-.legendWarning {
+.legendWarning,
+.legendSelected {
   width: 0.75rem;
   height: 0.75rem;
   display: inline-block;
@@ -51,6 +53,11 @@
 
 .legendWarning {
   background: #8a5a00;
+}
+
+.legendSelected {
+  background: #f5c542;
+  border-width: 2px;
 }
 
 .provenance {

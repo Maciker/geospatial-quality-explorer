@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import FindingsMap from "../findings/FindingsMap";
 import { toFindingMapFeatures, toSourceMapFeatures } from "../findings/mapFeatures";
@@ -23,6 +23,8 @@ import {
 import { shouldStickChatToBottom } from "./chatScroll";
 import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
+import { copyFindingId, errorAfterCopy } from "./copyFindingId";
+import { splitBreakableId } from "./formatBreakableId";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -48,10 +50,23 @@ export default function AlexaSimPanel() {
   const [cardsState, setCardsState] = useState<FindingCardsState>({ cards: [], selectedId: null });
   const findings = cardsState.cards;
   const selectedFindingId = cardsState.selectedId;
+  const clearCopyFeedback = () => {
+    if (copyFeedbackTimer.current) {
+      clearTimeout(copyFeedbackTimer.current);
+      copyFeedbackTimer.current = null;
+    }
+    setCopyFeedback(null);
+  };
+
   const selectFinding = (findingId: string) => {
     setCardsState((previous) => ({ ...previous, selectedId: findingId }));
+    clearCopyFeedback();
     setFitNonce((value) => value + 1);
   };
+
+  useEffect(() => () => {
+    if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+  }, []);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +76,11 @@ export default function AlexaSimPanel() {
   const [sourceHash, setSourceHash] = useState<string | null>(null);
   const [sourceLayer, setSourceLayer] = useState<AlexaFixtureSource | null>(null);
   const [fitNonce, setFitNonce] = useState(0);
+  /** The findingId whose copy just succeeded. */
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
+  const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const stickChatRef = useRef(true);
@@ -129,6 +147,7 @@ export default function AlexaSimPanel() {
     setLastQgisResponse(null);
     setConfirmedRunId(null);
     clearLayerState();
+    clearCopyFeedback();
     setError(null);
     setDraft("");
   }
@@ -351,7 +370,7 @@ export default function AlexaSimPanel() {
                 <strong>{finding.ruleId}</strong>
                 <div className={styles.cardMeta}>
                   {finding.severity} · featureId {finding.featureId}
-                  {isMissingGeometry(finding) ? " · sin geometría" : ""}
+                  {isMissingGeometry(finding) ? " · no geometry" : ""}
                 </div>
               </button>
             ))}
@@ -367,15 +386,34 @@ export default function AlexaSimPanel() {
                   type="button"
                   className={styles.detailCopy}
                   onClick={() => {
-                    void navigator.clipboard?.writeText(selected.findingId).catch(() => {
-                      setError("Could not copy findingId.");
+                    const copiedId = selected.findingId;
+                    void copyFindingId(navigator.clipboard, copiedId).then((result) => {
+                      setError((current) => errorAfterCopy(result, current));
+                      if (result !== "copied") return;
+                      clearCopyFeedback();
+                      setCopyFeedback(copiedId);
+                      copyFeedbackTimer.current = setTimeout(() => {
+                        copyFeedbackTimer.current = null;
+                        setCopyFeedback(null);
+                      }, 1600);
                     });
                   }}
                 >
-                  Copy findingId
+                  {copyFeedback === selected.findingId ? "Copied" : "Copy findingId"}
                 </button>
               </div>
-              <p className={styles.detailId}>findingId {selected.findingId}</p>
+              <p className={styles.detailId}>
+                findingId{" "}
+                {splitBreakableId(selected.findingId).map((part, index) => (
+                  <Fragment key={index}>
+                    {index > 0 ? <wbr /> : null}
+                    {part}
+                  </Fragment>
+                ))}
+              </p>
+              <p className={styles.copyLive} aria-live="polite">
+                {copyFeedback === selected.findingId ? "findingId copied to clipboard." : ""}
+              </p>
               <p>{selected.explanation}</p>
               <p>
                 Suggested action: {selected.suggestedAction}
