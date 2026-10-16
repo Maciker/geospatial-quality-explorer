@@ -31,7 +31,7 @@ export default function App() {
 
   return (
     <div className={mode === "alexa" ? styles.fixedShell : undefined}>
-      <nav style={{ display: "flex", gap: "0.75rem", padding: "0.75rem 1rem", borderBottom: "1px solid #ccd4cb" }}>
+      <nav className={styles.nav}>
         <button type="button" onClick={() => switchMode("review")} aria-current={mode === "review"}>
           Run review
         </button>
