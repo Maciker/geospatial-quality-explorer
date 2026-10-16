@@ -20,7 +20,7 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await page.getByRole("button", { name: "Send" }).click();
   const cards = page.getByLabel("Findings list").getByRole("button", { name: /(geometry|identifier)\./ });
   await expect(cards.first()).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByText(/sin geometría/)).toBeVisible();
+  await expect(page.getByText(/no geometry/)).toBeVisible();
 
   const map = page.getByLabel("Findings map");
   await expect(map.locator("canvas")).toBeVisible();

@@ -23,6 +23,7 @@ import {
 import { shouldStickChatToBottom } from "./chatScroll";
 import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
+import { formatBreakableId } from "./formatBreakableId";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
@@ -50,6 +51,7 @@ export default function AlexaSimPanel() {
   const selectedFindingId = cardsState.selectedId;
   const selectFinding = (findingId: string) => {
     setCardsState((previous) => ({ ...previous, selectedId: findingId }));
+    setCopyFeedback(null);
     setFitNonce((value) => value + 1);
   };
   const [draft, setDraft] = useState("");
@@ -61,8 +63,10 @@ export default function AlexaSimPanel() {
   const [sourceHash, setSourceHash] = useState<string | null>(null);
   const [sourceLayer, setSourceLayer] = useState<AlexaFixtureSource | null>(null);
   const [fitNonce, setFitNonce] = useState(0);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
+  const copyFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const stickChatRef = useRef(true);
@@ -351,7 +355,7 @@ export default function AlexaSimPanel() {
                 <strong>{finding.ruleId}</strong>
                 <div className={styles.cardMeta}>
                   {finding.severity} · featureId {finding.featureId}
-                  {isMissingGeometry(finding) ? " · sin geometría" : ""}
+                  {isMissingGeometry(finding) ? " · no geometry" : ""}
                 </div>
               </button>
             ))}
@@ -367,15 +371,22 @@ export default function AlexaSimPanel() {
                   type="button"
                   className={styles.detailCopy}
                   onClick={() => {
-                    void navigator.clipboard?.writeText(selected.findingId).catch(() => {
+                    void navigator.clipboard?.writeText(selected.findingId).then(() => {
+                      if (copyFeedbackTimer.current) clearTimeout(copyFeedbackTimer.current);
+                      setCopyFeedback("Copied");
+                      copyFeedbackTimer.current = setTimeout(() => setCopyFeedback(null), 1600);
+                    }).catch(() => {
                       setError("Could not copy findingId.");
                     });
                   }}
                 >
-                  Copy findingId
+                  {copyFeedback === "Copied" ? "Copied" : "Copy findingId"}
                 </button>
               </div>
-              <p className={styles.detailId}>findingId {selected.findingId}</p>
+              <p className={styles.detailId}>findingId {formatBreakableId(selected.findingId)}</p>
+              <p className={styles.copyLive} aria-live="polite">
+                {copyFeedback === "Copied" ? "findingId copied to clipboard." : ""}
+              </p>
               <p>{selected.explanation}</p>
               <p>
                 Suggested action: {selected.suggestedAction}

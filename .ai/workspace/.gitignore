@@ -32,3 +32,6 @@ tasks/*
 # MAC-403 Emil GIS UI handoff (2026-10-16).
 !tasks/mac-403-emil-gis-ui/
 !tasks/mac-403-emil-gis-ui/**
+# MAC-413 QA UI fixes handoff (2026-10-16).
+!tasks/mac-413-qa-ui-fixes/
+!tasks/mac-413-qa-ui-fixes/**

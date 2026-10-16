@@ -92,9 +92,26 @@ function isPolygonGeometry(value: unknown): value is GeoJsonGeometry {
   return type === "Polygon" || type === "MultiPolygon";
 }
 
+/** Mainland / near-Europe envelope used only for map framing (display GeoJSON stays intact). */
+const MAINLAND_EUROPE_FIT = {
+  west: -25,
+  south: 34,
+  east: 35,
+  north: 72,
+} as const;
+
+type LonLatBounds = {
+  readonly west: number;
+  readonly south: number;
+  readonly east: number;
+  readonly north: number;
+};
+
 /**
  * Prefer finding overlays for the initial fit so overseas territories in the
  * source layer (e.g. French Guiana on FRA) do not pull Europe out of frame.
+ * When only the source layer is present, drop multipolygon parts outside the
+ * mainland-Europe envelope (fit-only; source paint still shows full geometry).
  */
 export function featuresForFit(
   sourceFeatures: readonly SourceMapFeature[],
@@ -106,5 +123,45 @@ export function featuresForFit(
     if (selected) return [selected];
   }
   if (findingFeatures.length > 0) return findingFeatures;
-  return sourceFeatures;
+  return sourceFeatures.map((feature) => ({
+    geometry: clipGeometryToMainlandFit(feature.geometry),
+  }));
+}
+
+/** Expand a selected-finding bbox so fitBounds keeps regional context (not only the bowtie edge). */
+export function padBoundsForSelection(bounds: LonLatBounds, padDegrees: number): LonLatBounds {
+  return {
+    west: bounds.west - padDegrees,
+    south: bounds.south - padDegrees,
+    east: bounds.east + padDegrees,
+    north: bounds.north + padDegrees,
+  };
+}
+
+function clipGeometryToMainlandFit(geometry: GeoJsonGeometry): GeoJsonGeometry | null {
+  if (geometry.type === "Polygon") {
+    return polygonIntersectsMainland(geometry.coordinates) ? geometry : null;
+  }
+  const kept = geometry.coordinates.filter((polygon) => polygonIntersectsMainland(polygon));
+  if (kept.length === 0) return null;
+  if (kept.length === 1) return { type: "Polygon", coordinates: kept[0]! };
+  return { type: "MultiPolygon", coordinates: kept };
+}
+
+function polygonIntersectsMainland(rings: readonly (readonly (readonly number[])[])[]): boolean {
+  for (const ring of rings) {
+    for (const position of ring) {
+      const lon = position[0] ?? 0;
+      const lat = position[1] ?? 0;
+      if (
+        lon >= MAINLAND_EUROPE_FIT.west
+        && lon <= MAINLAND_EUROPE_FIT.east
+        && lat >= MAINLAND_EUROPE_FIT.south
+        && lat <= MAINLAND_EUROPE_FIT.north
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

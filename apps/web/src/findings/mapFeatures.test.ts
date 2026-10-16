@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { featuresForFit, toFindingMapFeatures, toSourceMapFeatures } from "./mapFeatures";
+import {
+  featuresForFit,
+  padBoundsForSelection,
+  toFindingMapFeatures,
+  toSourceMapFeatures,
+} from "./mapFeatures";
 
 const samplePolygon = {
   type: "Polygon" as const,
@@ -70,7 +75,53 @@ describe("mapFeatures", () => {
     ]);
     expect(featuresForFit(source, findings, null)).toEqual(findings);
     expect(featuresForFit(source, findings, "run:0:geometry.invalid")).toEqual([findings[0]]);
-    expect(featuresForFit(source, [], null)).toEqual(source);
+  });
+
+  it("drops overseas multipolygon parts when fitting the source layer alone", () => {
+    const source = toSourceMapFeatures({
+      features: [
+        {
+          id: "FRA",
+          properties: { NAME: "France" },
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: [
+              [[[-5, 42], [8, 42], [8, 51], [-5, 51], [-5, 42]]],
+              [[[-55, 2], [-50, 2], [-50, 6], [-55, 6], [-55, 2]]],
+            ],
+          },
+        },
+        {
+          id: "NOR",
+          properties: { NAME: "Norway" },
+          geometry: {
+            type: "MultiPolygon",
+            coordinates: [
+              [[[5, 58], [12, 58], [12, 64], [5, 64], [5, 58]]],
+              [[[15, 77], [25, 77], [25, 80], [15, 80], [15, 77]]],
+            ],
+          },
+        },
+      ],
+    });
+    const forFit = featuresForFit(source, [], null);
+    expect(forFit).toHaveLength(2);
+    const lons = forFit.flatMap((feature) => {
+      const geometry = feature.geometry;
+      if (!geometry) return [] as number[];
+      const rings = geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+      return rings.flatMap((ring) => ring.map((position) => position[0] ?? 0));
+    });
+    expect(Math.min(...lons)).toBeGreaterThan(-20);
+    expect(Math.max(...lons)).toBeLessThan(40);
+  });
+
+  it("pads a selected finding bbox so Explain/select keep regional context", () => {
+    const padded = padBoundsForSelection(
+      { west: -9.5, south: 38.5, east: -7.5, north: 40.5 },
+      2,
+    );
+    expect(padded).toEqual({ west: -11.5, south: 36.5, east: -5.5, north: 42.5 });
   });
 
   it("keeps source feature ids distinct per row index", () => {
