@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   featuresForFit,
+  hasSelectedOverlay,
   padBoundsForSelection,
   toFindingMapFeatures,
   toSourceMapFeatures,
@@ -121,13 +122,44 @@ describe("mapFeatures", () => {
     expect(source.every((feature) => feature.geometry.type === "MultiPolygon")).toBe(true);
   });
 
-  it("falls back to the full source layer when nothing lies in the mainland envelope", () => {
+  it("keeps features that lie wholly outside the mainland envelope", () => {
+    const americas = {
+      type: "Polygon" as const,
+      coordinates: [[[-80, -10], [-60, -10], [-60, 10], [-80, 10], [-80, -10]]],
+    };
     const source = toSourceMapFeatures({
-      features: [{ id: "a", properties: {}, geometry: samplePolygon }],
+      features: [
+        { id: "a", properties: {}, geometry: samplePolygon },
+        { id: "b", properties: {}, geometry: americas },
+        { id: "c", properties: {}, geometry: { type: "Polygon", coordinates: [[[0, 40], [5, 40], [5, 45], [0, 40]]] } },
+      ],
     });
-    const forFit = featuresForFit(source, [], null);
-    expect(forFit).toHaveLength(1);
-    expect(forFit[0]?.geometry).toEqual(samplePolygon);
+    expect(featuresForFit(source, [], null).map((feature) => feature.geometry)).toEqual(
+      source.map((feature) => feature.geometry),
+    );
+  });
+
+  it("keeps a part that encloses the envelope without a vertex inside it", () => {
+    const enclosing = {
+      type: "MultiPolygon" as const,
+      coordinates: [
+        [[[-60, 10], [60, 10], [60, 80], [-60, 80], [-60, 10]]],
+        [[[-55, 2], [-50, 2], [-50, 6], [-55, 6], [-55, 2]]],
+      ],
+    };
+    const source = toSourceMapFeatures({ features: [{ id: "big", properties: {}, geometry: enclosing }] });
+    const [fit] = featuresForFit(source, [], null);
+    expect(fit?.geometry).toEqual({ type: "Polygon", coordinates: enclosing.coordinates[0] });
+  });
+
+  it("reports a selected overlay only when that finding is drawn", () => {
+    const [drawn] = toFindingMapFeatures([{
+      findingId: "run:0:x", ruleId: "x", featureId: "f", severity: "error",
+      explanation: "a", suggestedAction: "b", geometry: samplePolygon,
+    }]);
+    expect(hasSelectedOverlay([drawn!], "run:0:x")).toBe(true);
+    expect(hasSelectedOverlay([drawn!], "run:1:y")).toBe(false);
+    expect(hasSelectedOverlay([drawn!], null)).toBe(false);
   });
 
   it("pads a selected finding bbox so Explain/select keep regional context", () => {

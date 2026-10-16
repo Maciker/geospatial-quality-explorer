@@ -110,8 +110,8 @@ type LonLatBounds = {
 /**
  * Prefer finding overlays for the initial fit so overseas territories in the
  * source layer (e.g. French Guiana on FRA) do not pull Europe out of frame.
- * When only the source layer is present, drop multipolygon parts outside the
- * mainland-Europe envelope (fit-only; source paint still shows full geometry).
+ * When only the source layer is present, drop outlying multipolygon parts of features that
+ * also have a part in mainland Europe (fit-only; source paint still shows full geometry).
  */
 export function featuresForFit(
   sourceFeatures: readonly SourceMapFeature[],
@@ -123,13 +123,18 @@ export function featuresForFit(
     if (selected) return [selected];
   }
   if (findingFeatures.length > 0) return findingFeatures;
-  const clipped = sourceFeatures.map((feature) => ({
-    geometry: clipGeometryToMainlandFit(feature.geometry),
+  return sourceFeatures.map((feature) => ({
+    geometry: clipOutlyingParts(feature.geometry),
   }));
-  // Synthetic fixtures sit outside Europe: clipping everything would leave no framing at all.
-  return clipped.some((feature) => feature.geometry !== null)
-    ? clipped
-    : sourceFeatures.map((feature) => ({ geometry: feature.geometry }));
+}
+
+/** True when the selected finding has a polygon overlay that is actually drawn on the map. */
+export function hasSelectedOverlay(
+  findingFeatures: readonly FindingMapFeature[],
+  selectedFindingId: string | null,
+): boolean {
+  return selectedFindingId != null
+    && findingFeatures.some((feature) => feature.properties.findingId === selectedFindingId);
 }
 
 /** Expand a selected-finding bbox so fitBounds keeps regional context (not only the bowtie edge). */
@@ -142,30 +147,37 @@ export function padBoundsForSelection(bounds: LonLatBounds, padDegrees: number):
   };
 }
 
-function clipGeometryToMainlandFit(geometry: GeoJsonGeometry): GeoJsonGeometry | null {
-  if (geometry.type === "Polygon") {
-    return polygonIntersectsMainland(geometry.coordinates) ? geometry : null;
-  }
-  const kept = geometry.coordinates.filter((polygon) => polygonIntersectsMainland(polygon));
-  if (kept.length === 0) return null;
+/**
+ * Drops multipolygon parts outside the mainland envelope, but only for a feature that also has a part
+ * inside it. A feature wholly outside (another continent, a synthetic fixture) keeps its full geometry,
+ * so the fit never goes empty or loses non-European features.
+ */
+function clipOutlyingParts(geometry: GeoJsonGeometry): GeoJsonGeometry {
+  if (geometry.type === "Polygon") return geometry;
+  const kept = geometry.coordinates.filter((polygon) => polygonOverlapsMainland(polygon));
+  if (kept.length === 0 || kept.length === geometry.coordinates.length) return geometry;
   if (kept.length === 1) return { type: "Polygon", coordinates: kept[0]! };
   return { type: "MultiPolygon", coordinates: kept };
 }
 
-function polygonIntersectsMainland(rings: readonly (readonly (readonly number[])[])[]): boolean {
+/** Bounding-box overlap, so a polygon that encloses the envelope without a vertex inside still counts. */
+function polygonOverlapsMainland(rings: readonly (readonly (readonly number[])[])[]): boolean {
+  let west = Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let north = -Infinity;
   for (const ring of rings) {
     for (const position of ring) {
       const lon = position[0] ?? 0;
       const lat = position[1] ?? 0;
-      if (
-        lon >= MAINLAND_EUROPE_FIT.west
-        && lon <= MAINLAND_EUROPE_FIT.east
-        && lat >= MAINLAND_EUROPE_FIT.south
-        && lat <= MAINLAND_EUROPE_FIT.north
-      ) {
-        return true;
-      }
+      west = Math.min(west, lon);
+      east = Math.max(east, lon);
+      south = Math.min(south, lat);
+      north = Math.max(north, lat);
     }
   }
-  return false;
+  return west <= MAINLAND_EUROPE_FIT.east
+    && east >= MAINLAND_EUROPE_FIT.west
+    && south <= MAINLAND_EUROPE_FIT.north
+    && north >= MAINLAND_EUROPE_FIT.south;
 }
