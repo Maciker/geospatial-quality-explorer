@@ -32,7 +32,8 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
 
   const invalidCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.invalid/ });
   await invalidCard.click();
-  await expect(page.getByLabel("Finding detail")).toContainText(/findingId [a-f0-9]{64}:\d+:geometry\.invalid/);
+  const detailText = (await page.getByLabel("Finding detail").innerText()).replace(/\u200b/g, "");
+  expect(detailText).toMatch(/findingId [a-f0-9]{64}:\d+:geometry\.invalid/);
 
   await page.getByRole("button", { name: "Explain selected finding" }).click();
   const assistant = page.getByLabel("Alexa simulation chat").locator("[data-role='assistant']");
