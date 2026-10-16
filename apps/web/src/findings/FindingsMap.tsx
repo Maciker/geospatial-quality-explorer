@@ -10,6 +10,7 @@ import {
   type FindingMapFeature,
   type SourceMapFeature,
 } from "./mapFeatures";
+import { planBasemap, resolveBasemapStyleUrl } from "./basemap";
 import styles from "./FindingsMap.module.css";
 
 type Props = {
@@ -51,6 +52,8 @@ export default function FindingsMap(props: Props) {
           map.resize();
         });
     resizeObserver?.observe(element);
+    const basemapAbort = new AbortController();
+    element.dataset.basemap = "off";
     map.on("load", () => {
       map.addSource("source-layer", { type: "geojson", data: emptyCollection() });
       map.addSource("findings", { type: "geojson", data: emptyCollection() });
@@ -112,9 +115,11 @@ export default function FindingsMap(props: Props) {
         const findingId = event.features?.[0]?.properties?.findingId;
         if (typeof findingId === "string") onSelect.current(findingId);
       });
+      void addBasemap(map, element, resolveBasemapStyleUrl(import.meta.env.VITE_BASEMAP_STYLE_URL), basemapAbort.signal);
     });
     mapRef.current = map;
     return () => {
+      basemapAbort.abort();
       resizeObserver?.disconnect();
       map.remove();
       mapRef.current = null;
@@ -245,6 +250,45 @@ function fitToLayers(
     return;
   }
   map.fitBounds(bounds, { padding: 36, maxZoom: 5 });
+}
+
+const BASEMAP_TIMEOUT_MS = 6000;
+
+/**
+ * Adds the vector basemap below the source and finding layers. Any failure (offline, provider down,
+ * unexpected JSON) leaves the plain background, so findings stay usable.
+ */
+async function addBasemap(
+  map: maplibregl.Map,
+  element: HTMLElement,
+  styleUrl: string | null,
+  signal: AbortSignal,
+): Promise<void> {
+  if (!styleUrl) return;
+  const addedSources: string[] = [];
+  const addedLayers: string[] = [];
+  try {
+    const response = await fetch(styleUrl, { signal: AbortSignal.any([signal, AbortSignal.timeout(BASEMAP_TIMEOUT_MS)]) });
+    if (!response.ok) return;
+    const plan = planBasemap(await response.json());
+    if (!plan || signal.aborted) return;
+    for (const source of plan.sources) {
+      map.addSource(source.id, source.spec);
+      addedSources.push(source.id);
+    }
+    if (plan.glyphs) map.setGlyphs(plan.glyphs);
+    if (plan.sprite) map.setSprite(plan.sprite);
+    for (const layer of plan.layers) {
+      map.addLayer(layer, "source-fill");
+      addedLayers.push(layer.id);
+    }
+    element.dataset.basemap = "on";
+  } catch {
+    // Keep the plain background; drop whatever was added before the failure.
+    if (!map.getStyle()) return;
+    for (const id of addedLayers) if (map.getLayer(id)) map.removeLayer(id);
+    for (const id of addedSources) if (map.getSource(id)) map.removeSource(id);
+  }
 }
 
 function extendBounds(bounds: maplibregl.LngLatBounds, geometry: GeoJsonGeometry | null): void {

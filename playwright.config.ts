@@ -23,7 +23,7 @@ export default defineConfig({
       },
     },
     {
-      command: "pnpm --filter geospatial-quality-explorer-web build && pnpm --filter geospatial-quality-explorer-web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+      command: "VITE_BASEMAP_STYLE_URL=http://127.0.0.1:4173/__e2e/basemap-style.json pnpm --filter geospatial-quality-explorer-web build && pnpm --filter geospatial-quality-explorer-web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
       url: "http://127.0.0.1:4173",
       timeout: 60_000,
     },
