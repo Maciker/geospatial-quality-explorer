@@ -1,7 +1,9 @@
+import { readFixtureSource } from "../../../alexa-tools/src/infrastructure/readFixtureSource.js";
 import { ConversationalLoop } from "../application/ConversationalLoop.js";
 import type { AlexaSimChatRequest, ChatMessage } from "../domain/chatTypes.js";
 import { createBoundedQualityToolsAdapter } from "./createToolsAdapter.js";
 import { createLlmClient } from "./createLlmClient.js";
+import { defaultVectorFixturesDirectory } from "./fixturesDirectory.js";
 import { FixedWindowRateLimiter } from "./FixedWindowRateLimiter.js";
 import { LlmUnavailableError } from "./NanOpenAiLlmClient.js";
 import { corsHeadersForRequest, readAlexaSimCorsOrigins } from "./parseCorsOrigins.js";
@@ -55,16 +57,35 @@ export async function handleAlexaSimHttp(
     response.status(200).end(JSON.stringify({ status: "ok", service: "alexa-sim", llmMode: currentLlmMode() }));
     return;
   }
+  const fixtureSourceMatch = /^\/api\/v1\/alexa-sim\/fixtures\/([^/]+)\/source$/.exec(pathname);
+  if (request.method === "GET" && fixtureSourceMatch) {
+    if (rejectIfRateLimited(request, response, options.rateLimiter ?? sharedRateLimiter)) return;
+    let fixtureId: string;
+    try {
+      fixtureId = decodeURIComponent(fixtureSourceMatch[1] ?? "");
+    } catch {
+      response.status(400).end(JSON.stringify({
+        error: "invalid_request",
+        message: "Fixture id is not valid percent-encoding.",
+      }));
+      return;
+    }
+    const result = readFixtureSource(defaultVectorFixturesDirectory(), fixtureId);
+    if ("error" in result) {
+      response.status(result.error === "not_found" ? 404 : 400).end(JSON.stringify({
+        error: result.error,
+        message: result.message,
+      }));
+      return;
+    }
+    response.status(200).end(JSON.stringify(result));
+    return;
+  }
   if (request.method !== "POST" || !pathname.endsWith("/chat")) {
     response.status(405).end(JSON.stringify({ error: "method_not_allowed" }));
     return;
   }
-  const decision = (options.rateLimiter ?? sharedRateLimiter).take(clientKey(request));
-  if (!decision.allowed) {
-    response.setHeader("Retry-After", String(decision.retryAfterSeconds));
-    response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
-    return;
-  }
+  if (rejectIfRateLimited(request, response, options.rateLimiter ?? sharedRateLimiter)) return;
   const body = request.body ?? "{}";
   if (Buffer.byteLength(body, "utf8") > ALEXA_SIM_LIMITS.maxBodyBytes) {
     response.status(413).end(JSON.stringify({ error: "too_large", message: `Requests are limited to ${ALEXA_SIM_LIMITS.maxBodyBytes} bytes.` }));
@@ -136,6 +157,19 @@ function parseChatRequest(raw: unknown): AlexaSimChatRequest | string {
 /** Disclosed to the UI so a demo never passes the deterministic mock off as a live model. */
 function currentLlmMode(): "mock" | "live" {
   return readNanLlmConfig().useMockLlm ? "mock" : "live";
+}
+
+/** Returns true when the response was already written for a 429. */
+function rejectIfRateLimited(
+  request: HttpLikeRequest,
+  response: HttpLikeResponse,
+  rateLimiter: FixedWindowRateLimiter,
+): boolean {
+  const decision = rateLimiter.take(clientKey(request));
+  if (decision.allowed) return false;
+  response.setHeader("Retry-After", String(decision.retryAfterSeconds));
+  response.status(429).end(JSON.stringify({ error: "rate_limited", message: "Too many requests. Try again shortly." }));
+  return true;
 }
 
 function clientKey(request: HttpLikeRequest): string {

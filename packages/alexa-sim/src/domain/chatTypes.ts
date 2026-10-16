@@ -33,6 +33,10 @@ export type AlexaSimChatResponse = {
   readonly assistantMessage: string;
   readonly findings: readonly CitedFindingCard[];
   readonly runId: string | null;
+  /** Catalog fixture id / dataset name from the active validation run, when known. */
+  readonly datasetName: string | null;
+  /** SHA-256 of the validated fixture bytes, when known. */
+  readonly sourceHash: string | null;
   readonly refused: boolean;
   readonly qgisExport: QgisExportArtifact | null;
 };

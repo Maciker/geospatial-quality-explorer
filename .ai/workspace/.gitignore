@@ -8,6 +8,7 @@ findings/
 qa/inputs/
 qa/outputs/
 qa/reports/
+pr-reviews/
 loop/
 repo-analysis/*
 !repo-analysis/.gitkeep
@@ -25,3 +26,6 @@ tasks/*
 # MAC-401 Natural Earth sample handoff (2026-10-15).
 !tasks/mac-401-real-gis-sample/
 !tasks/mac-401-real-gis-sample/**
+# MAC-402 map source layer handoff (2026-10-15).
+!tasks/mac-402-map-source-layer/
+!tasks/mac-402-map-source-layer/**

@@ -2,7 +2,10 @@ import type { ChatMessage } from "../domain/chatTypes.js";
 import type { LlmCompletionRequest, LlmCompletionResponse, LlmPort } from "../application/LlmPort.js";
 import { catalogFixtureFromValidateCommand } from "../application/sessionRecovery.js";
 
-const FINDING_ID = /[a-f0-9]{64}:\d+:[a-z0-9_.]+[a-z0-9_]/g;
+/** Finding id: 64-hex run, index, dotted ruleId — never swallows sentence punctuation. */
+const FINDING_ID = /[a-f0-9]{64}:\d+:[a-z0-9_]+(?:\.[a-z0-9_]+)*/g;
+const EXPLAIN_FINDING_COMMAND =
+  /explain\s+finding\s+([a-f0-9]{64}:\d+:[a-z0-9_]+(?:\.[a-z0-9_]+)*)/;
 
 function lastUserText(messages: readonly ChatMessage[]): string {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
@@ -89,6 +92,16 @@ export class DeterministicMockLlm implements LlmPort {
     }
     if (user.includes("list") && user.includes("finding")) {
       return toolCall("tc_list", "list_findings", { sessionId: sessionId ?? "", limit: 5 });
+    }
+    const explicitFinding = user.match(EXPLAIN_FINDING_COMMAND);
+    if (explicitFinding?.[1]) {
+      if (/\b(?:don't|dont|do not|not|never|no need|stop|without|instead of|yet)\b/.test(user)) {
+        return textReply(HELP_TEXT);
+      }
+      return toolCall("tc_explain_selected", "explain_finding", {
+        sessionId: sessionId ?? "",
+        findingId: explicitFinding[1],
+      });
     }
     if (user.includes("next one") || user.includes("next finding") || (user.includes("explain") && user.includes("next"))) {
       const next = nextFindingId(request.messages);

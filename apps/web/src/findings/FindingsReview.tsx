@@ -108,7 +108,17 @@ export default function FindingsReview(props: { search: string; onSearch: (searc
             />
             <div>
               <FindingsMap
-                features={screen.page.features.filter((feature) => feature.geometry !== null)}
+                sourceFeatures={[]}
+                findingFeatures={screen.page.features
+                  .filter((feature) => feature.geometry !== null)
+                  .map((feature) => ({
+                    ...feature,
+                    id: feature.properties.findingId,
+                    properties: { ...feature.properties, role: "finding-overlay" as const, hasGeometry: true },
+                  }))}
+                selectedFindingId={screen.selectedId}
+                fitNonce={0}
+                provenanceLabel={null}
                 onSelect={(findingId) => setScreen({ ...screen, selectedId: findingId })}
               />
               <FindingDetail feature={selected} />

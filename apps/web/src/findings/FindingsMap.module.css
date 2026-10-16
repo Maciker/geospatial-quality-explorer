@@ -1,5 +1,57 @@
+.mapShell {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legend {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legendSource,
+.legendError,
+.legendWarning {
+  width: 0.75rem;
+  height: 0.75rem;
+  display: inline-block;
+  border: 1px solid #10221a;
+}
+
+.legendSource {
+  background: #f4f0e6;
+}
+
+.legendError {
+  background: #9b2c2c;
+}
+
+.legendWarning {
+  background: #8a5a00;
+}
+
+.provenance {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #3a463c;
+}
+
 .map {
   height: 420px;
   border: 1px solid #c6cec4;
-  background: #d7e0d8;
+  background: #c5d4e0;
 }
