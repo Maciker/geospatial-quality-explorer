@@ -180,10 +180,10 @@ export default function FindingsMap(props: Props) {
           <span><i className={styles.legendError} /> Error</span>
           <span><i className={styles.legendWarning} /> Warning</span>
         </div>
+        <p className={styles.provenance} aria-label="Layer provenance">
+          {props.provenanceLabel ?? "No layer loaded yet."}
+        </p>
       </div>
-      {props.provenanceLabel && (
-        <p className={styles.provenance} aria-label="Layer provenance">{props.provenanceLabel}</p>
-      )}
       <div
         ref={container}
         className={`${styles.map}${props.standaloneHeight ? ` ${styles.mapStandalone}` : ""}`}

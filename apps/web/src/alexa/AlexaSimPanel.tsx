@@ -190,12 +190,9 @@ export default function AlexaSimPanel() {
   useEffect(() => {
     const scroller = messagesRef.current;
     if (!scroller || !stickChatRef.current) return;
-    const reduceMotion = typeof window !== "undefined"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    scroller.scrollTo({
-      top: scroller.scrollHeight,
-      behavior: reduceMotion ? "auto" : "smooth",
-    });
+    // Instant jump so scroll events from a smooth animation cannot clear stick
+    // before the assistant reply is painted.
+    scroller.scrollTop = scroller.scrollHeight;
   }, [messages]);
 
   async function sendMessage(text: string): Promise<void> {
@@ -272,6 +269,7 @@ export default function AlexaSimPanel() {
               type="button"
               onClick={() => {
                 if (!selectedFindingId) return;
+                stickChatRef.current = true;
                 void sendMessage(`Explain finding ${selectedFindingId}.`);
               }}
               disabled={!canExplain}
@@ -396,6 +394,7 @@ export default function AlexaSimPanel() {
             className={styles.messages}
             ref={messagesRef}
             onScroll={(event) => {
+              if (!event.isTrusted) return;
               stickChatRef.current = shouldStickChatToBottom(event.currentTarget);
             }}
           >
