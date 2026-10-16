@@ -1,9 +1,34 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { readNanLlmConfig } from "../packages/alexa-sim/src/infrastructure/readNanLlmConfig.js";
 
 test.beforeAll(() => {
   expect(readNanLlmConfig().useMockLlm).toBe(true);
 });
+
+const fixturesDirectory = join(process.cwd(), "packages/quality/fixtures/vector");
+const datasetName = "ne-admin0-westeurope-demo-errors";
+
+/** Serves the real fixture from disk so the layout does not depend on the rate-limited fixture endpoint. */
+async function stubFixtureSource(page: Page): Promise<void> {
+  const bytes = readFileSync(join(fixturesDirectory, `${datasetName}.geojson`));
+  const sidecar = JSON.parse(readFileSync(join(fixturesDirectory, `${datasetName}.fixture.json`), "utf8")) as Record<string, string>;
+  const body = JSON.stringify({
+    fixtureId: datasetName,
+    label: sidecar.label,
+    license: sidecar.license,
+    sourceCrs: sidecar.defaultSourceCrs,
+    sourceHash: createHash("sha256").update(bytes).digest("hex"),
+    origin: sidecar.origin,
+    transformation: sidecar.transformation,
+    scaleNote: sidecar.scaleNote,
+    didacticNote: sidecar.didacticNote,
+    collection: JSON.parse(bytes.toString("utf8")),
+  });
+  await page.route("**/api/v1/alexa-sim/fixtures/*/source", (route) => route.fulfill({ status: 200, contentType: "application/json", body }));
+}
 
 const runId = "8420b6be93973000852ec044f3a1598469e520a87f8028b8134764da67f8d63d";
 const longFeatureId = "urn:ine:es:municipio:22125:seccion:2212501001:distrito:01";
@@ -21,14 +46,15 @@ function finding(index: number, ruleId: string, featureId: string) {
 }
 
 /** Loads the demo-errors dataset through a stubbed chat reply so the layout is tested with a long provenance note and cards. */
-async function openWithFindings(page: Page, featureId: string): Promise<void> {
+async function openWithFindings(page: Page, featureId: string, extraFindings = 0): Promise<void> {
+  await stubFixtureSource(page);
   await page.route("**/api/v1/alexa-sim/chat", (route) => route.fulfill({
     status: 200,
     contentType: "application/json",
     body: JSON.stringify({
       sessionId: "layout-session-0001",
       runId,
-      datasetName: "ne-admin0-westeurope-demo-errors",
+      datasetName,
       sourceHash: "bfe80be1c8f795a81f429fab62a2dc94ba9c43f61e466d9322e4718d28c8b4a6",
       refused: false,
       qgisExport: null,
@@ -39,6 +65,7 @@ async function openWithFindings(page: Page, featureId: string): Promise<void> {
         finding(2, "identifier.duplicate", featureId),
         finding(3, "geometry.empty", "DEMO-EMPTY"),
         finding(4, "geometry.invalid", "PRT"),
+        ...Array.from({ length: extraFindings }, (_, index) => finding(5 + index, "identifier.duplicate", `${featureId}-${5 + index}`)),
       ],
     }),
   }));
@@ -117,6 +144,33 @@ for (const [width, height] of shortSizes) {
     await page.setViewportSize({ width, height });
     await openWithFindings(page, "ESP");
     await expectUsable(page);
+  });
+}
+
+// The viewport-locked and the unlocked layouts both have to cope with the 20 findings a list can return.
+// 620/621 and 700/701 are the seams of the unlock media query.
+const crowdedSizes = [[933, 600], [1100, 700], [1100, 701], [1440, 620], [1440, 621]] as const;
+
+for (const [width, height] of crowdedSizes) {
+  test(`20 findings at ${width}x${height} keep the list, the map and the page bounded`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await openWithFindings(page, "ESP", 16);
+    const b = await expectUsable(page);
+    expect(b.map.height).toBeLessThanOrEqual(1000);
+    const cards = await box(page.locator("[class*=cards]"));
+    expect(cards.height).toBeLessThanOrEqual(260);
+    expect(cards.height).toBeGreaterThanOrEqual(56);
+  });
+}
+
+for (const [width, height] of [[1440, 900], [390, 844]] as const) {
+  test(`review mode keeps its 420px map at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto(`/?run=${readFileSync("/tmp/geospatial-quality-explorer-run-id", "utf8").trim()}`);
+    await expect(page.getByLabel("Findings map").locator("canvas")).toBeVisible();
+    const map = await box(page.getByLabel("Findings map"));
+    expect(map.height).toBeGreaterThanOrEqual(410);
+    expect(map.height).toBeLessThanOrEqual(430);
   });
 }
 
