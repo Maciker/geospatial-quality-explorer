@@ -6,6 +6,7 @@ test.beforeAll(() => {
 });
 
 test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected finding", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/?sim=alexa");
   await expect(page.getByRole("note")).toContainText("Simulation of Alexa+ — not an Amazon product");
 
@@ -17,24 +18,27 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
 
   await page.getByLabel("Message Alexa simulation").fill("List the findings.");
   await page.getByRole("button", { name: "Send" }).click();
-  const cards = page.getByLabel("Finding cards and map").getByRole("button", { name: /(geometry|identifier)\./ });
+  const cards = page.getByLabel("Findings list").getByRole("button", { name: /(geometry|identifier)\./ });
   await expect(cards.first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/sin geometría/)).toBeVisible();
 
-  const emptyCard = page.getByLabel("Finding cards and map").getByRole("button", { name: /geometry\.empty/ });
+  const map = page.getByLabel("Findings map");
+  await expect(map.locator("canvas")).toBeVisible();
+  await expect(map).toBeInViewport();
+
+  const emptyCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.empty/ });
   await emptyCard.click();
   await expect(page.getByLabel("Finding detail")).toContainText("no geometry");
 
-  const invalidCard = page.getByLabel("Finding cards and map").getByRole("button", { name: /geometry\.invalid/ });
+  const invalidCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.invalid/ });
   await invalidCard.click();
-  await expect(invalidCard.getByText(/findingId [a-f0-9]{64}:\d+:geometry\.invalid/)).toBeVisible();
+  await expect(page.getByLabel("Finding detail")).toContainText(/findingId [a-f0-9]{64}:\d+:geometry\.invalid/);
 
   await page.getByRole("button", { name: "Explain selected finding" }).click();
   const assistant = page.getByLabel("Alexa simulation chat").locator("[data-role='assistant']");
-  await expect(assistant.filter({ hasText: /geometry\.invalid/ }).last()).toBeVisible({
-    timeout: 30_000,
-  });
-  await expect(assistant.filter({ hasText: /findingId [a-f0-9]{64}:\d+:geometry\.invalid/ }).last()).toBeVisible();
+  const explained = assistant.filter({ hasText: /findingId [a-f0-9]{64}:\d+:geometry\.invalid/ }).last();
+  await expect(explained).toBeVisible({ timeout: 30_000 });
+  await expect(explained).toBeInViewport();
 
   await page.getByLabel("Message Alexa simulation").fill("Export QGIS.");
   await page.getByRole("button", { name: "Send" }).click();
@@ -45,11 +49,9 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await page.getByRole("button", { name: "Download last QGIS bundle" }).click();
   expect((await download).suggestedFilename()).toMatch(/^qgis-[a-f0-9]{8}\.zip$/);
 
-  const map = page.getByLabel("Findings map");
-  await expect(map.locator("canvas")).toBeVisible();
   await expect(page.getByLabel("Layer provenance")).toContainText("NaturalEarth-public-domain");
   await expect(page.getByLabel("Layer provenance")).toContainText("EPSG:4326");
   await map.screenshot({
-    path: "apps/web/test-results/mac-402-ne-demo-errors-map.png",
+    path: "apps/web/test-results/mac-403-ne-demo-errors-map.png",
   });
 });

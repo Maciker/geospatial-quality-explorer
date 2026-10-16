@@ -1,6 +1,9 @@
 .mapShell {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 0.4rem;
+  height: 100%;
+  min-height: 0;
 }
 
 .toolbar {
@@ -51,7 +54,9 @@
 }
 
 .map {
-  height: 420px;
+  height: 100%;
+  /* Standalone review page has no sized parent; Alexa shell fills this via the map region. */
+  min-height: 420px;
   border: 1px solid #c6cec4;
   background: #c5d4e0;
 }

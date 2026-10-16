@@ -37,6 +37,12 @@ export default function FindingsMap(props: Props) {
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    const resizeObserver = typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => {
+          map.resize();
+        });
+    resizeObserver?.observe(element);
     map.on("load", () => {
       map.addSource("source-layer", { type: "geojson", data: emptyCollection() });
       map.addSource("findings", { type: "geojson", data: emptyCollection() });
@@ -96,6 +102,7 @@ export default function FindingsMap(props: Props) {
     });
     mapRef.current = map;
     return () => {
+      resizeObserver?.disconnect();
       map.remove();
       mapRef.current = null;
     };
