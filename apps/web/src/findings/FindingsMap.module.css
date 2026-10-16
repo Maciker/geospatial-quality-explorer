@@ -59,6 +59,11 @@
   font-size: 0.8rem;
   color: #3a463c;
   overflow-wrap: anywhere;
+  /* A parent can set --provenance-lines to clamp the note visually; the full text stays in the DOM and the title. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--provenance-lines, none);
+  overflow: hidden;
 }
 
 .map {
