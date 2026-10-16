@@ -6,12 +6,19 @@ const TILE_PATTERN = `${E2E_BASEMAP_TILES}/**`;
 /** A vector style served locally, so the suite never reaches a third-party tile host. */
 const stubStyle = {
   version: 8,
+  // A symbol layer with text needs glyphs set before it is added: a real map rejects it otherwise.
+  glyphs: `${E2E_BASEMAP_TILES}/fonts/{fontstack}/{range}.pbf`,
   sources: {
+    labels: {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [{ type: "Feature", properties: { name: "Stub" }, geometry: { type: "Point", coordinates: [0, 40] } }] },
+    },
     stub: { type: "vector", tiles: [`${E2E_BASEMAP_TILES}/{z}/{x}/{y}.pbf`], maxzoom: 6 },
   },
   layers: [
     { id: "land", type: "background", paint: { "background-color": "#eef2ee" } },
     { id: "water", type: "fill", source: "stub", "source-layer": "water", paint: { "fill-color": "#b8d0e6" } },
+    { id: "labels", type: "symbol", source: "labels", layout: { "text-field": ["get", "name"], "text-font": ["Stub Sans"] } },
   ],
 };
 

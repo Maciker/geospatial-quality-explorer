@@ -37,7 +37,22 @@ const offline = vi.fn(async () => {
 const ok = (body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
 
 describe("loadBasemap", () => {
-  it("adds the prefixed sources and layers below the given layer, then glyphs and sprite", async () => {
+  it("sets glyphs and sprite before the layers, because text layers are validated against them", async () => {
+    const order: string[] = [];
+    const { map } = fakeMap({
+      setGlyphs: vi.fn(() => void order.push("glyphs")),
+      setSprite: vi.fn(() => void order.push("sprite")),
+    });
+    const add = map.addLayer;
+    map.addLayer = vi.fn((layer: Parameters<BasemapTarget["addLayer"]>[0], before?: string) => {
+      order.push(`layer:${layer.id}`);
+      return add(layer, before);
+    });
+    await loadBasemap(map, "u", "source-fill", new AbortController().signal, ok(style));
+    expect(order).toEqual(["glyphs", "sprite", "layer:basemap-water", "layer:basemap-roads"]);
+  });
+
+  it("adds the prefixed sources and layers below the given layer", async () => {
     const { map, sources, layers } = fakeMap();
     await expect(loadBasemap(map, "https://s/style.json", "source-fill", new AbortController().signal, ok(style))).resolves.toBe(true);
     expect([...sources]).toEqual(["basemap-omt"]);
@@ -67,18 +82,24 @@ describe("loadBasemap", () => {
     await expect(loadBasemap(map, "u", "source-fill", new AbortController().signal, offline)).resolves.toBe(false);
   });
 
-  it("removes what it already added when a layer is rejected midway", async () => {
+  it.each([
+    ["silently rejects (an error event, no throw)", () => undefined],
+    ["throws on", () => {
+      throw new Error("bad layer");
+    }],
+  ])("rolls everything back when MapLibre %s the second layer", async (_label, onSecondLayer) => {
     const { map, sources, layers } = fakeMap();
     let calls = 0;
     map.addLayer = vi.fn((layer: { id: string }) => {
       calls += 1;
-      if (calls === 2) throw new Error("bad layer");
+      if (calls === 2) return onSecondLayer();
       layers.add(layer.id);
     });
     await expect(loadBasemap(map, "u", "source-fill", new AbortController().signal, ok(style))).resolves.toBe(false);
     expect([...sources]).toEqual([]);
     expect([...layers]).toEqual([]);
-    expect(map.setGlyphs).not.toHaveBeenCalled();
+    expect(map.setGlyphs).toHaveBeenLastCalledWith(null);
+    expect(map.setSprite).toHaveBeenLastCalledWith(null);
   });
 
   it("adds nothing when the map is unmounted while the style is loading", async () => {

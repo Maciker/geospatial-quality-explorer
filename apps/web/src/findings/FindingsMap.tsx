@@ -54,13 +54,15 @@ export default function FindingsMap(props: Props) {
         });
     resizeObserver?.observe(element);
     const basemapAbort = new AbortController();
-    // Test hook: how many distinct findings the map actually has in its source tiles.
-    map.on("idle", () => {
-      const drawn = new Set(
-        map.getSource("findings") ? map.querySourceFeatures("findings").map((feature) => String(feature.properties?.findingId)) : [],
-      );
-      element.dataset.drawnFindings = String(drawn.size);
-    });
+    // E2E-only hook (VITE_MAP_TEST_HOOKS=1): how many distinct findings the map has in its source tiles.
+    if (import.meta.env.VITE_MAP_TEST_HOOKS === "1") {
+      map.on("idle", () => {
+        const drawn = new Set(
+          map.getSource("findings") ? map.querySourceFeatures("findings").map((feature) => String(feature.properties?.findingId)) : [],
+        );
+        element.dataset.drawnFindings = String(drawn.size);
+      });
+    }
     element.dataset.basemap = "off";
     map.on("load", () => {
       // tolerance 0: the tiler otherwise drops rings whose signed area is ~0, such as a symmetric bowtie.

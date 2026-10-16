@@ -23,6 +23,12 @@ Rejected: self-hosted PMTiles (needs a regional extract that cannot be fetched h
 | n/a | `VITE_BASEMAP_STYLE_URL` selects the style; empty or `off` disables it | E2E and offline builds stay deterministic |
 | n/a | Any fetch/parse/add failure leaves the plain background; container gets `data-basemap="on"` or `"off"` | Graceful degradation, observable in tests |
 
+## Review follow-ups (same task)
+
+- Glyphs and sprite are set before the layers (MapLibre validates text/icon layers against them); each layer is checked to exist after `addLayer` because MapLibre reports invalid layers as error events, not exceptions; a failure rolls everything back, including glyphs and sprite.
+- The `data-drawn-findings` hook is only compiled in when `VITE_MAP_TEST_HOOKS=1` (set by the E2E build, never in production).
+- Also fixed on this branch: zero-net-area polygons (the PRT bowtie) were dropped by the GeoJSON tiler; the sources use `tolerance: 0`.
+
 ## Checklist
 
 - [ ] TDD `basemap.ts`: `resolveBasemapStyleUrl`, `planBasemap` (prefixing, attribution, validation of untrusted JSON)
