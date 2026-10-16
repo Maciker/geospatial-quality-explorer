@@ -39,16 +39,31 @@ test("a vector basemap loads under the findings and carries its attribution", as
   await expect(page.getByLabel("Layer provenance")).toContainText("EPSG:4326");
 });
 
-test("the plain background stays when the basemap style cannot be used", async ({ page }) => {
-  await page.route(STYLE_URL, (route) => route.fulfill({ status: 503, body: "unavailable" }));
-  await page.setViewportSize({ width: 1366, height: 768 });
-  const styleRequest = page.waitForResponse(STYLE_URL);
-  await page.goto("/?sim=alexa");
-  await styleRequest;
+const FALLBACKS = [
+  {
+    name: "the plain background stays when the basemap style cannot be used",
+    reply: { status: 503, body: "unavailable" },
+  },
+  {
+    // Text layers need glyphs; this style declares none, so the real map rejects the layer.
+    name: "a style with a layer the map rejects leaves no basemap behind",
+    reply: { json: { ...stubStyle, glyphs: undefined } },
+  },
+];
 
-  const map = page.getByLabel("Findings map");
-  await expect(map.locator("canvas")).toBeVisible();
-  await page.waitForTimeout(300);
-  await expect(map).toHaveAttribute("data-basemap", "off");
-  await expect(map.locator(".maplibregl-ctrl-attrib")).not.toContainText("OpenStreetMap");
-});
+for (const fallback of FALLBACKS) {
+  test(fallback.name, async ({ page }) => {
+    await page.route(STYLE_URL, (route) => route.fulfill(fallback.reply));
+    await page.route(TILE_PATTERN, (route) => route.fulfill({ status: 404 }));
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const styleRequest = page.waitForResponse(STYLE_URL);
+    await page.goto("/?sim=alexa");
+    await styleRequest;
+
+    const map = page.getByLabel("Findings map");
+    await expect(map.locator("canvas")).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(map).toHaveAttribute("data-basemap", "off");
+    await expect(map.locator(".maplibregl-ctrl-attrib")).not.toContainText("OpenStreetMap");
+  });
+}
