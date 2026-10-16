@@ -1,4 +1,4 @@
-export type CopyResult = "copied" | "unavailable" | "failed";
+type CopyResult = "copied" | "unavailable" | "failed";
 
 /** Copies the id verbatim; the caller decides how to tell the user. */
 export async function copyFindingId(
