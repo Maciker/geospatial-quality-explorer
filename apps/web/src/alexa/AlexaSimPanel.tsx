@@ -23,9 +23,13 @@ import {
 import { shouldStickChatToBottom } from "./chatScroll";
 import { buildProvenanceLabel } from "./provenanceLabel";
 import { isAlexaSessionContextValid } from "./sessionContext";
+import { copyFindingId } from "./copyFindingId";
 import { splitBreakableId } from "./formatBreakableId";
 import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
+
+const COPY_UNAVAILABLE = "Clipboard is not available in this browser.";
+const COPY_FAILED = "Could not copy findingId.";
 
 const WELCOME_MESSAGE =
   "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope-demo-errors (Natural Earth), then list findings.";
@@ -75,6 +79,7 @@ export default function AlexaSimPanel() {
   const [sourceHash, setSourceHash] = useState<string | null>(null);
   const [sourceLayer, setSourceLayer] = useState<AlexaFixtureSource | null>(null);
   const [fitNonce, setFitNonce] = useState(0);
+  /** The findingId whose copy just succeeded. */
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [llmMode, setLlmMode] = useState<"mock" | "live" | null>(null);
@@ -384,23 +389,27 @@ export default function AlexaSimPanel() {
                   type="button"
                   className={styles.detailCopy}
                   onClick={() => {
-                    if (!navigator.clipboard) {
-                      setError("Clipboard is not available in this browser.");
-                      return;
-                    }
-                    void navigator.clipboard.writeText(selected.findingId).then(() => {
+                    const copiedId = selected.findingId;
+                    void copyFindingId(navigator.clipboard, copiedId).then((result) => {
+                      if (result === "unavailable") {
+                        setError(COPY_UNAVAILABLE);
+                        return;
+                      }
+                      if (result === "failed") {
+                        setError(COPY_FAILED);
+                        return;
+                      }
+                      setError((current) => (current === COPY_UNAVAILABLE || current === COPY_FAILED ? null : current));
                       clearCopyFeedback();
-                      setCopyFeedback("Copied");
+                      setCopyFeedback(copiedId);
                       copyFeedbackTimer.current = setTimeout(() => {
                         copyFeedbackTimer.current = null;
                         setCopyFeedback(null);
                       }, 1600);
-                    }).catch(() => {
-                      setError("Could not copy findingId.");
                     });
                   }}
                 >
-                  {copyFeedback === "Copied" ? "Copied" : "Copy findingId"}
+                  {copyFeedback === selected.findingId ? "Copied" : "Copy findingId"}
                 </button>
               </div>
               <p className={styles.detailId}>
@@ -413,7 +422,7 @@ export default function AlexaSimPanel() {
                 ))}
               </p>
               <p className={styles.copyLive} aria-live="polite">
-                {copyFeedback === "Copied" ? "findingId copied to clipboard." : ""}
+                {copyFeedback === selected.findingId ? "findingId copied to clipboard." : ""}
               </p>
               <p>{selected.explanation}</p>
               <p>

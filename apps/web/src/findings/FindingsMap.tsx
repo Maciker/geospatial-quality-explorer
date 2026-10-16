@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { GeoJsonGeometry } from "../lib/api";
 import {
   featuresForFit,
+  hasSelectedOverlay,
   padBoundsForSelection,
   type FindingMapFeature,
   type SourceMapFeature,
@@ -195,7 +196,7 @@ export default function FindingsMap(props: Props) {
           <span><i className={styles.legendSource} /> Source</span>
           <span><i className={styles.legendError} /> Error</span>
           <span><i className={styles.legendWarning} /> Warning</span>
-          {props.selectedFindingId != null && <span><i className={styles.legendSelected} /> Selected</span>}
+          {hasSelectedOverlay(props.findingFeatures, props.selectedFindingId) && <span><i className={styles.legendSelected} /> Selected</span>}
         </div>
         {props.provenanceLabel != null && (
           <p className={styles.provenance} aria-label="Layer provenance" title={props.provenanceLabel}>
