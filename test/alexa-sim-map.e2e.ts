@@ -29,6 +29,9 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
 
   const map = page.getByLabel("Findings map");
   await expect(map.locator("canvas")).toBeVisible();
+  // Three findings have a polygon (two ESP duplicates and the PRT bowtie); DEMO-EMPTY has none.
+  // The PRT bowtie has zero net area and used to be dropped by the GeoJSON tiler, so it never drew.
+  await expect(map).toHaveAttribute("data-drawn-findings", "3", { timeout: 15_000 });
   await expect(map).toBeInViewport();
 
   await emptyCard.click();

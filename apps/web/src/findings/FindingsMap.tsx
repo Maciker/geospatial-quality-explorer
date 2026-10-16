@@ -53,10 +53,18 @@ export default function FindingsMap(props: Props) {
         });
     resizeObserver?.observe(element);
     const basemapAbort = new AbortController();
+    // Test hook: how many distinct findings the map actually has in its source tiles.
+    map.on("idle", () => {
+      const drawn = new Set(
+        map.getSource("findings") ? map.querySourceFeatures("findings").map((feature) => String(feature.properties?.findingId)) : [],
+      );
+      element.dataset.drawnFindings = String(drawn.size);
+    });
     element.dataset.basemap = "off";
     map.on("load", () => {
-      map.addSource("source-layer", { type: "geojson", data: emptyCollection() });
-      map.addSource("findings", { type: "geojson", data: emptyCollection() });
+      // tolerance 0: the tiler otherwise drops rings whose signed area is ~0, such as a symmetric bowtie.
+      map.addSource("source-layer", { type: "geojson", data: emptyCollection(), tolerance: 0 });
+      map.addSource("findings", { type: "geojson", data: emptyCollection(), tolerance: 0 });
       map.addLayer({
         id: "source-fill",
         type: "fill",
