@@ -123,9 +123,13 @@ export function featuresForFit(
     if (selected) return [selected];
   }
   if (findingFeatures.length > 0) return findingFeatures;
-  return sourceFeatures.map((feature) => ({
+  const clipped = sourceFeatures.map((feature) => ({
     geometry: clipGeometryToMainlandFit(feature.geometry),
   }));
+  // Synthetic fixtures sit outside Europe: clipping everything would leave no framing at all.
+  return clipped.some((feature) => feature.geometry !== null)
+    ? clipped
+    : sourceFeatures.map((feature) => ({ geometry: feature.geometry }));
 }
 
 /** Expand a selected-finding bbox so fitBounds keeps regional context (not only the bowtie edge). */

@@ -121,6 +121,15 @@ describe("mapFeatures", () => {
     expect(source.every((feature) => feature.geometry.type === "MultiPolygon")).toBe(true);
   });
 
+  it("falls back to the full source layer when nothing lies in the mainland envelope", () => {
+    const source = toSourceMapFeatures({
+      features: [{ id: "a", properties: {}, geometry: samplePolygon }],
+    });
+    const forFit = featuresForFit(source, [], null);
+    expect(forFit).toHaveLength(1);
+    expect(forFit[0]?.geometry).toEqual(samplePolygon);
+  });
+
   it("pads a selected finding bbox so Explain/select keep regional context", () => {
     const padded = padBoundsForSelection(
       { west: -9.5, south: 38.5, east: -7.5, north: 40.5 },
