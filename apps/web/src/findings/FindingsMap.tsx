@@ -13,6 +13,8 @@ type Props = {
   fitNonce: number;
   provenanceLabel: string | null;
   onSelect: (findingId: string) => void;
+  /** When true, keep a 420px floor for pages without a sized parent (FindingsReview). */
+  standaloneHeight?: boolean;
 };
 
 export default function FindingsMap(props: Props) {
@@ -182,7 +184,12 @@ export default function FindingsMap(props: Props) {
       {props.provenanceLabel && (
         <p className={styles.provenance} aria-label="Layer provenance">{props.provenanceLabel}</p>
       )}
-      <div ref={container} className={styles.map} role="application" aria-label="Findings map" />
+      <div
+        ref={container}
+        className={`${styles.map}${props.standaloneHeight ? ` ${styles.mapStandalone}` : ""}`}
+        role="application"
+        aria-label="Findings map"
+      />
     </div>
   );
 }

@@ -190,12 +190,12 @@ export default function AlexaSimPanel() {
   useEffect(() => {
     const scroller = messagesRef.current;
     if (!scroller || !stickChatRef.current) return;
-    const last = scroller.querySelector("[data-role='assistant']:last-of-type");
-    if (last instanceof HTMLElement) {
-      last.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    } else {
-      scroller.scrollTop = scroller.scrollHeight;
-    }
+    const reduceMotion = typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    scroller.scrollTo({
+      top: scroller.scrollHeight,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   }, [messages]);
 
   async function sendMessage(text: string): Promise<void> {
@@ -259,6 +259,7 @@ export default function AlexaSimPanel() {
         <p className={styles.chromeLead}>
           Deterministic tools back every cited finding. The assistant never edits geometry.
         </p>
+        {error && <p className={styles.error} role="alert">{error}</p>}
       </header>
 
       <div className={styles.workspace} aria-label="Finding cards and map">
@@ -282,7 +283,13 @@ export default function AlexaSimPanel() {
               type="button"
               onClick={() => void sendMessage("Export QGIS bundle.")}
               disabled={!canExport}
-              title={confirmedRunId === null ? "Validate a fixture first." : "Export QGIS for the current run"}
+              title={
+                busy
+                  ? "Wait for the current request."
+                  : confirmedRunId === null
+                    ? "Validate a fixture first."
+                    : "Export QGIS for the current run"
+              }
             >
               Export QGIS via Alexa
             </button>
@@ -299,7 +306,13 @@ export default function AlexaSimPanel() {
                 }
               }}
               disabled={!canDownload}
-              title={!canDownload ? "Export the current run before downloading." : "Download the last QGIS ZIP"}
+              title={
+                busy
+                  ? "Wait for the current request."
+                  : lastQgisResponse === null || lastQgisResponse.runId !== confirmedRunId
+                    ? "Export the current run before downloading."
+                    : "Download the last QGIS ZIP"
+              }
             >
               Download last QGIS bundle
             </button>
@@ -413,7 +426,14 @@ export default function AlexaSimPanel() {
             />
             <button
               type="button"
-              onClick={() => setVoiceEnabled((value) => !value)}
+              onClick={() => {
+                setVoiceEnabled((value) => {
+                  if (value && typeof window !== "undefined" && "speechSynthesis" in window) {
+                    window.speechSynthesis.cancel();
+                  }
+                  return !value;
+                });
+              }}
               aria-pressed={voiceEnabled}
               title={voiceEnabled ? "Mute spoken replies and hide the mic button" : "Enable spoken replies and mic input"}
             >
@@ -441,7 +461,6 @@ export default function AlexaSimPanel() {
       <p className={styles.statusLive} aria-live="polite">
         {busy ? "Working on your request." : ""}
       </p>
-      {error && <p className={styles.error} role="alert">{error}</p>}
     </main>
   );
 }

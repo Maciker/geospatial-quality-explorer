@@ -55,8 +55,11 @@
 
 .map {
   height: 100%;
-  /* Standalone review page has no sized parent; Alexa shell fills this via the map region. */
-  min-height: 420px;
+  min-height: 0;
   border: 1px solid #c6cec4;
   background: #c5d4e0;
+}
+
+.mapStandalone {
+  min-height: 420px;
 }

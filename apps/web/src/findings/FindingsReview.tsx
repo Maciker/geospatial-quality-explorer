@@ -119,6 +119,7 @@ export default function FindingsReview(props: { search: string; onSearch: (searc
                 selectedFindingId={screen.selectedId}
                 fitNonce={0}
                 provenanceLabel={null}
+                standaloneHeight
                 onSelect={(findingId) => setScreen({ ...screen, selectedId: findingId })}
               />
               <FindingDetail feature={selected} />

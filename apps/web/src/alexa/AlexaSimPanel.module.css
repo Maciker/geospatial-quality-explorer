@@ -105,12 +105,13 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
   padding: 0.55rem;
+  overflow: hidden;
 }
 
 .chatPanel {
@@ -271,6 +272,13 @@
   display: grid;
   gap: 0.35rem;
   font-size: 0.86rem;
+  min-height: 0;
+  max-height: 40%;
+  overflow: auto;
+}
+
+.detail p {
+  margin: 0;
 }
 
 .detailHeader {
@@ -296,6 +304,10 @@
 .error {
   color: var(--danger);
   margin: 0;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #e0b4b4;
+  border-radius: 8px;
+  background: #fff5f5;
 }
 
 .statusLive {
