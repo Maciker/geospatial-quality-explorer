@@ -1,0 +1,15 @@
+/* The Alexa simulation fills the viewport below the nav, so the page never grows past the fold. */
+.fixedShell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/* Narrow or short windows (phones, landscape, browser zoom) scroll the page instead of squeezing the map. */
+/* Keep this condition identical to the unlock query in alexa/AlexaSimPanel.module.css. */
+@media (max-width: 900px), (max-height: 560px), (max-width: 1100px) and (max-height: 700px) {
+  .fixedShell {
+    height: auto;
+    min-height: 100dvh;
+  }
+}

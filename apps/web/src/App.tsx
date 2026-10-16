@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import AlexaSimPanel from "./alexa/AlexaSimPanel";
+import styles from "./App.module.css";
 import { resolveAppMode, type AppMode } from "./appMode";
 import FindingsReview from "./findings/FindingsReview";
 
@@ -20,10 +21,16 @@ export default function App() {
     setSearch(nextSearch || window.location.search);
   }
 
-  if (!initialMode.canSwitch) return <AlexaSimPanel />;
+  if (!initialMode.canSwitch) {
+    return (
+      <div className={styles.fixedShell}>
+        <AlexaSimPanel />
+      </div>
+    );
+  }
 
   return (
-    <>
+    <div className={mode === "alexa" ? styles.fixedShell : undefined}>
       <nav style={{ display: "flex", gap: "0.75rem", padding: "0.75rem 1rem", borderBottom: "1px solid #ccd4cb" }}>
         <button type="button" onClick={() => switchMode("review")} aria-current={mode === "review"}>
           Run review
@@ -43,6 +50,6 @@ export default function App() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
