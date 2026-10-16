@@ -170,6 +170,12 @@ describe("mapFeatures", () => {
     expect(padded).toEqual({ west: -11.5, south: 36.5, east: -5.5, north: 42.5 });
   });
 
+  it("keeps the padded bounds inside the map latitude range near the poles", () => {
+    const padded = padBoundsForSelection({ west: -10, south: -89.5, east: 10, north: 88 }, 2);
+    expect(padded.south).toBeGreaterThanOrEqual(-85.0511);
+    expect(padded.north).toBeLessThanOrEqual(85.0511);
+  });
+
   it("keeps source feature ids distinct per row index", () => {
     const features = toSourceMapFeatures({
       features: [

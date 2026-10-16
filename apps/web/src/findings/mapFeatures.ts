@@ -100,6 +100,8 @@ const MAINLAND_EUROPE_FIT = {
   north: 72,
 } as const;
 
+const MAX_MAP_LATITUDE = 85.0511;
+
 type LonLatBounds = {
   readonly west: number;
   readonly south: number;
@@ -139,11 +141,12 @@ export function hasSelectedOverlay(
 
 /** Expand a selected-finding bbox so fitBounds keeps regional context (not only the bowtie edge). */
 export function padBoundsForSelection(bounds: LonLatBounds, padDegrees: number): LonLatBounds {
+  // LngLatBounds.extend throws for a latitude outside the Web Mercator range.
   return {
     west: bounds.west - padDegrees,
-    south: bounds.south - padDegrees,
+    south: Math.max(-MAX_MAP_LATITUDE, bounds.south - padDegrees),
     east: bounds.east + padDegrees,
-    north: bounds.north + padDegrees,
+    north: Math.min(MAX_MAP_LATITUDE, bounds.north + padDegrees),
   };
 }
 
