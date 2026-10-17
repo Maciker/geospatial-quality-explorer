@@ -174,6 +174,10 @@ export class ConversationalLoop {
           if (!executed.result.ok && executed.result.error === "refused") {
             return reply(executed.result.message, true);
           }
+          if (toolCall.name === "run_validation" && executed.result.ok && runId) {
+            findingCards = await hydrateFindingsAfterValidation(this.tools, sessionId, runId, findingCards);
+            knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
+          }
           if (
             !sessionAlive
             && !recoveryRevalidated
@@ -215,6 +219,10 @@ export class ConversationalLoop {
             knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
             if (!revalidated.result.ok && revalidated.result.error === "refused") {
               return reply(revalidated.result.message, true);
+            }
+            if (revalidated.result.ok && runId) {
+              findingCards = await hydrateFindingsAfterValidation(this.tools, sessionId, runId, findingCards);
+              knownIds = mergeCitationIds(knownIds, collectCitationIdsFromFindings(findingCards));
             }
           }
         }
@@ -358,6 +366,26 @@ function withServerSideToolCall(assistant: ChatMessage, forced: string | null, s
     content: "",
     toolCalls: [{ id: `server-${forced}`, name: forced, argumentsJson: JSON.stringify({ sessionId }) }],
   };
+}
+
+/**
+ * Validate replies historically omitted finding cards (list was a second turn). Hydrate the
+ * HTTP response from list_findings without injecting another tool call into the model transcript.
+ */
+async function hydrateFindingsAfterValidation(
+  tools: QualityToolsPort,
+  sessionId: string,
+  runId: string,
+  existing: readonly CitedFindingCard[],
+): Promise<readonly CitedFindingCard[]> {
+  const listed = await executeAlexaTool(
+    tools,
+    "list_findings",
+    JSON.stringify({ sessionId, runId }),
+    sessionId || undefined,
+  );
+  if (!listed.result.ok) return existing;
+  return extractStructuredState(listed.result, existing).findings;
 }
 
 function extractStructuredState(

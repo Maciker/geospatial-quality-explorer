@@ -34,6 +34,20 @@ export function nextFindingCards(
   const selectedStillShown = cards.some((card) => card.findingId === previous.selectedId);
   const selectedId = incoming.length === 1
     ? incoming[0]!.findingId
-    : selectedStillShown ? previous.selectedId : cards[0]?.findingId ?? null;
+    : selectedStillShown ? previous.selectedId : preferredSelection(cards);
   return { cards, selectedId };
+}
+
+/** Prefer a card with map geometry so validate→fit frames a real overlay, not DEMO-EMPTY. */
+export function preferredSelection(cards: readonly AlexaFindingCard[]): string | null {
+  return cards.find((card) => !isMissingGeometry(card))?.findingId ?? cards[0]?.findingId ?? null;
+}
+
+/** Skip map refit when the user selects a finding that has nothing to draw. */
+export function shouldRefitMapOnSelect(finding: AlexaFindingCard | undefined): boolean {
+  return finding != null && !isMissingGeometry(finding);
+}
+
+export function isMissingGeometry(finding: { readonly geometry: unknown }): boolean {
+  return finding.geometry === null || finding.geometry === undefined;
 }

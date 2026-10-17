@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AlexaFindingCard } from "./alexaSimApi";
-import { nextFindingCards } from "./findingCards";
+import { nextFindingCards, preferredSelection, shouldRefitMapOnSelect } from "./findingCards";
 
 const run = "a".repeat(64);
 const card = (index: number, runId = run): AlexaFindingCard => ({
@@ -11,6 +11,11 @@ const card = (index: number, runId = run): AlexaFindingCard => ({
   explanation: `e${index}`,
   suggestedAction: "s",
   geometry: null,
+});
+
+const withPolygon = (index: number): AlexaFindingCard => ({
+  ...card(index),
+  geometry: { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] },
 });
 
 describe("nextFindingCards", () => {
@@ -56,5 +61,17 @@ describe("nextFindingCards", () => {
     const afterEmpty = nextFindingCards(listed, [], null);
 
     expect(afterEmpty.cards).toHaveLength(1);
+  });
+
+  it("auto-selects the first card that has map geometry after a multi-card validate", () => {
+    const next = nextFindingCards({ cards: [], selectedId: null }, [card(0), withPolygon(1), withPolygon(2)], run);
+    expect(next.selectedId).toBe(withPolygon(1).findingId);
+  });
+
+  it("does not refit the map when the selected finding has no geometry", () => {
+    expect(shouldRefitMapOnSelect(card(0))).toBe(false);
+    expect(shouldRefitMapOnSelect(withPolygon(1))).toBe(true);
+    expect(shouldRefitMapOnSelect(undefined)).toBe(false);
+    expect(preferredSelection([card(0), withPolygon(2)])).toBe(withPolygon(2).findingId);
   });
 });

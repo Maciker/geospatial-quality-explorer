@@ -162,6 +162,20 @@ describe("mapFeatures", () => {
     expect(hasSelectedOverlay([drawn!], null)).toBe(false);
   });
 
+  it("falls through to sibling overlays when the selection has no drawn geometry", () => {
+    const overlays = toFindingMapFeatures([{
+      findingId: "run:0:geometry.invalid",
+      ruleId: "geometry.invalid",
+      featureId: "PRT",
+      severity: "error",
+      explanation: "a",
+      suggestedAction: "b",
+      geometry: samplePolygon,
+    }]);
+    // Data-driven fits (validate) may auto-select DEMO-EMPTY first; still frame the drawn findings.
+    expect(featuresForFit([], overlays, "run:2:geometry.empty")).toEqual(overlays);
+  });
+
   it("pads a selected finding bbox so Explain/select keep regional context", () => {
     const padded = padBoundsForSelection(
       { west: -9.5, south: 38.5, east: -7.5, north: 40.5 },
