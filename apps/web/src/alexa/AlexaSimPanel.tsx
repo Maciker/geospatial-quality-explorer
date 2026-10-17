@@ -9,7 +9,6 @@ import {
   postAlexaSimChat,
   type AlexaChatMessage,
   type AlexaChatResponse,
-  type AlexaFindingCard,
   type AlexaFixtureSource,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
