@@ -24,5 +24,5 @@ This folder documents the **labeled web simulation** route ([ADR 001](./adr-001-
 
 ## Judge quick start
 
-Hosted demo: `<DEMO_URL>` (replace when Vercel URL is live).  
+Hosted demo: https://geospatial-quality-explorer.vercel.app  
 Local: [Five-minute demo — Alexa+ simulation](../demo.md#fastest-path-alexa-simulation-no-database-no-api-key).
