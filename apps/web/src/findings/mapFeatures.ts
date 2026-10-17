@@ -122,7 +122,9 @@ export function featuresForFit(
 ): readonly { readonly geometry: GeoJsonGeometry | null }[] {
   if (selectedFindingId) {
     const selected = findingFeatures.find((feature) => feature.properties.findingId === selectedFindingId);
-    if (selected) return [selected];
+    // Selected but undrawable (DEMO-EMPTY): keep the current camera — never yank to siblings.
+    if (!selected) return [];
+    return [selected];
   }
   if (findingFeatures.length > 0) return findingFeatures;
   return sourceFeatures.map((feature) => ({
