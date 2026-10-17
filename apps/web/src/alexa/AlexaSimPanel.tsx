@@ -9,11 +9,15 @@ import {
   postAlexaSimChat,
   type AlexaChatMessage,
   type AlexaChatResponse,
-  type AlexaFindingCard,
   type AlexaFixtureSource,
 } from "./alexaSimApi";
 import { boundedHistory } from "./boundedHistory";
-import { nextFindingCards, type FindingCardsState } from "./findingCards";
+import {
+  isMissingGeometry,
+  nextFindingCards,
+  shouldRefitMapOnSelect,
+  type FindingCardsState,
+} from "./findingCards";
 import { downloadQgisArtifacts } from "./downloadQgisZip";
 import {
   formatAlexaSimErrorMessage,
@@ -29,7 +33,7 @@ import { speakReply } from "./speakReply";
 import styles from "./AlexaSimPanel.module.css";
 
 const WELCOME_MESSAGE =
-  "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope-demo-errors (Natural Earth), then list findings.";
+  "Hi, I am Alexa in a labeled simulation. Ask me to validate portfolio (CC0) or ne-admin0-westeurope-demo-errors (Natural Earth). Findings appear after validation.";
 
 type SpeechRecognitionLike = {
   lang: string;
@@ -61,6 +65,8 @@ export default function AlexaSimPanel() {
   const selectFinding = (findingId: string) => {
     setCardsState((previous) => ({ ...previous, selectedId: findingId }));
     clearCopyFeedback();
+    const chosen = findings.find((finding) => finding.findingId === findingId);
+    if (!shouldRefitMapOnSelect(chosen)) return;
     setFitNonce((value) => value + 1);
   };
 
@@ -375,7 +381,7 @@ export default function AlexaSimPanel() {
               </button>
             ))}
             {findings.length === 0 && (
-              <p className={styles.cardEmpty}>No findings yet. Validate a catalog fixture, then list findings.</p>
+              <p className={styles.cardEmpty}>No findings yet. Validate a catalog fixture to load findings.</p>
             )}
           </div>
           {selected ? (
@@ -502,8 +508,4 @@ export default function AlexaSimPanel() {
       </p>
     </main>
   );
-}
-
-function isMissingGeometry(finding: AlexaFindingCard): boolean {
-  return finding.geometry === null || finding.geometry === undefined;
 }

@@ -16,4 +16,14 @@ describe("splitBreakableId", () => {
   it("leaves short tokens without separators as one part", () => {
     expect(splitBreakableId("PRT")).toEqual(["PRT"]);
   });
+
+  it("chunks a 64-char hex run while keeping the rule token intact", () => {
+    const hash = "a".repeat(64);
+    const id = `${hash}:16:geometry.invalid`;
+    const parts = splitBreakableId(id);
+    expect(parts.join("")).toBe(id);
+    expect(parts[0]).toBe("aaaaaaaa");
+    expect(parts.filter((part) => /^a+$/.test(part.replace(/:$/, ""))).every((part) => part.replace(/:$/, "").length <= 8)).toBe(true);
+    expect(parts.at(-1)).toBe("geometry.invalid");
+  });
 });

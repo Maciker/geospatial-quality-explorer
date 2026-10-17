@@ -16,7 +16,7 @@ export function compactToolResultForModel(result: object): unknown {
     data.voiceAnswer = "The QGIS export is ready. Download the bundle from the simulation panel.";
   }
   if ("findingCount" in data && "runId" in data && typeof data.datasetName === "string") {
-    data.voiceAnswer = `Validation finished for ${data.datasetName}. runId ${String(data.runId)}. ${String(data.findingCount)} findings. Ask when you want the prioritized list.`;
+    data.voiceAnswer = `Validation finished for ${data.datasetName}. runId ${String(data.runId)}. ${String(data.findingCount)} findings are in the findings rail.`;
   }
   if (Array.isArray(data.findings)) {
     const summaries = data.findings.map(withoutGeometry);

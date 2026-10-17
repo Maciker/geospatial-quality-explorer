@@ -20,10 +20,10 @@ test("Alexa+ simulation maps Natural Earth demo-errors and explains the selected
   await expect(page.getByLabel("Active dataset summary")).toContainText("ne-admin0-westeurope-demo-errors");
   await expect(page.getByLabel("Layer provenance")).toContainText("NaturalEarth-public-domain");
 
-  await page.getByLabel("Message Alexa simulation").fill("List the findings.");
-  await page.getByRole("button", { name: "Send" }).click();
+  // Cards hydrate from validate — no separate "List findings" turn required.
   const cards = page.getByLabel("Findings list").getByRole("button", { name: /(geometry|identifier)\./ });
   await expect(cards.first()).toBeVisible({ timeout: 30_000 });
+  await expect(cards).toHaveCount(4);
   const emptyCard = page.getByLabel("Findings list").getByRole("button", { name: /geometry\.empty/ });
   await expect(emptyCard).toContainText(/no geometry/);
 

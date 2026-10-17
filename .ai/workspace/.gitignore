@@ -35,3 +35,6 @@ tasks/*
 # MAC-413 QA UI fixes handoff (2026-10-16).
 !tasks/mac-413-qa-ui-fixes/
 !tasks/mac-413-qa-ui-fixes/**
+# MAC-413 residual QA handoff (2026-10-17).
+!tasks/mac-413-residual-qa/
+!tasks/mac-413-residual-qa/**

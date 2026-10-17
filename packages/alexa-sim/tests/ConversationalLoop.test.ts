@@ -34,6 +34,17 @@ describe("ConversationalLoop", () => {
     expect(result.assistantMessage).toContain(result.runId!);
   });
 
+  it("hydrates finding cards on the validate reply so the UI rail is not empty", async () => {
+    const loop = createLoop(new DeterministicMockLlm());
+    const result = await loop.run({
+      messages: [{ role: "user", content: "Validate the ne-admin0-westeurope-demo-errors fixture." }],
+    });
+    expect(result.refused).toBe(false);
+    expect(result.findings.length).toBeGreaterThanOrEqual(4);
+    expect(result.findings.some((finding) => finding.ruleId === "geometry.invalid")).toBe(true);
+    expect(result.findings.some((finding) => finding.featureId === "DEMO-EMPTY")).toBe(true);
+  });
+
   it("cites findingId ruleId and featureId after listing portfolio findings", async () => {
     const loop = createLoop(new DeterministicMockLlm());
     const first = await loop.run({

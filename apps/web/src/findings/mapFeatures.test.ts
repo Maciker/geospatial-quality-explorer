@@ -162,6 +162,20 @@ describe("mapFeatures", () => {
     expect(hasSelectedOverlay([drawn!], null)).toBe(false);
   });
 
+  it("returns no fit targets when the selection has no drawn geometry", () => {
+    const overlays = toFindingMapFeatures([{
+      findingId: "run:0:geometry.invalid",
+      ruleId: "geometry.invalid",
+      featureId: "PRT",
+      severity: "error",
+      explanation: "a",
+      suggestedAction: "b",
+      geometry: samplePolygon,
+    }]);
+    // preferredSelection avoids empty-first auto-select; empty focus skips fitBounds if it is selected later.
+    expect(featuresForFit([], overlays, "run:2:geometry.empty")).toEqual([]);
+  });
+
   it("pads a selected finding bbox so Explain/select keep regional context", () => {
     const padded = padBoundsForSelection(
       { west: -9.5, south: 38.5, east: -7.5, north: 40.5 },
