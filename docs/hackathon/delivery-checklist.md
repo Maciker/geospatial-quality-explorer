@@ -10,7 +10,7 @@ Agents prepare docs; humans review media, secrets, and public access.
 
 ## Repository and license (target ~2026-10-22)
 
-- [ ] Repository is **public** on GitHub (MIT already in `LICENSE`).
+- [x] Repository is **public** on GitHub (MIT already in `LICENSE`).
 - [ ] README judge quick start and [demo.md](../demo.md) Alexa path work from a clean clone (`pnpm install`, `pnpm dev:api`, `pnpm dev:web`, `?sim=alexa`).
 - [ ] No secrets in git history on the public default branch; `NAN_API_KEY` only in Vercel project settings.
 - [ ] `THIRD_PARTY_NOTICES.md` and fixture licenses accurate for judges (synthetic CC0; Natural Earth samples as public domain per Natural Earth terms, not relabeled CC0).
@@ -20,7 +20,7 @@ Agents prepare docs; humans review media, secrets, and public access.
 
 ## Hosted demo
 
-- [ ] Vercel project live at `<DEMO_URL>` (replace placeholder in [devpost-submission.md](./devpost-submission.md) and README if linked).
+- [x] Vercel project live at https://geospatial-quality-explorer.vercel.app (replace placeholder in [devpost-submission.md](./devpost-submission.md) and README if linked).
 - [ ] Vercel env: `NAN_API_KEY` scoped to **Production** only, optional `NAN_MODEL=qwen3.6`, `ALEXA_SIM_TIMEOUT_MS=55000` (function `maxDuration` is 60 s), provider **spend limit** set.
 - [ ] Vercel Git fork protection left **on** (public repo); rotate the key if it was ever shared in chat or screenshots. See [development.md](../development.md#hosted-demo-vercel).
 - [ ] Badge reads **Model: live LLM** on production; run validate → list → explain → export once, and open the downloaded `qgis-<run>.zip` in QGIS 3.
@@ -43,7 +43,7 @@ Agents prepare docs; humans review media, secrets, and public access.
 
 - [ ] Paste sections from [devpost-submission.md](./devpost-submission.md) (English).
 - [ ] Attach **Product Feedback** from [product-feedback.md](./product-feedback.md) ([MAC-371](https://linear.app/maciker/issue/MAC-371)).
-- [ ] Add repository URL, `<DEMO_URL>`, and video URL.
+- [ ] Add repository URL, https://geospatial-quality-explorer.vercel.app, and video URL.
 - [ ] Confirm Open Source mini-challenge fields if applicable.
 - [ ] Submit on **2026-10-23** before 21:00 Madrid; save Devpost confirmation screenshot or link in Linear.
 - [ ] Ensure free judge access through **2026-11-20** (per MAC-232).

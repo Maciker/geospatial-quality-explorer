@@ -19,13 +19,13 @@
 | 8 | 2:08–2:28 | 2:28 |
 | 9 | 2:28–2:45 | 2:45 |
 
-Record against `<DEMO_URL>` when live, or local `pnpm dev:web` with `?sim=alexa` and the same UI. Record every shot with the **live LLM** badge. Rehearse the four commands once first and check the server log lines `alexa-sim: LLM round <ms> ms` stay well under the budget (`ALEXA_SIM_TIMEOUT_MS`, default 45 000, max 55 000). Use the **deterministic mock** only for a shot that still times out, and say so on screen and in the narration.
+Record against https://geospatial-quality-explorer.vercel.app, or local `pnpm dev:web` with `?sim=alexa` and the same UI. Record every shot with the **live LLM** badge. Rehearse the four commands once first and check the server log lines `alexa-sim: LLM round <ms> ms` stay well under the budget (`ALEXA_SIM_TIMEOUT_MS`, default 45 000, max 55 000). Use the **deterministic mock** only for a shot that still times out, and say so on screen and in the narration.
 
 ---
 
 ## Shot 1 — Title and simulation disclosure (0:00–0:12)
 
-**UI action:** Open the app at `<DEMO_URL>/?sim=alexa` (or local equivalent). Hold full viewport so both badges are readable: *Simulation of Alexa+ — not an Amazon product* and *Model: …*.
+**UI action:** Open the app at https://geospatial-quality-explorer.vercel.app/?sim=alexa (or local equivalent). Hold full viewport so both badges are readable: *Simulation of Alexa+ — not an Amazon product* and *Model: …*.
 
 **Narration:**  
 This is Geospatial Quality Explorer, a labeled simulation of Alexa plus for GIS quality review. It is not an official Amazon Alexa skill. The validation engine is deterministic; the language model only calls tools and cites their results.
