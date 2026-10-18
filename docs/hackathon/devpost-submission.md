@@ -1,6 +1,6 @@
 # Devpost submission copy (paste-ready)
 
-Use this text on [Amazon Alexa+ Devpost](https://amazonappdev2026.devpost.com/). Replace `<DEMO_URL>` with the hosted Vercel demo when available. Do **not** claim official Alexa+, MCP, or Agent Skill certification.
+Use this text on [Amazon Alexa+ Devpost](https://amazonappdev2026.devpost.com/). Hosted demo: https://geospatial-quality-explorer.vercel.app. Do **not** claim official Alexa+, MCP, or Agent Skill certification.
 
 ---
 
@@ -29,7 +29,7 @@ Geospatial Quality Explorer runs a fixed ruleset (`vector-core`) over GeoJSON an
 
 The UI shows persistent badges: *Simulation of Alexa+ — not an Amazon product*, and whether replies use a **deterministic mock** or a **live LLM**. The model orchestrates tool calls; it does **not** judge geometry or mutate source data. Out-of-scope requests (for example “repair this polygon”) are refused.
 
-**Try it:** `<DEMO_URL>` or clone the public MIT repo and follow the [two-minute quick start](../../README.md#quick-start-2-minutes-no-database-no-api-key) with `?sim=alexa`.
+**Try it:** https://geospatial-quality-explorer.vercel.app or clone the public MIT repo and follow the [two-minute quick start](../../README.md#quick-start-2-minutes-no-database-no-api-key) with `?sim=alexa`.
 
 ## How we built it
 
@@ -81,7 +81,7 @@ We rejected MCP Streamable HTTP and Amazon Agent Skill for this window: they nee
 
 - **Public repository:** (GitHub URL — confirm at submit time)
 - **Demo video:** (YouTube/Vimeo URL — add after upload)
-- **Live demo:** `<DEMO_URL>`
+- **Live demo:** https://geospatial-quality-explorer.vercel.app
 
 ## Open Source mini-challenge
 
