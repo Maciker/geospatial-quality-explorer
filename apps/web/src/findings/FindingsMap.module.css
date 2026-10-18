@@ -85,3 +85,13 @@
   height: 420px;
   min-height: 420px;
 }
+
+.unavailable {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+  border: 1px solid var(--line, #c8cfc4);
+  color: var(--ink, #1c241e);
+  background: var(--surface, #f4f7f3);
+}

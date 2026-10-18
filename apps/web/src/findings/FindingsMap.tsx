@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -31,11 +31,14 @@ export default function FindingsMap(props: Props) {
   const onSelect = useRef(props.onSelect);
   onSelect.current = props.onSelect;
   const lastFitNonce = useRef<number | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
 
   useEffect(() => {
     const element = container.current;
     if (!element || mapRef.current) return undefined;
-    const map = new maplibregl.Map({
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
       container: element,
       style: {
         version: 8,
@@ -45,7 +48,14 @@ export default function FindingsMap(props: Props) {
       center: [2, 46],
       zoom: 3,
       attributionControl: { compact: true },
-    });
+      });
+    } catch {
+      // MapLibre may leave a canvas behind when WebGL initialization throws.
+      element.replaceChildren();
+      setMapUnavailable(true);
+      return undefined;
+    }
+    setMapUnavailable(false);
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     const resizeObserver = typeof ResizeObserver === "undefined"
       ? null
@@ -204,6 +214,7 @@ export default function FindingsMap(props: Props) {
       <div className={styles.toolbar}>
         <button
           type="button"
+          disabled={mapUnavailable}
           onClick={() => {
             const map = mapRef.current;
             if (!map) return;
@@ -227,10 +238,17 @@ export default function FindingsMap(props: Props) {
       </div>
       <div
         ref={container}
+        hidden={mapUnavailable}
         className={`${styles.map}${props.standaloneHeight ? ` ${styles.mapStandalone}` : ""}`}
         role="application"
         aria-label="Findings map"
       />
+      {mapUnavailable && (
+        <div className={styles.unavailable} role="status" aria-label="Map unavailable">
+          <p>The map could not start in this browser.</p>
+          <p>You can still validate data, select findings in the list, ask for an explanation, and export to QGIS.</p>
+        </div>
+      )}
     </div>
   );
 }
