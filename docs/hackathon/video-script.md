@@ -1,113 +1,33 @@
-# Demo video script (< 3 minutes)
+# Demo video — corrected narration and evidence
 
-**Purpose:** Public YouTube/Vimeo upload for Devpost ([MAC-232](https://linear.app/maciker/issue/MAC-232)).  
-**Flow:** Matches [docs/demo.md](../demo.md) — Validate → List → Explain → Export QGIS.  
-**Production:** TTS voice (Kokoro) reads **Narration**; screen capture follows **UI action** each shot.  
-**Labeling:** On-screen badges and spoken intro must say this is a **simulation of Alexa+**, not an Amazon product.
+Internal cutoff: **2026-10-21**. Public YouTube/Vimeo video must be under 3 minutes. This version reuses the supplied 72.7-second recording with new production voiceover. It does not claim microphone input, geometry repair, completed ZIP download or QGIS desktop inspection.
 
-**Total target:** ~2:45 (hard cap 2:59).
+## Narrative and shots
 
-| Shot | Time (mm:ss) | Cumulative |
+| Shot | Show | Say |
 | --- | --- | --- |
-| 1 | 0:00–0:12 | 0:12 |
-| 2 | 0:12–0:22 | 0:22 |
-| 3 | 0:22–0:38 | 0:38 |
-| 4 | 0:38–1:05 | 1:05 |
-| 5 | 1:05–1:28 | 1:28 |
-| 6 | 1:28–1:48 | 1:48 |
-| 7 | 1:48–2:08 | 2:08 |
-| 8 | 2:08–2:28 | 2:28 |
-| 9 | 2:28–2:45 | 2:45 |
+| Problem / disclosure | Simulation and live/mock labels, product visible | Before publishing a map, a reviewer needs to know which feature failed and why. This is Geospatial Quality Explorer, a labeled Alexa Plus simulation. |
+| Validate | Modified Natural Earth sample and real validation response | I ask the assistant to validate a Natural Earth sample of Western Europe. We deliberately introduced errors in this copy for the demo. The language model calls tools, and a deterministic engine performs the checks. |
+| Finding | Selected invalid polygon in the derived sample | The review finds four issues. In our modified sample, this polygon crosses itself. I select it on the map. The source data is never modified. |
+| Explain | Selected detail and matching cited response, copy identifier | I ask for an explanation of the selected finding. Its rule and identifier stay linked to the map, so the result can be traced. I can copy that identifier for a follow up ticket. |
+| Export | Real export-ready result; do not invent a download | Next, I ask the assistant to prepare a Q GIS bundle for this review. The export contains a project, findings, styling, and run metadata for desktop review. |
+| Close | Geometry-empty finding remains in list | Features without geometry remain visible in the findings list. Validate, understand, and export a traceable spatial review. The assistant explains the evidence; it does not repair the data. |
 
-Record against https://geospatial-quality-explorer.vercel.app, or local `pnpm dev:web` with `?sim=alexa` and the same UI. Record every shot with the **live LLM** badge. Rehearse the four commands once first and check the server log lines `alexa-sim: LLM round <ms> ms` stay well under the budget (`ALEXA_SIM_TIMEOUT_MS`, default 45 000, max 55 000). Use the **deterministic mock** only for a shot that still times out, and say so on screen and in the narration.
+## Mandatory editing details
 
----
+- Label the sample on screen: **Natural Earth sample — errors introduced for this demo**. Do not attribute injected defects to the upstream source.
+- Keep simulation and live/mock labels visible. Voiceover is narration, not proof of live voice input.
+- Keep Explain and the selected feature readable; captions must not cover controls or attribution.
+- No automatic-repair claim. No fake ticket creation, desktop proof, live-model metrics or recovery result.
+- Preserve the same dataset/run across the walkthrough. If waits are abbreviated or held for narration, do not imply a measured response time.
+- Add public video URL after author review and upload; never mark submitted just because a local file exists.
 
-## Shot 1 — Title and simulation disclosure (0:00–0:12)
+## Stronger optional final shot (still pending)
 
-**UI action:** Open the app at https://geospatial-quality-explorer.vercel.app/?sim=alexa (or local equivalent). Hold full viewport so both badges are readable: *Simulation of Alexa+ — not an Amazon product* and *Model: …*.
+Record the **actual** downloaded bundle for the same run, extract it and open `findings.qgs` in QGIS 3. Compare a finding and run metadata with the browser. Only then append: “I download the bundle and open its project in QGIS. The findings and run metadata travel together.”
 
-**Narration:**  
-This is Geospatial Quality Explorer, a labeled simulation of Alexa plus for GIS quality review. It is not an official Amazon Alexa skill. The validation engine is deterministic; the language model only calls tools and cites their results.
+If this take cannot be made, submit an honest export-ready walkthrough rather than fabricated desktop footage. The final bundle inspection remains on the delivery checklist.
 
----
+## Voice variant
 
-## Shot 2 — Problem in one sentence (0:12–0:22)
-
-**UI action:** Brief pan from the map panel to the empty chat input; no typing yet.
-
-**Narration:**  
-Before publishing vector data, teams need traceable checks: which file, which rules, and which feature failed. We built a conversational path on top of a fixed ruleset, with every issue tied to identifiers you can audit.
-
----
-
-## Shot 3 — Validate the portfolio fixture (0:22–0:38)
-
-**UI action:** Click or focus the chat input. Type or paste: `Validate the portfolio fixture.` Send. Wait until the assistant reply appears and mentions a sixty-four character run id.
-
-**Narration:**  
-First I ask to validate the portfolio fixture. The assistant runs the deterministic validator and returns a run id. That id anchors every later finding in this session.
-
----
-
-## Shot 4 — List the findings (0:38–1:05)
-
-**UI action:** Send: `List the findings.` Wait for finding cards and map highlights. Slowly scroll one card so `findingId`, `ruleId`, and `featureId` are legible; map should show corresponding features.
-
-**Narration:**  
-Next, list the findings. Each card shows a finding id, rule id, and feature id from the core—not from the model’s imagination. The map draws the same features so you can see geometry in context.
-
----
-
-## Shot 5 — Explain the next finding (1:05–1:28)
-
-**UI action:** Send: `Explain the next finding.` Wait for the explanation panel or assistant message. If the UI shows rule text or suggested action from the core, hold on that text.
-
-**Narration:**  
-Explain the next finding pulls wording from the deterministic rules engine. The model does not decide whether a polygon is valid; it reads what the tools returned and cites the ids.
-
----
-
-## Shot 6 — Refusal boundary (optional, if time) (1:28–1:48)
-
-**UI action:** Send: `Repair the invalid geometry.` Show the refusal message. If this shot is cut for time, skip to Shot 7 and keep total under three minutes.
-
-**Narration:**  
-If I ask it to repair geometry, it refuses. Source GeoJSON is never mutated by AI—only validators produce findings.
-
----
-
-## Shot 7 — Export QGIS (1:48–2:08)
-
-**UI action:** Send: `Export QGIS.` When the reply says the bundle is ready, click **Download last QGIS bundle**. Show the single `qgis-<run>.zip` download completing (filename visible if possible).
-
-**Narration:**  
-Export QGIS downloads one zip for desktop review: a QGIS project, its layer style, the findings GeoJSON and the run metadata, all from the same run.
-
----
-
-## Shot 8 — QGIS proof (2:08–2:28)
-
-**UI action:** Unzip `qgis-<run>.zip` into one folder, then cut to QGIS 3 with `findings.qgs` opened from that folder (the project loads `./findings.geojson` next to it). Pan/zoom one highlighted finding layer. Rehearse this once before recording.
-
-**Narration:**  
-In QGIS, stewards can continue review with familiar tools. The conversational demo and the desktop project describe the same run.
-
----
-
-## Shot 9 — Close: stack and links (2:28–2:45)
-
-**UI action:** Return to browser; show simulation badge again. Optional: flash README or repo URL on a simple title card—not required if repo URL is in video description.
-
-**Narration:**  
-Built with TypeScript, a deterministic quality core, tool contracts, and an OpenAI-compatible model on the server. Repository is open source under MIT. Try the simulation at the link in the description.
-
----
-
-## Post-production checklist
-
-- [ ] Total runtime under three minutes.
-- [ ] Spoken and visible **simulation** disclosure in the first fifteen seconds.
-- [ ] All four core commands shown: validate, list, explain, export (refusal shot optional).
-- [ ] No API keys, env files, or secrets on screen.
-- [ ] Video set to **public** on YouTube or Vimeo before Devpost submit.
+To highlight voice, re-record a real utterance with Voice on, microphone capture and visible transcription. The supplied recording shows Voice off, so the replacement narration uses “I ask” rather than “by voice”.

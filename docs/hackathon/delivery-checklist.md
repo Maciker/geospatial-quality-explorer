@@ -1,69 +1,43 @@
-# Hackathon delivery checklist (human steps)
+# Hackathon delivery checklist
 
-**Owner:** Iker submits on Devpost ([MAC-232](https://linear.app/maciker/issue/MAC-232)).  
-**Deadline:** 2026-10-23 21:00 Europe/Madrid ([rules](https://amazonappdev2026.devpost.com/rules)).  
-**Do not** mark Linear delivery complete until Devpost shows a submitted entry with URLs and receipt.
+Owner: Iker submits on Devpost. **Internal review cutoff: 2026-10-21.** Official deadline: **2026-10-23 21:00 Europe/Madrid** (12:00 PDT). Evaluation: November 9–20.
 
-Agents prepare docs; humans review media, secrets, and public access.
+Only check a box when its evidence exists. A source change is not a production deploy, and prepared materials are not a submitted entry.
 
----
+## Repository and access
 
-## Repository and license (target ~2026-10-22)
+- [x] Public repository and MIT license: https://github.com/Maciker/geospatial-quality-explorer
+- [x] Production URL incorporated in documentation by PR #36.
+- [ ] Prove clean checkout quick start and record source start/end commits or contribution PRs for the event window.
+- [ ] Review secrets and third-party/data licenses; keep synthetic CC0 separate from Natural Earth public-domain provenance.
+- [ ] Verify basemap terms and visible attribution for published media.
 
-- [x] Repository is **public** on GitHub (MIT already in `LICENSE`).
-- [ ] README judge quick start and [demo.md](../demo.md) Alexa path work from a clean clone (`pnpm install`, `pnpm dev:api`, `pnpm dev:web`, `?sim=alexa`).
-- [ ] No secrets in git history on the public default branch; `NAN_API_KEY` only in Vercel project settings.
-- [ ] `THIRD_PARTY_NOTICES.md` and fixture licenses accurate for judges (synthetic CC0; Natural Earth samples as public domain per Natural Earth terms, not relabeled CC0).
-- [ ] Note initial/final commit SHAs or PR numbers in Linear when submitting (per MAC-232 acceptance).
+## Product proof
 
----
+- [ ] Merge/deploy MAC-460 through the owner-approved workflow, then record deployed commit and URL.
+- [ ] In production, verify map-unavailable mode retains chat, findings, Explain and export. In a WebGL-capable browser, verify the normal map/selection path.
+- [ ] With a genuinely configured live model, validate the modified Natural Earth sample, select an incidence, explain it and export the same run. Record model/provider, time, observed latency and outcome. Do not silently substitute mock on failure.
+- [ ] Check cold start/session recovery and a controlled provider failure without disabling limits.
+- [ ] Download the ZIP and inspect `findings.qgs`, `findings.qml`, `findings.geojson`, `run-metadata.json`; cross-check identifiers/source hash/run.
+- [ ] Open the final bundle in QGIS 3 and record the result. A generated ZIP or parsed XML alone is not desktop inspection.
 
-## Hosted demo
+## Video
 
-- [x] Vercel project live at https://geospatial-quality-explorer.vercel.app (replace placeholder in [devpost-submission.md](./devpost-submission.md) and README if linked).
-- [ ] Vercel env: `NAN_API_KEY` scoped to **Production** only, optional `NAN_MODEL=qwen3.6`, `ALEXA_SIM_TIMEOUT_MS=55000` (function `maxDuration` is 60 s), provider **spend limit** set.
-- [ ] Vercel Git fork protection left **on** (public repo); rotate the key if it was ever shared in chat or screenshots. See [development.md](../development.md#hosted-demo-vercel).
-- [ ] Badge reads **Model: live LLM** on production; run validate → list → explain → export once, and open the downloaded `qgis-<run>.zip` in QGIS 3.
-- [ ] Document cold-start/session TTL behavior if a judge reports a missing run id ([tool-contracts.md](./tool-contracts.md)).
+- [ ] Review the corrected production voiceover and captions against `video-script.md`.
+- [ ] Confirm no unshown live-voice, upstream-defect, automatic-repair, download or QGIS-inspection claim.
+- [ ] Simulation disclosure and introduced-errors label are legible. Explain and attribution remain visible.
+- [ ] Add a genuine QGIS take if available; otherwise keep the honest export-ready version and describe the evidence limit accurately.
+- [ ] Review the narration voice/tool rights, no secrets, English, duration <3 minutes.
+- [ ] Upload reviewed final file to **public YouTube or Vimeo** and save its URL.
 
----
+## Devpost and feedback
 
-## Demo video (< 3 min)
+- [ ] Review `devpost-submission.md` against the actual final build and video; add the public video URL.
+- [ ] Review `product-feedback.md`: confirm the author’s actual onboarding and reuse decisions per tool. Internal env/router problems are not attributed to Amazon.
+- [ ] Update `friction-log.md` with measured outcomes. Friction log is optional; up-to-10% bonus is not automatic.
+- [ ] Select Alexa+ / explicitly labeled simulation. No official MCP/Agent Skill integration is claimed.
+- [ ] If keeping Open Source mini-challenge, supply a concrete eligible contribution URL, repo URL, GitHub username and explanation. Public visibility alone is not the contribution evidence.
+- [ ] Iker reviews materials by **21 October**; Iker submits by official deadline and records confirmation/entry URL in Linear.
+- [ ] Keep supplied code/video/instructions accessible free to the judges through November 20. Official FAQ permits a runnable local repository plus video without requiring hosting; keep a useful local fallback even when offering a live demo.
 
-- [ ] Record using [video-script.md](./video-script.md) (TTS + screen capture), all shots with the **live LLM** badge after a rehearsal; re-record the earlier draft whose Explain and Export shots used the mock.
-- [ ] Finding cards stay on screen through Explain and Export, and long ids wrap inside the chat (fixed in PR #26).
-- [ ] First ~15 s: visible and spoken **simulation of Alexa+** disclosure.
-- [ ] Shows validate, list, explain, export; optional refusal shot if under time cap.
-- [ ] Upload to **public** YouTube or Vimeo; paste URL into Devpost and Linear.
-- [ ] Iker reviews video for accuracy and labeling before publish.
-
----
-
-## Devpost form
-
-- [ ] Paste sections from [devpost-submission.md](./devpost-submission.md) (English).
-- [ ] Attach **Product Feedback** from [product-feedback.md](./product-feedback.md) ([MAC-371](https://linear.app/maciker/issue/MAC-371)).
-- [ ] Add repository URL, https://geospatial-quality-explorer.vercel.app, and video URL.
-- [ ] Confirm Open Source mini-challenge fields if applicable.
-- [ ] Submit on **2026-10-23** before 21:00 Madrid; save Devpost confirmation screenshot or link in Linear.
-- [ ] Ensure free judge access through **2026-11-20** (per MAC-232).
-
----
-
-## Explicit non-goals for this PR
-
-- [ ] Do **not** merge agent docs PR until Iker reviews.
-- [ ] Do **not** claim official Alexa+, MCP, or Agent Skill certification in any public copy.
-- [ ] Do **not** add fictional friction log entries—extend [friction-log.md](./friction-log.md) only for real incidents.
-
----
-
-## Quick links
-
-| Item | Location |
-| --- | --- |
-| Devpost copy | [devpost-submission.md](./devpost-submission.md) |
-| Video script | [video-script.md](./video-script.md) |
-| Product Feedback | [product-feedback.md](./product-feedback.md) |
-| Route decision | [adr-001-alexa-simulation.md](./adr-001-alexa-simulation.md) |
-| Friction log | [friction-log.md](./friction-log.md) |
+Do not auto-submit, merge, deploy, accept new paid usage or claim completion of unchecked steps.

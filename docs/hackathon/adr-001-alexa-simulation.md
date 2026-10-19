@@ -25,7 +25,7 @@ Three integration routes were in scope for [MAC-230](https://linear.app/maciker/
 | Route | Outcome | Rationale |
 | --- | --- | --- |
 | MCP Streamable HTTP | Rejected | Requires a hosted MCP adapter, session semantics, and judge-facing transport proof within the hackathon window; the repo’s API is loopback-only and in-memory ([MAC-230](https://linear.app/maciker/issue/MAC-230)). |
-| Agent Skill | Rejected | Needs Alexa developer account, skill certification path, and voice hardware or simulator coupling; does not reuse the existing web viewer without a parallel stack ([MAC-230](https://linear.app/maciker/issue/MAC-230)). |
+| Agent Skill | Rejected | Would require a separate Agent Skill implementation and evidence; not selected for this window. This decision does not establish a certification or hardware requirement for the hackathon ([MAC-230](https://linear.app/maciker/issue/MAC-230)). |
 | Web simulation | **Selected** | Reuses the deterministic core through documented tool contracts; demo and video can show voice-like dialogue in the browser with a visible **simulation** label ([MAC-231](https://linear.app/maciker/issue/MAC-231)). |
 
 This is **not** an official Alexa integration. UI copy, demo video, and Devpost materials must state that the experience is a **simulation** ([MAC-231](https://linear.app/maciker/issue/MAC-231)).
