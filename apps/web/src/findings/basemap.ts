@@ -39,6 +39,7 @@ export function planBasemap(style: unknown): BasemapPlan | null {
     return [{ ...layer, id: PREFIX + layer.id, source: PREFIX + layer.source } as unknown as LayerSpecification];
   });
   if (layers.length === 0) return null;
+  if (layers.some(layerRequiresGlyphs) && typeof style.glyphs !== "string") return null;
   return {
     sources,
     layers,
@@ -57,4 +58,12 @@ function withAttribution(spec: Record<string, unknown>): Record<string, unknown>
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function layerRequiresGlyphs(layer: LayerSpecification): boolean {
+  if (layer.type !== "symbol") return false;
+  const layout = layer.layout;
+  if (!layout || typeof layout !== "object") return false;
+  const textField = layout["text-field"];
+  return textField !== undefined && textField !== null && textField !== "";
 }
