@@ -1,8 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { FixedWindowRateLimiter } from "../src/infrastructure/FixedWindowRateLimiter.js";
 import { ALEXA_SIM_LIMITS, type HttpLikeRequest } from "../src/infrastructure/handleAlexaSimHttp.js";
-import { resetSharedToolsAdapterForTests } from "../src/infrastructure/createToolsAdapter.js";
 import { alexaSimChatRequest, sendAlexaSimHttp } from "./support/alexaSimHttpTestKit.js";
+import { registerDeterministicLlmTestEnv } from "./support/nanLlmTestEnv.js";
+
+registerDeterministicLlmTestEnv();
 
 function chatRequest(body: unknown, clientAddress = "203.0.113.7"): HttpLikeRequest {
   return alexaSimChatRequest(body, clientAddress);
@@ -11,18 +13,6 @@ function chatRequest(body: unknown, clientAddress = "203.0.113.7"): HttpLikeRequ
 async function send(request: HttpLikeRequest, rateLimiter = new FixedWindowRateLimiter({ limit: 100, windowMs: 60_000 })) {
   return sendAlexaSimHttp(request, rateLimiter);
 }
-
-const savedKey = process.env.NAN_API_KEY;
-
-beforeEach(() => {
-  delete process.env.NAN_API_KEY;
-});
-
-afterEach(() => {
-  if (savedKey === undefined) delete process.env.NAN_API_KEY;
-  else process.env.NAN_API_KEY = savedKey;
-  resetSharedToolsAdapterForTests();
-});
 
 describe("The Alexa simulation HTTP handler", () => {
   it("rejects a body larger than the limit", async () => {

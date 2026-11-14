@@ -9,6 +9,9 @@ import { DeterministicMockLlm } from "../src/infrastructure/DeterministicMockLlm
 import { FixedWindowRateLimiter } from "../src/infrastructure/FixedWindowRateLimiter.js";
 import { LlmUnavailableError } from "../src/infrastructure/NanOpenAiLlmClient.js";
 import { alexaSimChatRequest, sendAlexaSimHttp } from "./support/alexaSimHttpTestKit.js";
+import { registerDeterministicLlmTestEnv } from "./support/nanLlmTestEnv.js";
+
+registerDeterministicLlmTestEnv();
 
 const fixturesDirectory = join(dirname(fileURLToPath(import.meta.url)), "../../quality/fixtures/vector");
 const VALIDATE = "Validate the portfolio fixture.";
