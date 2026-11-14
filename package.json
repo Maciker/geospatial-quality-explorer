@@ -61,19 +61,25 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "minimatch": ">=11.0.1",
+      "nanoid": ">=3.3.18",
+      "postcss": ">=8.5.23",
+      "source-map-js": ">=1.2.2"
+    }
   },
   "devDependencies": {
-    "@eslint/js": "^9.18.0",
-    "@playwright/test": "1.55.0",
+    "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.55.1",
     "@types/node": "^22.10.0",
-    "dependency-cruiser": "^16.9.0",
-    "eslint": "^9.18.0",
-    "jscpd": "4.0.1",
-    "knip": "^5.42.0",
+    "dependency-cruiser": "^18.7.2",
+    "eslint": "^9.39.4",
+    "jscpd": "5.4.3",
+    "knip": "^5.88.1",
     "tsx": "4.20.5",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.20.0",
-    "vitest": "^3.0.0"
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
   }
 }

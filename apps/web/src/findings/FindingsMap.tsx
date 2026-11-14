@@ -1,5 +1,6 @@
+import type { Feature, FeatureCollection } from "geojson";
 import { useEffect, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { GeoJsonGeometry } from "../lib/api";
@@ -66,12 +67,8 @@ export default function FindingsMap(props: Props) {
     const basemapAbort = new AbortController();
     // E2E-only hook (VITE_MAP_TEST_HOOKS=1): how many distinct findings the map has in its source tiles.
     if (import.meta.env.VITE_MAP_TEST_HOOKS === "1") {
-      map.on("idle", () => {
-        const drawn = new Set(
-          map.getSource("findings") ? map.querySourceFeatures("findings").map((feature) => String(feature.properties?.findingId)) : [],
-        );
-        element.dataset.drawnFindings = String(drawn.size);
-      });
+      const syncDrawnFindings = () => publishDrawnFindingsCount(map, element);
+      map.on("idle", syncDrawnFindings);
     }
     element.dataset.basemap = "off";
     map.on("load", () => {
@@ -160,46 +157,53 @@ export default function FindingsMap(props: Props) {
       if (cancelled) return;
       const source = map.getSource("source-layer") as maplibregl.GeoJSONSource | undefined;
       const findings = map.getSource("findings") as maplibregl.GeoJSONSource | undefined;
-      source?.setData({
-        type: "FeatureCollection",
-        features: props.sourceFeatures as GeoJSON.Feature[],
+      const updates: Promise<unknown>[] = [];
+      if (source) {
+        updates.push(source.setData({ type: "FeatureCollection", features: props.sourceFeatures as Feature[] }));
+      }
+      if (findings) {
+        updates.push(findings.setData({ type: "FeatureCollection", features: props.findingFeatures as Feature[] }));
+      }
+      void Promise.all(updates).then(() => {
+        if (cancelled) return;
+        if (map.getLayer("findings-fill")) {
+          map.setPaintProperty("findings-fill", "fill-color", [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            "#f5c542",
+            ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
+          ]);
+          map.setPaintProperty("findings-fill", "fill-opacity", [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            0.72,
+            0.22,
+          ]);
+        }
+        if (map.getLayer("findings-line")) {
+          map.setPaintProperty("findings-line", "line-color", [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            "#1a1a1a",
+            "#6b7a6d",
+          ]);
+          map.setPaintProperty("findings-line", "line-width", [
+            "case",
+            ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
+            4.5,
+            1.25,
+          ]);
+        }
+        if (lastFitNonce.current !== props.fitNonce) {
+          lastFitNonce.current = props.fitNonce;
+          fitToLayers(map, props.sourceFeatures, props.findingFeatures, props.selectedFindingId);
+        }
+        if (import.meta.env.VITE_MAP_TEST_HOOKS === "1") {
+          const sync = () => publishDrawnFindingsCount(map, container.current);
+          sync();
+          map.once("idle", sync);
+        }
       });
-      findings?.setData({
-        type: "FeatureCollection",
-        features: props.findingFeatures as GeoJSON.Feature[],
-      });
-      if (map.getLayer("findings-fill")) {
-        map.setPaintProperty("findings-fill", "fill-color", [
-          "case",
-          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          "#f5c542",
-          ["match", ["get", "severity"], "error", "#9b2c2c", "warning", "#8a5a00", "info", "#1d4e89", "#555555"],
-        ]);
-        map.setPaintProperty("findings-fill", "fill-opacity", [
-          "case",
-          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          0.72,
-          0.22,
-        ]);
-      }
-      if (map.getLayer("findings-line")) {
-        map.setPaintProperty("findings-line", "line-color", [
-          "case",
-          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          "#1a1a1a",
-          "#6b7a6d",
-        ]);
-        map.setPaintProperty("findings-line", "line-width", [
-          "case",
-          ["==", ["get", "findingId"], props.selectedFindingId ?? ""],
-          4.5,
-          1.25,
-        ]);
-      }
-      if (lastFitNonce.current !== props.fitNonce) {
-        lastFitNonce.current = props.fitNonce;
-        fitToLayers(map, props.sourceFeatures, props.findingFeatures, props.selectedFindingId);
-      }
     };
     if (map.isStyleLoaded()) apply();
     else map.once("load", apply);
@@ -253,8 +257,16 @@ export default function FindingsMap(props: Props) {
   );
 }
 
-function emptyCollection(): GeoJSON.FeatureCollection {
+function emptyCollection(): FeatureCollection {
   return { type: "FeatureCollection", features: [] };
+}
+
+function publishDrawnFindingsCount(map: maplibregl.Map, element: HTMLDivElement | null): void {
+  if (!element) return;
+  const drawn = new Set(
+    map.getSource("findings") ? map.querySourceFeatures("findings").map((feature) => String(feature.properties?.findingId)) : [],
+  );
+  element.dataset.drawnFindings = String(drawn.size);
 }
 
 function fitToLayers(

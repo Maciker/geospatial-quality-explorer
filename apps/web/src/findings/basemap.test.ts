@@ -94,4 +94,9 @@ describe("planBasemap", () => {
   it("rejects a style with no drawable layers", () => {
     expect(planBasemap({ version: 8, sources: {}, layers: [] })).toBeNull();
   });
+
+  it("rejects a style whose text layers need glyphs but none are declared", () => {
+    const withoutGlyphs = { ...vectorStyle, glyphs: undefined };
+    expect(planBasemap(withoutGlyphs)).toBeNull();
+  });
 });
