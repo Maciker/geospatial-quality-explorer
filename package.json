@@ -74,7 +74,7 @@
     "@playwright/test": "^1.55.1",
     "@types/node": "^22.10.0",
     "dependency-cruiser": "^18.7.2",
-    "eslint": "^9.39.4",
+    "eslint": "^10.15.0",
     "jscpd": "5.4.3",
     "knip": "^5.88.1",
     "tsx": "4.20.5",
