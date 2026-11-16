@@ -72,7 +72,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.55.1",
-    "@types/node": "^22.10.0",
+    "@types/node": "^26.6.6",
     "dependency-cruiser": "^18.7.2",
     "eslint": "^9.39.4",
     "jscpd": "5.4.3",
