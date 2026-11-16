@@ -78,7 +78,7 @@
     "jscpd": "5.4.3",
     "knip": "^5.88.1",
     "tsx": "4.20.5",
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2",
     "vitest": "^5.1.0"
   }
