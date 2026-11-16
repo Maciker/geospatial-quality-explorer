@@ -76,7 +76,7 @@
     "dependency-cruiser": "^18.7.2",
     "eslint": "^9.39.4",
     "jscpd": "5.4.3",
-    "knip": "^5.88.1",
+    "knip": "^6.45.1",
     "tsx": "4.20.5",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.72.2",
